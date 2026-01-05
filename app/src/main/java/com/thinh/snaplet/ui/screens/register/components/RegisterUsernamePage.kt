@@ -16,6 +16,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.onFocusChanged
+import kotlinx.coroutines.launch
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.FormTextField
 
@@ -38,6 +43,11 @@ fun RegisterUsernamePage(
     val usernameFocusRequester = remember { FocusRequester() }
     val firstNameFocusRequester = remember { FocusRequester() }
     val lastNameFocusRequester = remember { FocusRequester() }
+    
+    val firstNameBringIntoViewRequester = remember { BringIntoViewRequester() }
+    val lastNameBringIntoViewRequester = remember { BringIntoViewRequester() }
+    
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         usernameFocusRequester.requestFocus()
@@ -81,7 +91,16 @@ fun RegisterUsernamePage(
                     },
                     errorMessage = firstNameError,
                     enabled = !isLoading,
-                    modifier = Modifier.focusRequester(firstNameFocusRequester)
+                    modifier = Modifier
+                        .focusRequester(firstNameFocusRequester)
+                        .bringIntoViewRequester(firstNameBringIntoViewRequester)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                coroutineScope.launch {
+                                    firstNameBringIntoViewRequester.bringIntoView()
+                                }
+                            }
+                        }
                 )
 
                 Spacer(Modifier.height(24.dp))
@@ -99,7 +118,16 @@ fun RegisterUsernamePage(
                     },
                     errorMessage = lastNameError,
                     enabled = !isLoading,
-                    modifier = Modifier.focusRequester(lastNameFocusRequester)
+                    modifier = Modifier
+                        .focusRequester(lastNameFocusRequester)
+                        .bringIntoViewRequester(lastNameBringIntoViewRequester)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                coroutineScope.launch {
+                                    lastNameBringIntoViewRequester.bringIntoView()
+                                }
+                            }
+                        }
                 )
             }
         }

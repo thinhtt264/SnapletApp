@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -105,6 +107,8 @@ fun Register(
             }
         }
 
+        val scrollState = rememberScrollState()
+        
         StepAnimatedContent(
             currentStep = uiState.currentStep,
             stepOrder = { step ->
@@ -115,7 +119,8 @@ fun Register(
                 }
             },
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp),
         ) { step ->
             when (step) {
