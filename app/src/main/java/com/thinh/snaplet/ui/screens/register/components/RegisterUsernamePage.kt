@@ -1,5 +1,6 @@
 package com.thinh.snaplet.ui.screens.register.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.FormTextField
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RegisterUsernamePage(
     email: String,
