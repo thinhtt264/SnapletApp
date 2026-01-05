@@ -58,9 +58,9 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun isAuthenticated(): Boolean {
         val authenticated =
-            dataStoreManager.getAccessToken() != null &&
-                    dataStoreManager.getRefreshToken() != null &&
-                    dataStoreManager.getUserProfile() != null
+            dataStoreManager.loadAccessToken() != null &&
+                    dataStoreManager.loadRefreshToken() != null &&
+                    dataStoreManager.loadUserProfile() != null
 
         _authState.value =
             if (authenticated)

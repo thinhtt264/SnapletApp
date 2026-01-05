@@ -1,4 +1,4 @@
-package com.thinh.snaplet.ui.screens.login
+package com.thinh.snaplet.ui.screens.register
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,19 +28,37 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import animateVisibility
 import com.thinh.snaplet.ui.components.StepAnimatedContent
-import com.thinh.snaplet.ui.screens.login.components.LoginEmailPage
-import com.thinh.snaplet.ui.screens.login.components.LoginPasswordPage
+import com.thinh.snaplet.ui.screens.register.components.RegisterEmailPage
+import com.thinh.snaplet.ui.screens.register.components.RegisterPasswordPage
+import com.thinh.snaplet.ui.screens.register.components.RegisterUsernamePage
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Login(
-    viewModel: LoginViewModel = hiltViewModel(),
-    onLoginSuccess: () -> Unit,
-    onRegisterClick: () -> Unit
+fun Register(
+    onRegisterSuccess: () -> Unit,
+    onLoginClick: () -> Unit,
+    viewModel: RegisterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                RegisterUIEvent.RegisterSuccess -> onRegisterSuccess()
+                RegisterUIEvent.NavigateToLogin -> onLoginClick()
+            }
+        }
+    }
+
+    fun onGoBack() {
+        when (uiState.currentStep) {
+            RegisterStep.USERNAME -> viewModel.onScrollToPage(RegisterStep.EMAIL)
+            RegisterStep.PASSWORD -> viewModel.onScrollToPage(RegisterStep.USERNAME)
+            RegisterStep.EMAIL -> {}
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -57,12 +76,12 @@ fun Login(
                 .height(80.dp)
         ) {
             IconButton(
-                onClick = viewModel::onBackToEmailStep,
+                onClick = ::onGoBack,
                 enabled = !uiState.isLoading,
                 modifier = Modifier
                     .padding(16.dp)
                     .size(48.dp)
-                    .animateVisibility(uiState.currentStep == LoginStep.PASSWORD)
+                    .animateVisibility(uiState.currentStep != RegisterStep.EMAIL)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -76,8 +95,9 @@ fun Login(
             currentStep = uiState.currentStep,
             stepOrder = { step ->
                 when (step) {
-                    LoginStep.EMAIL -> 0
-                    LoginStep.PASSWORD -> 1
+                    RegisterStep.EMAIL -> 0
+                    RegisterStep.USERNAME -> 1
+                    RegisterStep.PASSWORD -> 2
                 }
             },
             modifier = Modifier
@@ -85,18 +105,26 @@ fun Login(
                 .padding(horizontal = 24.dp),
         ) { step ->
             when (step) {
-                LoginStep.EMAIL -> LoginEmailPage(
+                RegisterStep.EMAIL -> RegisterEmailPage(
                     email = uiState.email,
                     emailError = uiState.emailError?.asString(context),
                     isLoading = uiState.isLoading,
                     onEmailChange = viewModel::onEmailChange,
                     onContinue = viewModel::onContinueFromEmail,
-                    focusManager = focusManager,
-                    onRegisterClick = onRegisterClick
+                    onLoginClick = viewModel::onNavigateToLogin
                 )
 
-                LoginStep.PASSWORD -> LoginPasswordPage(
+                RegisterStep.USERNAME -> RegisterUsernamePage(
                     email = uiState.email,
+                    username = uiState.username,
+                    usernameError = uiState.usernameError?.asString(context),
+                    isLoading = uiState.isLoading,
+                    onUsernameChange = viewModel::onUsernameChange,
+                    onContinue = viewModel::onContinueFromUsername
+                )
+
+                RegisterStep.PASSWORD -> RegisterPasswordPage(
+                    username = uiState.username,
                     password = uiState.password,
                     passwordError = uiState.passwordError?.asString(context),
                     isPasswordVisible = uiState.isPasswordVisible,
@@ -104,8 +132,7 @@ fun Login(
                     isLoading = uiState.isLoading,
                     onPasswordChange = viewModel::onPasswordChange,
                     onPasswordVisibilityToggle = viewModel::onPasswordVisibilityToggle,
-                    onLogin = { viewModel.onLogin(onLoginSuccess) },
-                    focusManager = focusManager
+                    onRegister = viewModel::onRegister
                 )
             }
         }

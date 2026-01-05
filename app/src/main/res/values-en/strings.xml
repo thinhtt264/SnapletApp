@@ -9,17 +9,36 @@
     <string name="send_request">Send request</string>
     <string name="close">Close</string>
 
-    <!-- Login Screen -->
     <string name="login_email_title">What\'s your email?</string>
     <string name="login_password_title">Choose a password</string>
     <string name="login_subtitle">Connect with your friends</string>
     <string name="email">Email</string>
     <string name="email_placeholder">your.email@example.com</string>
+    <string name="email_invalid">Email invalid</string>
+    <string name="email_required">Email is required</string>
+
     <string name="password">Password</string>
     <string name="password_placeholder">Password</string>
     <string name="password_requirement">Your password must be at least 8 characters</string>
     <string name="forgot_password">Forgot password?</string>
+    <string name="password_required">Password is required</string>
     <string name="dont_have_account">Don\'t have an account?</string>
     <string name="sign_up">Sign up</string>
     <string name="continue_text">Continue</string>
+
+    <string name="register_email_title">What\'s your email?</string>
+    <string name="register_username_title">What\'s your username?</string>
+    <string name="username_required">Username is required</string>
+    <string name="username_requirement1">Username must be at least 3 characters</string>
+    <string name="username_requirement2">Username cannot exceed 20 characters</string>
+
+    <string name="register_password_title">Choose a password</string>
+    <string name="username">Username</string>
+    <string name="username_placeholder">username</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="email_already_taken">This email is already in use</string>
+    <string name="email_check_failed">Unable to check email</string>
+    <string name="username_already_taken">This username is already taken</string>
+    <string name="username_check_failed">Unable to check username</string>
+    <string name="username_invalid_characters">Username can only contain letters, numbers, and underscores</string>
 </resources>

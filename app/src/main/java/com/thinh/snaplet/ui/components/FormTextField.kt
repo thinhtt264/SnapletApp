@@ -36,7 +36,6 @@ fun FormTextField(
     minLines: Int = 1
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Label
         AppText(
             text = label,
             typography = typography.titleMedium,
@@ -44,7 +43,6 @@ fun FormTextField(
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // TextField
         BaseTextField(
             value = value,
             onValueChange = onValueChange,
@@ -68,7 +66,6 @@ fun FormTextField(
             minLines = minLines
         )
 
-        // Error Message
         AnimatedVisibility(
             visible = errorMessage != null,
             enter = fadeIn(),

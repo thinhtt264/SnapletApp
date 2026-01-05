@@ -11,17 +11,36 @@
     <string name="send_request">Gửi yêu cầu</string>
     <string name="close">Đóng</string>
 
-    <!-- Login Screen -->
     <string name="login_email_title">Email của bạn là gì?</string>
     <string name="login_password_title">Chọn mật khẩu</string>
     <string name="login_subtitle">Kết nối với bạn bè của bạn</string>
     <string name="email">Email</string>
+    <string name="email_invalid">Email không hợp lệ</string>
+    <string name="email_required">Email là bắt buộc</string>
     <string name="email_placeholder">your.email@example.com</string>
     <string name="password">Mật khẩu</string>
     <string name="password_placeholder">Mật khẩu</string>
     <string name="password_requirement">Mật khẩu phải có ít nhất 8 ký tự</string>
     <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="password_required">Mật khẩu là bắt buộc</string>
+
     <string name="dont_have_account">Chưa có tài khoản?</string>
     <string name="sign_up">Đăng ký</string>
     <string name="continue_text">Tiếp tục</string>
+
+    <string name="register_email_title">Email của bạn là gì?</string>
+    <string name="register_username_title">Tên người dùng của bạn là gì?</string>
+    <string name="username_required">Tên người dùng là bắt buộc</string>
+    <string name="username_requirement1">Tên người dùng phải có ít nhất 3 ký tự</string>
+    <string name="username_requirement2">Tên người dùng không được vượt quá 20 ký tự</string>
+
+    <string name="register_password_title">Chọn mật khẩu</string>
+    <string name="username">Tên người dùng</string>
+    <string name="username_placeholder">username</string>
+    <string name="already_have_account">Đã có tài khoản?</string>
+    <string name="email_already_taken">Email này đã được sử dụng</string>
+    <string name="email_check_failed">Không thể kiểm tra email</string>
+    <string name="username_already_taken">Tên người dùng này đã được sử dụng</string>
+    <string name="username_check_failed">Không thể kiểm tra tên người dùng</string>
+    <string name="username_invalid_characters">Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới</string>
 </resources>

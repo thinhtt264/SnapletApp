@@ -1,11 +1,15 @@
 package com.thinh.snaplet.ui.screens.login
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.UserProfile
-import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.data.repository.UserRepository
+import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.utils.UiText
+import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,11 +77,6 @@ class LoginViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
-                // For now, we'll just validate the email format and proceed to password step
-                // In the future, you can add an API call to check email availability here
-                // Example: val result = authRepository.checkEmailExists(currentState.email)
-
-                Logger.d("✅ Email validated: ${currentState.email}")
                 _uiState.update {
                     it.copy(
                         isLoading = false, currentStep = LoginStep.PASSWORD
@@ -88,7 +87,7 @@ class LoginViewModel @Inject constructor(
                 Logger.e("❌ Email validation failed: ${e.message}")
                 _uiState.update {
                     it.copy(
-                        isLoading = false, emailError = e.message ?: "Unable to verify email"
+                        isLoading = false, emailError = UiText.DynamicString(e.safeMessage)
                     )
                 }
             }
@@ -99,14 +98,6 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = _uiState.value
 
-            // Validate password
-            val passwordError = validatePassword(currentState.password)
-            if (passwordError != null) {
-                _uiState.update { it.copy(passwordError = passwordError) }
-                return@launch
-            }
-
-            // Start loading
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
@@ -122,40 +113,33 @@ class LoginViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     onSuccess()
                 } else {
-                    val exception = result.exceptionOrNull()
-                    Logger.e("❌ Login failed: ${exception?.message}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = exception?.message ?: "An error occurred during login"
+                            errorMessage = UiText.DynamicString(
+                                result.exceptionOrNull()?.message ?: "Unknown error"
+                            )
                         )
                     }
                 }
 
             } catch (e: Exception) {
-                Logger.e("❌ Login exception: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "An error occurred during login"
+                        errorMessage = UiText.DynamicString(e.safeMessage)
                     )
                 }
             }
         }
     }
 
-    private fun validateEmail(email: String): String? {
+    private fun validateEmail(email: String): UiText? {
         return when {
-            email.isBlank() -> "Email is required"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Invalid email format"
-            else -> null
-        }
-    }
+            email.isBlank() -> UiText.StringResource(R.string.email_required)
+            !Patterns.EMAIL_ADDRESS.matcher(email).matches() ->
+                UiText.StringResource(R.string.email_invalid)
 
-    private fun validatePassword(password: String): String? {
-        return when {
-            password.isBlank() -> "Password is required"
-            password.length < 8 -> "Password must be at least 8 characters"
             else -> null
         }
     }

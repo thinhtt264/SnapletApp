@@ -10,12 +10,9 @@ import com.google.gson.Gson
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.utils.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,20 +34,6 @@ class DataStoreManager @Inject constructor(
     private val currentAccessToken = AtomicReference<String?>(null)
     private val currentRefreshToken = AtomicReference<String?>(null)
 
-    init {
-        CoroutineScope(Dispatchers.Default).launch { reHydrate() }
-    }
-
-    private suspend fun reHydrate() {
-        try {
-            val preferences = dataStore.data.first()
-            currentAccessToken.set(preferences[accessTokenKey])
-            currentRefreshToken.set(preferences[refreshTokenKey])
-        } catch (e: Exception) {
-            Logger.e("Failed to init cache: ${e.message}")
-        }
-    }
-
     suspend fun saveAccessToken(token: String) {
         currentAccessToken.set(token)
         dataStore.edit { preferences ->
@@ -58,7 +41,7 @@ class DataStoreManager @Inject constructor(
         }
         Logger.d("💾 Access token saved")
     }
-
+    
     fun getAccessToken(): String? {
         return currentAccessToken.get()
     }
@@ -98,14 +81,13 @@ class DataStoreManager @Inject constructor(
         }
     }
 
-    suspend fun getUserProfile(): UserProfile? {
+    suspend fun loadUserProfile(): UserProfile? {
         return try {
             val preferences = dataStore.data.first()
             val userJson = preferences[userProfileKey] ?: return null
 
             gson.fromJson(userJson, UserProfile::class.java)
-        } catch (e: Exception) {
-            Logger.e("❌ Failed to get user profile: ${e.message}")
+        } catch (_: Exception) {
             null
         }
     }
@@ -133,6 +115,32 @@ class DataStoreManager @Inject constructor(
         clearSession()
         clearUserProfile()
         Logger.d("🗑️ All data cleared")
+    }
+
+    suspend fun loadAccessToken(): String? {
+        return try {
+            val preferences = dataStore.data.first()
+            val token = preferences[accessTokenKey]
+            if (token != null) {
+                currentAccessToken.set(token)
+            }
+            token
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun loadRefreshToken(): String? {
+        return try {
+            val preferences = dataStore.data.first()
+            val token = preferences[refreshTokenKey]
+            if (token != null) {
+                currentRefreshToken.set(token)
+            }
+            token
+        } catch (_: Exception) {
+            null
+        }
     }
 }
 
