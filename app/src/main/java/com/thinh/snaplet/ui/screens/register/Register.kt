@@ -1,4 +1,4 @@
-package com.thinh.snaplet.ui.screens.login
+package com.thinh.snaplet.ui.screens.register
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -25,7 +25,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -38,33 +37,40 @@ import animateVisibility
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.AppText
 import com.thinh.snaplet.ui.components.StepAnimatedContent
-import com.thinh.snaplet.ui.screens.login.components.LoginEmailPage
-import com.thinh.snaplet.ui.screens.login.components.LoginPasswordPage
+import com.thinh.snaplet.ui.screens.register.components.RegisterEmailPage
+import com.thinh.snaplet.ui.screens.register.components.RegisterPasswordPage
+import com.thinh.snaplet.ui.screens.register.components.RegisterUsernamePage
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Login(
-    viewModel: LoginViewModel = hiltViewModel(),
-    onLoginSuccess: () -> Unit,
-    onRegisterClick: () -> Unit
+fun Register(
+    onRegisterSuccess: () -> Unit,
+    onLoginClick: () -> Unit,
+    viewModel: RegisterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
 
-    var errorDialogMessage by rememberSaveable {
-        mutableStateOf<String?>(null)
-    }
+    var errorDialogMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is LoginUIEvent.LoginSuccess -> onLoginSuccess()
-                is LoginUIEvent.NavigateToRegister -> onRegisterClick()
-                is LoginUIEvent.ShowErrorPopup -> {
+                is RegisterUIEvent.RegisterSuccess -> onRegisterSuccess()
+                is RegisterUIEvent.NavigateToLogin -> onLoginClick()
+                is RegisterUIEvent.ShowErrorPopup -> {
                     errorDialogMessage = event.message
                 }
             }
+        }
+    }
+
+    fun onGoBack() {
+        when (uiState.currentStep) {
+            RegisterStep.USERNAME -> viewModel.onScrollToPage(RegisterStep.EMAIL)
+            RegisterStep.PASSWORD -> viewModel.onScrollToPage(RegisterStep.USERNAME)
+            RegisterStep.EMAIL -> {}
         }
     }
 
@@ -84,12 +90,12 @@ fun Login(
                 .height(80.dp)
         ) {
             IconButton(
-                onClick = viewModel::onBackToEmailStep,
+                onClick = ::onGoBack,
                 enabled = !uiState.isLoading,
                 modifier = Modifier
                     .padding(16.dp)
                     .size(48.dp)
-                    .animateVisibility(uiState.currentStep == LoginStep.PASSWORD)
+                    .animateVisibility(uiState.currentStep != RegisterStep.EMAIL)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -103,8 +109,9 @@ fun Login(
             currentStep = uiState.currentStep,
             stepOrder = { step ->
                 when (step) {
-                    LoginStep.EMAIL -> 0
-                    LoginStep.PASSWORD -> 1
+                    RegisterStep.EMAIL -> 0
+                    RegisterStep.USERNAME -> 1
+                    RegisterStep.PASSWORD -> 2
                 }
             },
             modifier = Modifier
@@ -112,26 +119,39 @@ fun Login(
                 .padding(horizontal = 24.dp),
         ) { step ->
             when (step) {
-                LoginStep.EMAIL -> LoginEmailPage(
+                RegisterStep.EMAIL -> RegisterEmailPage(
                     email = uiState.email,
                     emailError = uiState.emailError?.asString(context),
                     isLoading = uiState.isLoading,
                     onEmailChange = viewModel::onEmailChange,
                     onContinue = viewModel::onContinueFromEmail,
-                    focusManager = focusManager,
-                    onRegisterClick = viewModel::onNavigateToRegister
+                    onLoginClick = viewModel::onNavigateToLogin
                 )
 
-                LoginStep.PASSWORD -> LoginPasswordPage(
+                RegisterStep.USERNAME -> RegisterUsernamePage(
                     email = uiState.email,
+                    username = uiState.username,
+                    firstName = uiState.firstName,
+                    lastName = uiState.lastName,
+                    usernameError = uiState.usernameError?.asString(context),
+                    firstNameError = uiState.firstNameError?.asString(context),
+                    lastNameError = uiState.lastNameError?.asString(context),
+                    isLoading = uiState.isLoading,
+                    onUsernameChange = viewModel::onUsernameChange,
+                    onFirstNameChange = viewModel::onFirstNameChange,
+                    onLastNameChange = viewModel::onLastNameChange,
+                    onContinue = viewModel::onContinueFromUsername
+                )
+
+                RegisterStep.PASSWORD -> RegisterPasswordPage(
+                    username = uiState.username,
                     password = uiState.password,
                     passwordError = uiState.passwordError?.asString(context),
                     isPasswordVisible = uiState.isPasswordVisible,
                     isLoading = uiState.isLoading,
                     onPasswordChange = viewModel::onPasswordChange,
                     onPasswordVisibilityToggle = viewModel::onPasswordVisibilityToggle,
-                    onLogin = viewModel::onLogin,
-                    focusManager = focusManager
+                    onRegister = viewModel::onRegister
                 )
             }
         }

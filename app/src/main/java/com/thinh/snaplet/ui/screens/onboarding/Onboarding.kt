@@ -32,7 +32,8 @@ import com.thinh.snaplet.utils.Logger
 @Composable
 fun Onboarding(
     modifier: Modifier = Modifier,
-    onNavigateToLogin: () -> Unit = {},
+    onNavigateToLogin: () -> Unit,
+    onNavigateToRegister: () -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -64,7 +65,7 @@ fun Onboarding(
                 modifier = Modifier.weight(1f)
             ) {
                 PrimaryButton(
-                    onClick = {},
+                    onClick = onNavigateToRegister,
                     title = stringResource(R.string.create_account),
                     contentPadding = PaddingValues(vertical = 16.dp, horizontal = 18.dp),
                     titleColor = Color.Black,

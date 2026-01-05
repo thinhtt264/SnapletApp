@@ -42,8 +42,7 @@ fun Modifier.pressScaleClickable(
     scaleOnPress: Float = 0.96f,
     onClick: suspend () -> Unit
 ): Modifier = composed {
-    val internalInteractionSource = remember { MutableInteractionSource() }
-    val finalInteractionSource = interactionSource ?: internalInteractionSource
+    val finalInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
 
     var isProcessing by remember { mutableStateOf(false) }
     val isPressed by finalInteractionSource.collectIsPressedAsState()

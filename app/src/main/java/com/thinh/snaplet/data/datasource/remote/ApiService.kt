@@ -2,10 +2,13 @@ package com.thinh.snaplet.data.datasource.remote
 
 import com.thinh.snaplet.data.model.LoginRequest
 import com.thinh.snaplet.data.model.LoginResponse
+import com.thinh.snaplet.data.model.RegisterRequest
 import com.thinh.snaplet.data.model.BaseResponse
 import com.thinh.snaplet.data.model.FeedData
 import com.thinh.snaplet.data.model.Relationship
 import com.thinh.snaplet.data.model.UserProfile
+import com.thinh.snaplet.data.model.EmailAvailabilityData
+import com.thinh.snaplet.data.model.UsernameAvailabilityData
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -20,6 +23,12 @@ interface ApiService {
     suspend fun login(
         @Header("X-Device-Id") deviceId: String ="default-device-id",
         @Body body: LoginRequest
+    ): Response<BaseResponse<LoginResponse>>
+    
+    @POST("auth/register")
+    suspend fun register(
+        @Header("X-Device-Id") deviceId: String = "default-device-id",
+        @Body body: RegisterRequest
     ): Response<BaseResponse<LoginResponse>>
     
     @GET("posts/feed")
@@ -37,4 +46,14 @@ interface ApiService {
     suspend fun sendFriendRequest(
         @Body body: Map<String, String>
     ): Response<BaseResponse<Relationship>>
+    
+    @GET("users/email-availability")
+    suspend fun checkEmailAvailability(
+        @Query("email") email: String
+    ): Response<BaseResponse<EmailAvailabilityData>>
+    
+    @GET("users/username-availability")
+    suspend fun checkUsernameAvailability(
+        @Query("username") username: String
+    ): Response<BaseResponse<UsernameAvailabilityData>>
 }

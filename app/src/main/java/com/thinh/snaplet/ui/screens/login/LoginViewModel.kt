@@ -1,15 +1,23 @@
 package com.thinh.snaplet.ui.screens.login
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.UserProfile
-import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.data.repository.UserRepository
+import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.utils.UiText
+import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -24,6 +32,13 @@ class LoginViewModel @Inject constructor(
     private val _currentUserProfile: Flow<UserProfile?> = userRepository.observeMyUserProfile()
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    private val _uiEvent = MutableSharedFlow<LoginUIEvent>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.SUSPEND
+    )
+    val uiEvent: SharedFlow<LoginUIEvent> = _uiEvent.asSharedFlow()
 
     init {
         observeUserProfile()
@@ -73,11 +88,6 @@ class LoginViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
-                // For now, we'll just validate the email format and proceed to password step
-                // In the future, you can add an API call to check email availability here
-                // Example: val result = authRepository.checkEmailExists(currentState.email)
-
-                Logger.d("✅ Email validated: ${currentState.email}")
                 _uiState.update {
                     it.copy(
                         isLoading = false, currentStep = LoginStep.PASSWORD
@@ -88,25 +98,17 @@ class LoginViewModel @Inject constructor(
                 Logger.e("❌ Email validation failed: ${e.message}")
                 _uiState.update {
                     it.copy(
-                        isLoading = false, emailError = e.message ?: "Unable to verify email"
+                        isLoading = false, emailError = UiText.DynamicString(e.safeMessage)
                     )
                 }
             }
         }
     }
 
-    fun onLogin(onSuccess: () -> Unit) {
+    fun onLogin() {
         viewModelScope.launch {
             val currentState = _uiState.value
 
-            // Validate password
-            val passwordError = validatePassword(currentState.password)
-            if (passwordError != null) {
-                _uiState.update { it.copy(passwordError = passwordError) }
-                return@launch
-            }
-
-            // Start loading
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
@@ -115,47 +117,33 @@ class LoginViewModel @Inject constructor(
                     password = currentState.password
                 )
 
-                if (result.isSuccess) {
-                    val userProfile: UserProfile = result.getOrThrow()
+                result.onSuccess { userProfile ->
                     Logger.d("✅ Login successful for: ${userProfile.displayName}")
-
                     _uiState.update { it.copy(isLoading = false) }
-                    onSuccess()
-                } else {
-                    val exception = result.exceptionOrNull()
-                    Logger.e("❌ Login failed: ${exception?.message}")
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = exception?.message ?: "An error occurred during login"
-                        )
-                    }
+                    _uiEvent.emit(LoginUIEvent.LoginSuccess)
+                }.onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(LoginUIEvent.ShowErrorPopup(error.safeMessage))
                 }
-
             } catch (e: Exception) {
-                Logger.e("❌ Login exception: ${e.message}")
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = e.message ?: "An error occurred during login"
-                    )
-                }
+                _uiState.update { it.copy(isLoading = false) }
+                _uiEvent.emit(LoginUIEvent.ShowErrorPopup(e.safeMessage))
             }
         }
     }
 
-    private fun validateEmail(email: String): String? {
-        return when {
-            email.isBlank() -> "Email is required"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Invalid email format"
-            else -> null
+    fun onNavigateToRegister() {
+        viewModelScope.launch {
+            _uiEvent.emit(LoginUIEvent.NavigateToRegister)
         }
     }
 
-    private fun validatePassword(password: String): String? {
+    private fun validateEmail(email: String): UiText? {
         return when {
-            password.isBlank() -> "Password is required"
-            password.length < 8 -> "Password must be at least 8 characters"
+            email.isBlank() -> UiText.StringResource(R.string.email_required)
+            !Patterns.EMAIL_ADDRESS.matcher(email).matches() ->
+                UiText.StringResource(R.string.email_invalid)
+
             else -> null
         }
     }

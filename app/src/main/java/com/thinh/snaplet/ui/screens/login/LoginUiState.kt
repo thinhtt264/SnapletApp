@@ -1,5 +1,7 @@
 package com.thinh.snaplet.ui.screens.login
 
+import com.thinh.snaplet.utils.UiText
+
 enum class LoginStep {
     EMAIL,
     PASSWORD
@@ -10,9 +12,8 @@ data class LoginUiState(
     val email: String = "",
     val password: String = "",
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val emailError: String? = null,
-    val passwordError: String? = null,
+    val errorMessage: UiText? = null,
+    val emailError: UiText? = null,
+    val passwordError: UiText? = null,
     val isPasswordVisible: Boolean = false
 )
-

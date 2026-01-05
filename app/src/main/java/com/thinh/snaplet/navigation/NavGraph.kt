@@ -10,6 +10,7 @@ import androidx.navigation.compose.navigation
 import com.thinh.snaplet.ui.screens.home.Home
 import com.thinh.snaplet.ui.screens.login.Login
 import com.thinh.snaplet.ui.screens.onboarding.Onboarding
+import com.thinh.snaplet.ui.screens.register.Register
 
 @Composable
 fun NavGraph(
@@ -46,16 +47,32 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
                         popUpTo(NavScreen.Onboarding.route) { inclusive = true }
                     }
                 },
+                onNavigateToRegister = {
+                    navController.navigate(NavScreen.Register.route) {
+                        popUpTo(NavScreen.Onboarding.route) { inclusive = true }
+                    }
+                }
             )
         }
 
         composable(route = NavScreen.Login.route) {
             Login(onLoginSuccess = {
-                // Navigate to home graph
                 navController.navigate(NavScreen.HomeGraph.route) {
                     popUpTo(NavScreen.AuthGraph.route) { inclusive = true }
                 }
-            }, onRegisterClick = {})
+            }, onRegisterClick = {
+                navController.navigate(NavScreen.Register.route)
+            })
+        }
+
+        composable(route = NavScreen.Register.route) {
+            Register(onRegisterSuccess = {
+                navController.navigate(NavScreen.HomeGraph.route) {
+                    popUpTo(NavScreen.AuthGraph.route) { inclusive = true }
+                }
+            }, onLoginClick = {
+                navController.navigate(NavScreen.Login.route)
+            })
         }
     }
 }
