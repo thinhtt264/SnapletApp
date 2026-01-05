@@ -32,7 +32,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.AppText
-import com.thinh.snaplet.ui.components.AuthPageContent
 import com.thinh.snaplet.ui.components.FormTextField
 
 @Composable
@@ -54,7 +53,7 @@ fun RegisterPasswordPage(
         focusRequester.requestFocus()
     }
 
-    AuthPageContent(
+    RegisterPageContent(
         title = stringResource(R.string.register_password_title),
         subtitle = username,
         subtitleColor = colorScheme.primary,

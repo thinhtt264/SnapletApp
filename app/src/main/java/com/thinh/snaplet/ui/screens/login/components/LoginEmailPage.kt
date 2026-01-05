@@ -24,7 +24,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.AppText
-import com.thinh.snaplet.ui.components.AuthPageContent
 import com.thinh.snaplet.ui.components.FormTextField
 
 @Composable
@@ -43,7 +42,7 @@ fun LoginEmailPage(
         focusRequester.requestFocus()
     }
 
-    AuthPageContent(
+    LoginPageContent(
         title = stringResource(R.string.login_email_title),
         subtitle = stringResource(R.string.login_subtitle),
         buttonText = stringResource(R.string.continue_text),

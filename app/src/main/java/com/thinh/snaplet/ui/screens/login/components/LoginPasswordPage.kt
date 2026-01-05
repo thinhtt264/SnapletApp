@@ -37,7 +37,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.AppText
-import com.thinh.snaplet.ui.components.AuthPageContent
 import com.thinh.snaplet.ui.components.FormTextField
 
 @Composable
@@ -59,7 +58,7 @@ fun LoginPasswordPage(
         focusRequester.requestFocus()
     }
 
-    AuthPageContent(
+    LoginPageContent(
         title = stringResource(R.string.login_password_title),
         subtitle = email,
         subtitleColor = colorScheme.primary,

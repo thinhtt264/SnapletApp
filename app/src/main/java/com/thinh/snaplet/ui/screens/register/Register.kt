@@ -117,9 +117,15 @@ fun Register(
                 RegisterStep.USERNAME -> RegisterUsernamePage(
                     email = uiState.email,
                     username = uiState.username,
+                    firstName = uiState.firstName,
+                    lastName = uiState.lastName,
                     usernameError = uiState.usernameError?.asString(context),
+                    firstNameError = uiState.firstNameError?.asString(context),
+                    lastNameError = uiState.lastNameError?.asString(context),
                     isLoading = uiState.isLoading,
                     onUsernameChange = viewModel::onUsernameChange,
+                    onFirstNameChange = viewModel::onFirstNameChange,
+                    onLastNameChange = viewModel::onLastNameChange,
                     onContinue = viewModel::onContinueFromUsername
                 )
 

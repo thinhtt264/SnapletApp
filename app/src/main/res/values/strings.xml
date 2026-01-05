@@ -43,4 +43,10 @@
     <string name="username_already_taken">Tên người dùng này đã được sử dụng</string>
     <string name="username_check_failed">Không thể kiểm tra tên người dùng</string>
     <string name="username_invalid_characters">Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới</string>
+    <string name="first_name">Tên</string>
+    <string name="first_name_placeholder">Tên của bạn</string>
+    <string name="first_name_required">Tên là bắt buộc</string>
+    <string name="last_name">Họ</string>
+    <string name="last_name_placeholder">Họ của bạn</string>
+    <string name="last_name_required">Họ là bắt buộc</string>
 </resources>

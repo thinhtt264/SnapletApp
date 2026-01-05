@@ -8,10 +8,20 @@ interface AuthRepository {
     val authState: StateFlow<AuthState>
 
     suspend fun login(email: String, password: String): Result<UserProfile>
+    
+    suspend fun register(
+        email: String,
+        username: String,
+        firstName: String,
+        lastName: String,
+        password: String
+    ): Result<UserProfile>
 
     suspend fun logout()
 
     suspend fun isAuthenticated(): Boolean
     
     suspend fun checkEmailAvailability(email: String): Result<Boolean>
+    
+    suspend fun checkUsernameAvailability(username: String): Result<Boolean>
 }

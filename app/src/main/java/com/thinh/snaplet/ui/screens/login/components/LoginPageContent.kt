@@ -1,4 +1,4 @@
-package com.thinh.snaplet.ui.components
+package com.thinh.snaplet.ui.screens.login.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,9 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.PrimaryButton
 
 @Composable
-fun AuthPageContent(
+fun LoginPageContent(
     title: String,
     subtitle: String,
     buttonText: String,

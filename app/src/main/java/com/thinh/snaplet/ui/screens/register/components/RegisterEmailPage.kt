@@ -22,7 +22,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.AppText
-import com.thinh.snaplet.ui.components.AuthPageContent
 import com.thinh.snaplet.ui.components.FormTextField
 import pressScaleClickable
 
@@ -42,7 +41,7 @@ fun RegisterEmailPage(
         focusRequester.requestFocus()
     }
 
-    AuthPageContent(
+    RegisterPageContent(
         title = stringResource(R.string.register_email_title),
         subtitle = stringResource(R.string.create_account),
         buttonText = stringResource(R.string.continue_text),

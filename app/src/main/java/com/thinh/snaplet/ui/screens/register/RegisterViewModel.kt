@@ -4,14 +4,13 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.thinh.snaplet.R
+import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.UiText
 import com.thinh.snaplet.utils.ValidationConstants
 import com.thinh.snaplet.utils.safeMessage
-import com.thinh.snaplet.data.repository.auth.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -45,6 +44,20 @@ class RegisterViewModel @Inject constructor(
         _uiState.update { it.copy(username = username, usernameError = null, errorMessage = null) }
     }
 
+    fun onFirstNameChange(firstName: String) {
+        _uiState.update {
+            it.copy(
+                firstName = firstName,
+                firstNameError = null,
+                errorMessage = null
+            )
+        }
+    }
+
+    fun onLastNameChange(lastName: String) {
+        _uiState.update { it.copy(lastName = lastName, lastNameError = null, errorMessage = null) }
+    }
+
     fun onPasswordChange(password: String) {
         _uiState.update { it.copy(password = password, passwordError = null, errorMessage = null) }
     }
@@ -63,6 +76,10 @@ class RegisterViewModel @Inject constructor(
                             currentStep = RegisterStep.EMAIL,
                             username = "",
                             usernameError = null,
+                            firstName = "",
+                            lastName = "",
+                            firstNameError = null,
+                            lastNameError = null,
                             password = "",
                             passwordError = null,
                             errorMessage = null
@@ -117,7 +134,7 @@ class RegisterViewModel @Inject constructor(
                 }
 
                 val result = authRepository.checkEmailAvailability(currentState.email)
-                
+
                 result.onSuccess { isAvailable ->
                     if (!isAvailable) {
                         _uiState.update {
@@ -159,53 +176,70 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = _uiState.value
 
-            Logger.d("onContinueFromUsername called: step=${currentState.currentStep}, isLoading=${currentState.isLoading}")
-
-            // Kiểm tra nếu đã không ở step USERNAME hoặc đang loading thì không xử lý
             if (currentState.currentStep != RegisterStep.USERNAME || currentState.isLoading) {
-                Logger.d("onContinueFromUsername: Skipping - step=${currentState.currentStep}, isLoading=${currentState.isLoading}")
                 return@launch
             }
 
             val usernameError = validateUsername(currentState.username)
-            if (usernameError != null) {
-                _uiState.update { it.copy(usernameError = usernameError) }
+            val firstNameError = validateFirstName(currentState.firstName)
+            val lastNameError = validateLastName(currentState.lastName)
+
+            if (usernameError != null || firstNameError != null || lastNameError != null) {
+                _uiState.update {
+                    it.copy(
+                        usernameError = usernameError,
+                        firstNameError = firstNameError,
+                        lastNameError = lastNameError
+                    )
+                }
                 return@launch
             }
 
-            _uiState.update { it.copy(isLoading = true, usernameError = null, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    usernameError = null,
+                    firstNameError = null,
+                    lastNameError = null,
+                    errorMessage = null
+                )
+            }
 
             try {
-                // Mock API call to check username availability
-                delay(1000) // Simulate network delay
-
-                // Kiểm tra lại step sau delay để đảm bảo vẫn ở USERNAME step
-                val stateAfterDelay = _uiState.value
-                if (stateAfterDelay.currentStep != RegisterStep.USERNAME) {
+                val stateAfterCheck = _uiState.value
+                if (stateAfterCheck.currentStep != RegisterStep.USERNAME) {
                     _uiState.update { it.copy(isLoading = false) }
                     return@launch
                 }
 
-                val isUsernameAvailable = checkUsernameAvailable(currentState.username)
+                val result = authRepository.checkUsernameAvailability(currentState.username)
 
-                if (!isUsernameAvailable) {
+                result.onSuccess { isAvailable ->
+                    if (!isAvailable) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                usernameError = UiText.StringResource(R.string.username_already_taken)
+                            )
+                        }
+                        return@launch
+                    }
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            usernameError = UiText.StringResource(R.string.username_already_taken)
+                            currentStep = RegisterStep.PASSWORD
                         )
                     }
-                    return@launch
-                }
-
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        currentStep = RegisterStep.PASSWORD
-                    )
+                }.onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            usernameError = UiText.DynamicString(error.safeMessage)
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                Logger.e("❌ Username check failed: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -220,28 +254,35 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = _uiState.value
 
-            // Validate password
             val passwordError = validatePassword(currentState.password)
             if (passwordError != null) {
                 _uiState.update { it.copy(passwordError = passwordError) }
                 return@launch
             }
 
-            // Start loading
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             try {
-                // Mock API call to register
-                delay(1500) // Simulate network delay
+                val result = authRepository.register(
+                    email = currentState.email,
+                    username = currentState.username,
+                    firstName = currentState.firstName,
+                    lastName = currentState.lastName,
+                    password = currentState.password
+                )
 
-                // Mock registration logic
-                Logger.d("✅ Registration successful for: ${currentState.email}")
-
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.emit(RegisterUIEvent.RegisterSuccess)
-
+                result.onSuccess {
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(RegisterUIEvent.RegisterSuccess)
+                }.onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = UiText.DynamicString(error.safeMessage)
+                        )
+                    }
+                }
             } catch (e: Exception) {
-                Logger.e("❌ Registration exception: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -286,11 +327,17 @@ class RegisterViewModel @Inject constructor(
         }
     }
 
+    private fun validateFirstName(firstName: String): UiText? {
+        return when {
+            firstName.isBlank() -> UiText.StringResource(R.string.first_name_required)
+            else -> null
+        }
+    }
 
-    private suspend fun checkUsernameAvailable(username: String): Boolean {
-        // Mock: return false for specific usernames to simulate taken usernames
-        val takenUsernames = listOf("admin", "test", "user")
-        return !takenUsernames.contains(username.lowercase())
+    private fun validateLastName(lastName: String): UiText? {
+        return when {
+            lastName.isBlank() -> UiText.StringResource(R.string.last_name_required)
+            else -> null
+        }
     }
 }
-
