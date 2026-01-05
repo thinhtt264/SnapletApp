@@ -39,3 +39,11 @@ data class LoginResponse(
     val user: UserProfile
 )
 
+/**
+ * Email Availability
+ */
+data class EmailAvailabilityData(
+    @SerializedName("available")
+    val available: Boolean
+)
+

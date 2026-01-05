@@ -6,6 +6,7 @@ import com.thinh.snaplet.data.model.BaseResponse
 import com.thinh.snaplet.data.model.FeedData
 import com.thinh.snaplet.data.model.Relationship
 import com.thinh.snaplet.data.model.UserProfile
+import com.thinh.snaplet.data.model.EmailAvailabilityData
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -37,4 +38,9 @@ interface ApiService {
     suspend fun sendFriendRequest(
         @Body body: Map<String, String>
     ): Response<BaseResponse<Relationship>>
+    
+    @GET("users/email-availability")
+    suspend fun checkEmailAvailability(
+        @Query("email") email: String
+    ): Response<BaseResponse<EmailAvailabilityData>>
 }

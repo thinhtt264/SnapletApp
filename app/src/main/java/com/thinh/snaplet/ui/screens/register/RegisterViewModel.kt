@@ -8,6 +8,7 @@ import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.UiText
 import com.thinh.snaplet.utils.ValidationConstants
 import com.thinh.snaplet.utils.safeMessage
+import com.thinh.snaplet.data.repository.auth.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -22,7 +23,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class RegisterViewModel @Inject constructor() : ViewModel() {
+class RegisterViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
@@ -113,25 +116,32 @@ class RegisterViewModel @Inject constructor() : ViewModel() {
                     return@launch
                 }
 
-                val isEmailAvailable = checkEmailAvailable(currentState.email)
+                val result = authRepository.checkEmailAvailability(currentState.email)
+                
+                result.onSuccess { isAvailable ->
+                    if (!isAvailable) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                emailError = UiText.StringResource(R.string.email_already_taken)
+                            )
+                        }
+                        return@launch
+                    }
 
-                if (!isEmailAvailable) {
-                    Logger.d("❌ Email already taken: ${currentState.email}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            emailError = UiText.StringResource(R.string.email_already_taken)
+                            currentStep = RegisterStep.USERNAME
                         )
                     }
-                    return@launch
-                }
-
-                Logger.d("✅ Email available: ${currentState.email}")
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        currentStep = RegisterStep.USERNAME
-                    )
+                }.onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            emailError = UiText.DynamicString(error.safeMessage)
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 Logger.e("❌ Email check failed: ${e.message}")
@@ -276,12 +286,6 @@ class RegisterViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    // Mock functions - replace with actual API calls later
-    private suspend fun checkEmailAvailable(email: String): Boolean {
-        // Mock: return false for specific emails to simulate taken emails
-        val takenEmails = listOf("test@example.com", "admin@example.com")
-        return !takenEmails.contains(email.lowercase())
-    }
 
     private suspend fun checkUsernameAvailable(username: String): Boolean {
         // Mock: return false for specific usernames to simulate taken usernames

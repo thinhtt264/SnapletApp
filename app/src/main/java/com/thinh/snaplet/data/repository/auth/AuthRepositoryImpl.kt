@@ -42,8 +42,7 @@ class AuthRepositoryImpl @Inject constructor(
 
                 Result.success(result.user)
             } else {
-                val errorMsg = "HTTP ${response.code()}: ${response.message()}"
-                Result.failure(Exception(errorMsg))
+                Result.failure(Exception(response.message()))
             }
         } catch (e: Exception) {
             Logger.e("❌ Failed to login: ${e.message}")
@@ -69,5 +68,26 @@ class AuthRepositoryImpl @Inject constructor(
                 AuthState.Unauthenticated
 
         return authenticated
+    }
+    
+    override suspend fun checkEmailAvailability(email: String): Result<Boolean> {
+        return try {
+            val response = apiService.checkEmailAvailability(email)
+            
+            if (response.isSuccessful) {
+                val body = response.body()
+                
+                if (body != null && body.status.code == 200) {
+                    Result.success(body.data.available)
+                } else {
+                    val errorMsg = body?.status?.message
+                    Result.failure(Exception(errorMsg))
+                }
+            } else {
+                Result.failure(Exception(response.message()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

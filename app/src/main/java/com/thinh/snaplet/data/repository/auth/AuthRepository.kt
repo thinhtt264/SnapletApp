@@ -12,4 +12,6 @@ interface AuthRepository {
     suspend fun logout()
 
     suspend fun isAuthenticated(): Boolean
+    
+    suspend fun checkEmailAvailability(email: String): Result<Boolean>
 }
