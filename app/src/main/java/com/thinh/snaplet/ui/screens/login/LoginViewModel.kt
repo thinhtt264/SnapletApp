@@ -11,9 +11,13 @@ import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.UiText
 import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,6 +32,13 @@ class LoginViewModel @Inject constructor(
     private val _currentUserProfile: Flow<UserProfile?> = userRepository.observeMyUserProfile()
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    private val _uiEvent = MutableSharedFlow<LoginUIEvent>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.SUSPEND
+    )
+    val uiEvent: SharedFlow<LoginUIEvent> = _uiEvent.asSharedFlow()
 
     init {
         observeUserProfile()
@@ -94,7 +105,7 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun onLogin(onSuccess: () -> Unit) {
+    fun onLogin() {
         viewModelScope.launch {
             val currentState = _uiState.value
 
@@ -106,31 +117,24 @@ class LoginViewModel @Inject constructor(
                     password = currentState.password
                 )
 
-                if (result.isSuccess) {
-                    val userProfile: UserProfile = result.getOrThrow()
+                result.onSuccess { userProfile ->
                     Logger.d("✅ Login successful for: ${userProfile.displayName}")
-
                     _uiState.update { it.copy(isLoading = false) }
-                    onSuccess()
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = UiText.DynamicString(
-                                result.exceptionOrNull()?.message ?: "Unknown error"
-                            )
-                        )
-                    }
+                    _uiEvent.emit(LoginUIEvent.LoginSuccess)
+                }.onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(LoginUIEvent.ShowErrorPopup(error.safeMessage))
                 }
-
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = UiText.DynamicString(e.safeMessage)
-                    )
-                }
+                _uiState.update { it.copy(isLoading = false) }
+                _uiEvent.emit(LoginUIEvent.ShowErrorPopup(e.safeMessage))
             }
+        }
+    }
+
+    fun onNavigateToRegister() {
+        viewModelScope.launch {
+            _uiEvent.emit(LoginUIEvent.NavigateToRegister)
         }
     }
 

@@ -3,11 +3,8 @@ package com.thinh.snaplet.ui.screens.register.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -22,13 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.AppText
@@ -40,7 +37,6 @@ fun RegisterPasswordPage(
     password: String,
     passwordError: String?,
     isPasswordVisible: Boolean,
-    errorMessage: String?,
     isLoading: Boolean,
     onPasswordChange: (String) -> Unit,
     onPasswordVisibilityToggle: () -> Unit,
@@ -110,31 +106,6 @@ fun RegisterPasswordPage(
                     color = colorScheme.onError,
                     modifier = Modifier.padding(start = 16.dp, top = 4.dp)
                 )
-            }
-        },
-        errorContent = {
-            AnimatedVisibility(
-                visible = errorMessage != null,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = colorScheme.onError,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(16.dp)
-                ) {
-                    AppText(
-                        text = errorMessage ?: "",
-                        typography = typography.bodyMedium,
-                        color = colorScheme.onError,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
             }
         }
     )

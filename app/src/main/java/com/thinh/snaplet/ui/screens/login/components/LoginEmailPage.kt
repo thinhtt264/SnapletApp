@@ -1,7 +1,5 @@
 package com.thinh.snaplet.ui.screens.login.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.AppText
 import com.thinh.snaplet.ui.components.FormTextField
+import pressScaleClickable
 
 @Composable
 fun LoginEmailPage(
@@ -81,11 +80,8 @@ fun LoginEmailPage(
                     text = stringResource(R.string.sign_up),
                     typography = typography.bodyMedium,
                     color = colorScheme.primary,
-                    modifier = Modifier.clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }) {
-                        onRegisterClick()
-                    })
+                    modifier = Modifier.pressScaleClickable(onClick = onRegisterClick)
+                )
             }
         })
 }

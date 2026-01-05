@@ -49,4 +49,5 @@
     <string name="last_name">Họ</string>
     <string name="last_name_placeholder">Họ của bạn</string>
     <string name="last_name_required">Họ là bắt buộc</string>
+    <string name="error">Lỗi</string>
 </resources>

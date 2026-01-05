@@ -30,7 +30,6 @@ fun RegisterPageContent(
     modifier: Modifier = Modifier,
     subtitleColor: Color = colorScheme.secondary,
     extraContent: @Composable (() -> Unit)? = null,
-    errorContent: @Composable (() -> Unit)? = null,
     bottomContent: @Composable (() -> Unit)? = null
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -94,8 +93,6 @@ fun RegisterPageContent(
         } else {
             Spacer(Modifier.height(42.dp))
         }
-
-        errorContent?.invoke()
 
         bottomContent?.invoke()
 

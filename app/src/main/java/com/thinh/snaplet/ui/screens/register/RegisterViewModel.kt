@@ -275,20 +275,12 @@ class RegisterViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false) }
                     _uiEvent.emit(RegisterUIEvent.RegisterSuccess)
                 }.onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = UiText.DynamicString(error.safeMessage)
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(RegisterUIEvent.ShowErrorPopup(error.safeMessage))
                 }
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = UiText.DynamicString(e.safeMessage)
-                    )
-                }
+                _uiState.update { it.copy(isLoading = false) }
+                _uiEvent.emit(RegisterUIEvent.ShowErrorPopup(e.safeMessage))
             }
         }
     }
