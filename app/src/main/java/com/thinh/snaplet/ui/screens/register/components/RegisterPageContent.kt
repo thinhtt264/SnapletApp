@@ -1,14 +1,14 @@
 package com.thinh.snaplet.ui.screens.register.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.runtime.Composable
@@ -32,7 +32,11 @@ fun RegisterPageContent(
     extraContent: @Composable (() -> Unit)? = null,
     bottomContent: @Composable (() -> Unit)? = null
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Column(
             modifier = Modifier.height(96.dp)
         ) {
@@ -51,12 +55,12 @@ fun RegisterPageContent(
             )
         }
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(40.dp))
 
         inputField()
 
         Box(
-            modifier = Modifier.height(52.dp),
+            modifier = Modifier.height(40.dp),
             contentAlignment = Alignment.TopStart
         ) {
             Column {
@@ -66,37 +70,20 @@ fun RegisterPageContent(
 
         PrimaryButton(
             onClick = onButtonClick,
-            title = if (isLoading) "" else buttonText,
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 18.dp),
+            title = buttonText,
+            modifier = Modifier.width(220.dp),
+            contentPadding = PaddingValues(vertical = 12.dp),
             enabled = !isLoading,
+            isLoading = isLoading,
             colors = ButtonDefaults.buttonColors(
                 containerColor = colorScheme.primary,
-                disabledContainerColor = colorScheme.primary.copy(alpha = 0.5f)
+                disabledContainerColor = colorScheme.primary.copy(0.7f)
             ),
             titleColor = Color.Black
         )
-
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(42.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color.Black,
-                    strokeWidth = 2.dp
-                )
-            }
-        } else {
-            Spacer(Modifier.height(42.dp))
-        }
 
         bottomContent?.invoke()
 
         Spacer(Modifier.height(40.dp))
     }
 }
-

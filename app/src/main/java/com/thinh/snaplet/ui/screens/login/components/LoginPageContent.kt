@@ -75,7 +75,11 @@ fun LoginPageContent(
             modifier = Modifier.width(220.dp),
             contentPadding = PaddingValues(vertical = 12.dp),
             enabled = !isLoading,
-            colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary),
+            isLoading = isLoading,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorScheme.primary,
+                disabledContainerColor = colorScheme.primary.copy(0.7f)
+            ),
             titleColor = Color.Black
         )
 

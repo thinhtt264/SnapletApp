@@ -2,14 +2,18 @@ package com.thinh.snaplet.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -30,6 +34,7 @@ fun PrimaryButton(
     modifier: Modifier = Modifier,
     titleColor: Color = Color.Unspecified,
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     colors: ButtonColors? = null,
     elevation: ButtonElevation? = null,
     contentPadding: PaddingValues? = null,
@@ -53,19 +58,32 @@ fun PrimaryButton(
         tonalElevation = tonalElevation,
         shadowElevation = 2.dp,
         border = border,
-        modifier = modifier.pressScaleClickable(enabled, interactionSource, onClick = onClick),
+        modifier = modifier.pressScaleClickable(enabled && !isLoading, interactionSource, onClick = onClick),
     ) {
         Box(
             modifier = Modifier.padding(finalContentPadding),
             contentAlignment = Alignment.Center
         ) {
-            BaseText(
-                text = title,
-                typography = typography,
-                color = titleColor,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                BaseText(
+                    text = title,
+                    typography = typography,
+                    color = titleColor,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+                if (isLoading) {
+                    Spacer(modifier = Modifier.padding(start = 12.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = if (titleColor != Color.Unspecified) titleColor else contentColor,
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
         }
     }
 }
