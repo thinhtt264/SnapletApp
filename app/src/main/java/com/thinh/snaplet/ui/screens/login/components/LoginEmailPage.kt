@@ -21,7 +21,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.FormTextField
 import pressScaleClickable
 
@@ -70,13 +70,13 @@ fun LoginEmailPage(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AppText(
+                BaseText(
                     text = stringResource(R.string.dont_have_account),
                     typography = typography.bodyMedium,
                     color = colorScheme.secondary
                 )
                 Spacer(Modifier.size(4.dp))
-                AppText(
+                BaseText(
                     text = stringResource(R.string.sign_up),
                     typography = typography.bodyMedium,
                     color = colorScheme.primary,

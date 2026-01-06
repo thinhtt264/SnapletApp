@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
 import com.thinh.snaplet.R
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.PrimaryButton
 import com.thinh.snaplet.utils.Logger
 
@@ -46,12 +46,12 @@ fun Onboarding(
                 verticalArrangement = Arrangement.Bottom,
                 modifier = Modifier.weight(1f)
             ) {
-                AppText(
+                BaseText(
                     text = stringResource(R.string.app_name),
                     typography = typography.displayLarge
                 )
                 Spacer(Modifier.height(20.dp))
-                AppText(
+                BaseText(
                     color = colorScheme.secondary,
                     typography = typography.headlineSmall,
                     textAlign = TextAlign.Center,
@@ -88,12 +88,12 @@ fun Onboarding(
         ) {
             OutlinedButton(
                 onClick = { changeLocale("vi") }) {
-                AppText("🇻🇳 Tiếng Việt")
+                BaseText("🇻🇳 Tiếng Việt")
             }
             Spacer(modifier = Modifier.width(12.dp))
             OutlinedButton(
                 onClick = { changeLocale("en") }) {
-                AppText("🇺🇸 English")
+                BaseText("🇺🇸 English")
             }
         }
     }

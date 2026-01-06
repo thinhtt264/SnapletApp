@@ -68,6 +68,6 @@ private fun VideoIndicatorOverlay(
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         // Future: Show duration text
-        // AppText(text = formatDuration(durationMs))
+        // BaseText(text = formatDuration(durationMs))
     }
 }

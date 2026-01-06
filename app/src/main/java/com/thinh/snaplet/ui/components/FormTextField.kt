@@ -36,7 +36,7 @@ fun FormTextField(
     minLines: Int = 1
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        AppText(
+        BaseText(
             text = label,
             typography = typography.titleMedium,
             color = colorScheme.onBackground,
@@ -48,7 +48,7 @@ fun FormTextField(
             onValueChange = onValueChange,
             modifier = modifier.fillMaxWidth(),
             placeholder = {
-                AppText(
+                BaseText(
                     text = placeholder,
                     color = colorScheme.secondary.copy(alpha = 0.6f)
                 )
@@ -71,7 +71,7 @@ fun FormTextField(
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            AppText(
+            BaseText(
                 text = errorMessage ?: "",
                 typography = typography.bodySmall,
                 color = Color.Red,

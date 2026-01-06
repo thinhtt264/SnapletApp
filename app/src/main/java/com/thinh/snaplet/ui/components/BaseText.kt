@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.TextUnit
 import com.thinh.snaplet.ui.theme.AppFontFamily
 
 @Composable
-fun AppText(
+fun BaseText(
     text: String,
     modifier: Modifier = Modifier,
     typography: TextStyle = MaterialTheme.typography.bodyLarge,

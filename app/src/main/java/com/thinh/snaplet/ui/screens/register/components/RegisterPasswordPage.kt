@@ -28,7 +28,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.FormTextField
 
 @Composable
@@ -100,7 +100,7 @@ fun RegisterPasswordPage(
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                AppText(
+                BaseText(
                     text = stringResource(R.string.password_requirement),
                     typography = typography.bodySmall,
                     color = colorScheme.onError,

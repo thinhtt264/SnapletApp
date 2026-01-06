@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonColors
@@ -12,11 +13,13 @@ import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import pressScaleClickable
 
@@ -43,27 +46,26 @@ fun PrimaryButton(
     val finalContentPadding = contentPadding ?: ButtonDefaults.ContentPadding
     val tonalElevation = if (enabled && elevation != null) 2.dp else 0.dp
 
-    Box(
-        modifier = modifier.pressScaleClickable(enabled, interactionSource, onClick = onClick)
+    Surface(
+        shape = finalShape,
+        color = containerColor,
+        contentColor = contentColor,
+        tonalElevation = tonalElevation,
+        shadowElevation = 2.dp,
+        border = border,
+        modifier = modifier.pressScaleClickable(enabled, interactionSource, onClick = onClick),
     ) {
-        Surface(
-            shape = finalShape,
-            color = containerColor,
-            contentColor = contentColor,
-            tonalElevation = tonalElevation,
-            shadowElevation = 0.dp,
-            border = border,
+        Box(
+            modifier = Modifier.padding(finalContentPadding),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier.padding(finalContentPadding)
-            ) {
-                AppText(
-                    text = title,
-                    typography = typography,
-                    color = titleColor,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            BaseText(
+                text = title,
+                typography = typography,
+                color = titleColor,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

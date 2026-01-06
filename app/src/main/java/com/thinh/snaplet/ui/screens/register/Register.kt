@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import animateVisibility
 import com.thinh.snaplet.R
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.StepAnimatedContent
 import com.thinh.snaplet.ui.screens.register.components.RegisterEmailPage
 import com.thinh.snaplet.ui.screens.register.components.RegisterPasswordPage
@@ -167,14 +167,14 @@ fun Register(
         AlertDialog(
             onDismissRequest = { errorDialogMessage = null },
             title = {
-                AppText(
+                BaseText(
                     text = stringResource(R.string.error),
                     typography = typography.titleLarge,
                     color = colorScheme.onBackground
                 )
             },
             text = {
-                AppText(
+                BaseText(
                     text = message,
                     typography = typography.bodyMedium,
                     color = colorScheme.onBackground
@@ -182,7 +182,7 @@ fun Register(
             },
             confirmButton = {
                 TextButton(onClick = { errorDialogMessage = null }) {
-                    AppText(
+                    BaseText(
                         text = stringResource(R.string.close),
                         typography = typography.labelLarge,
                         color = colorScheme.primary

@@ -32,7 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.CameraPreview
 import com.thinh.snaplet.ui.components.PrimaryButton
 import com.thinh.snaplet.ui.screens.home.CameraState
@@ -118,12 +118,12 @@ private fun CameraPermissionDenied(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         ) {
-            AppText(
+            BaseText(
                 text = stringResource(R.string.camera_unavailable),
                 typography = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            AppText(
+            BaseText(
                 modifier = Modifier.padding(horizontal = 32.dp),
                 text = stringResource(R.string.approve_camera),
                 typography = MaterialTheme.typography.titleMedium,

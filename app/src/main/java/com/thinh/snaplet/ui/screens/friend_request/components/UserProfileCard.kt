@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.UserProfile
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.PrimaryButton
 
 @Composable
@@ -42,7 +42,7 @@ internal fun UserProfileCard(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        AppText(
+        BaseText(
             text = userProfile.displayName,
             typography = MaterialTheme.typography.headlineSmall,
             color = Color.White,

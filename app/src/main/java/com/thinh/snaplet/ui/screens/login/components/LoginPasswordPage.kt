@@ -30,7 +30,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.FormTextField
 import pressScaleClickable
 
@@ -102,7 +102,7 @@ fun LoginPasswordPage(
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                AppText(
+                BaseText(
                     text = stringResource(R.string.password_requirement),
                     typography = typography.bodySmall,
                     color = colorScheme.onError,
@@ -115,7 +115,7 @@ fun LoginPasswordPage(
             Row(
                 modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
             ) {
-                AppText(
+                BaseText(
                     text = stringResource(R.string.forgot_password),
                     typography = typography.bodySmall,
                     color = colorScheme.primary,

@@ -15,7 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
 import com.thinh.snaplet.ui.components.OptimizedAsyncImage
 import com.thinh.snaplet.ui.theme.Gray
@@ -55,7 +55,7 @@ internal fun ProfileAvatar(
                     .background(Gray.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center
             ) {
-                AppText(
+                BaseText(
                     text = displayName.firstOrNull()?.toString()?.uppercase() ?: "?",
                     typography = MaterialTheme.typography.displayLarge,
                     color = Gray,

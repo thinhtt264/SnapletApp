@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
-import com.thinh.snaplet.ui.components.AppText
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.theme.GoldenPollen
 
 /**
@@ -57,7 +57,7 @@ internal fun ActionButtons(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxSize()
             ) {
-                AppText(
+                BaseText(
                     text = stringResource(R.string.close),
                     typography = MaterialTheme.typography.labelLarge,
                     color = Color.White,
@@ -67,4 +67,3 @@ internal fun ActionButtons(
         }
     }
 }
-
