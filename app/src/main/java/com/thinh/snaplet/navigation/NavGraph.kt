@@ -1,5 +1,8 @@
 package com.thinh.snaplet.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
@@ -12,6 +15,8 @@ import com.thinh.snaplet.ui.screens.login.Login
 import com.thinh.snaplet.ui.screens.onboarding.Onboarding
 import com.thinh.snaplet.ui.screens.register.Register
 
+private const val NAV_ANIM_DURATION = 280
+
 @Composable
 fun NavGraph(
     modifier: Modifier = Modifier,
@@ -19,7 +24,25 @@ fun NavGraph(
     startDestination: String = NavScreen.AuthGraph.route,
 ) {
     NavHost(
-        navController = navController, startDestination = startDestination, modifier = modifier
+        navController = navController, startDestination = startDestination, modifier = modifier,
+        enterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(
+                    durationMillis = NAV_ANIM_DURATION,
+                    easing = FastOutSlowInEasing
+                )
+            )
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(
+                    durationMillis = NAV_ANIM_DURATION,
+                    easing = FastOutSlowInEasing
+                )
+            )
+        }
     ) {
         authGraph(navController = navController)
         homeGraph(navController = navController)
