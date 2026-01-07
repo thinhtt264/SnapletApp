@@ -1,0 +1,23 @@
+default_platform(:android)
+
+platform :android do
+  desc "Distribute app to Firebase Distribution"
+  lane :build_test do |options|
+    release_notes = options[:release_notes] || ENV["RELEASE_NOTES"] || "New release"
+    
+    # Build release APK
+    gradle(
+      task: "assembleRelease",
+      project_dir: "."
+    )
+
+    # Upload to Firebase Distribution
+    firebase_app_distribution(
+      app: "YOUR_FIREBASE_APP_ID",  # Update this with your Firebase App ID
+      apk_path: "app/build/outputs/apk/release/app-release.apk",
+      groups: "testers",  # Optional: specify tester groups
+      release_notes: release_notes
+    )
+  end
+end
+
