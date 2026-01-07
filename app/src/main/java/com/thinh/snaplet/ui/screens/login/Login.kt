@@ -64,7 +64,7 @@ fun Login(
                 is LoginUIEvent.LoginSuccess -> onLoginSuccess()
                 is LoginUIEvent.NavigateToRegister -> onRegisterClick()
                 is LoginUIEvent.ShowErrorPopup -> {
-                    errorDialogMessage = event.message
+                    errorDialogMessage = event.message.asString(context)
                 }
             }
         }
