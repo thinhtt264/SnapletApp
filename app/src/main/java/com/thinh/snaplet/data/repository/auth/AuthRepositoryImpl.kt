@@ -7,6 +7,9 @@ import com.thinh.snaplet.data.model.LoginRequest
 import com.thinh.snaplet.data.model.RegisterRequest
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.utils.network.ApiResult
+import com.thinh.snaplet.utils.network.mapSuccess
+import com.thinh.snaplet.utils.network.safeApiCall
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -19,34 +22,16 @@ class AuthRepositoryImpl @Inject constructor(
 
     override val authState: StateFlow<AuthState> = _authState
 
-    override suspend fun login(email: String, password: String): Result<UserProfile> {
-        return try {
-            val request = LoginRequest(email = email, password = password)
-            val response = apiService.login(body = request)
-
-            if (response.isSuccessful) {
-                val body = response.body()
-
-                if (body == null || body.status.code != 200) {
-                    val errorMsg = body?.status?.message
-                    return Result.failure(Exception(errorMsg))
-                }
-
-                val result = body.data
-
-                dataStoreManager.saveTokens(
-                    accessToken = result.token.accessToken,
-                    refreshToken = result.token.refreshToken
-                )
-                dataStoreManager.saveUserProfile(result.user)
-
-                Result.success(result.user)
-            } else {
-                Result.failure(Exception(response.message()))
-            }
-        } catch (e: Exception) {
-            Logger.e("❌ Failed to login: ${e.message}")
-            Result.failure(e)
+    override suspend fun login(email: String, password: String): ApiResult<UserProfile> {
+        return safeApiCall(apiCall = {
+            apiService.login(body = LoginRequest(email, password))
+        }, onSuccess = { result ->
+            dataStoreManager.saveTokens(
+                result.token.accessToken, result.token.refreshToken
+            )
+            dataStoreManager.saveUserProfile(result.user)
+        }).mapSuccess { response ->
+            response.user
         }
     }
 
@@ -74,8 +59,7 @@ class AuthRepositoryImpl @Inject constructor(
                 val result = body.data
 
                 dataStoreManager.saveTokens(
-                    accessToken = result.token.accessToken,
-                    refreshToken = result.token.refreshToken
+                    accessToken = result.token.accessToken, refreshToken = result.token.refreshToken
                 )
                 dataStoreManager.saveUserProfile(result.user)
 

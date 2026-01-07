@@ -8,10 +8,18 @@ data class ResponseStatus(
     val code: Int,
 
     @SerializedName("message")
-    val message: String,
+    val message: String? = null,
 
     @SerializedName("meta")
-    val meta: Any?
+    val meta: ErrorMeta? = null
+)
+
+data class ErrorMeta(
+    @SerializedName("errorCode")
+    val errorCode: String? = null,
+
+    @SerializedName("reason")
+    val reason: String? = null
 )
 
 data class BaseResponse<T>(

@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder
 import com.thinh.snaplet.BuildConfig
 import com.thinh.snaplet.data.datasource.local.datastore.DataStoreManager
 import com.thinh.snaplet.data.datasource.remote.ApiService
-import com.thinh.snaplet.data.datasource.remote.ResponseNormalizeInterceptor
 import com.thinh.snaplet.utils.Logger
 import dagger.Module
 import dagger.Provides
@@ -31,7 +30,7 @@ object NetworkModule {
     //     else -> "https://api.snaplet.com/v1/"
     // }
     
-    /**
+    /**Unresolved reference 'tag'.
      * Provide Gson instance
      * Configure JSON parsing behavior
      */
@@ -60,16 +59,6 @@ object NetworkModule {
                 HttpLoggingInterceptor.Level.BASIC // Minimal logs in release
             }
         }
-    }
-    
-    /**
-     * Provide Response Normalize Interceptor
-     * Normalizes error responses to match BaseResponse format
-     */
-    @Provides
-    @Singleton
-    fun provideResponseNormalizeInterceptor(): ResponseNormalizeInterceptor {
-        return ResponseNormalizeInterceptor()
     }
     
     /**
@@ -110,16 +99,13 @@ object NetworkModule {
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
         authInterceptor: Interceptor,
-        responseNormalizeInterceptor: ResponseNormalizeInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             // 1. Auth headers
             .addInterceptor(authInterceptor)
             // 2. Logging
             .addInterceptor(loggingInterceptor)
-            // 3. Normalize error responses (must be last to process response body)
-            .addInterceptor(responseNormalizeInterceptor)
-            
+
             // Timeouts
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

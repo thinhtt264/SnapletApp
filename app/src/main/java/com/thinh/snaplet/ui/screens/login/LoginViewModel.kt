@@ -9,6 +9,10 @@ import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.UiText
+import com.thinh.snaplet.utils.network.ApiError
+import com.thinh.snaplet.utils.network.ApiErrorCode
+import com.thinh.snaplet.utils.network.onFailure
+import com.thinh.snaplet.utils.network.onSuccess
 import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
@@ -109,25 +113,26 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = _uiState.value
 
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
-            try {
-                val result = authRepository.login(
-                    email = currentState.email,
-                    password = currentState.password
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    passwordError = null
                 )
+            }
 
-                result.onSuccess { userProfile ->
-                    Logger.d("✅ Login successful for: ${userProfile.displayName}")
-                    _uiState.update { it.copy(isLoading = false) }
-                    _uiEvent.emit(LoginUIEvent.LoginSuccess)
-                }.onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false) }
-                    _uiEvent.emit(LoginUIEvent.ShowErrorPopup(error.safeMessage))
-                }
-            } catch (e: Exception) {
+            val result = authRepository.login(
+                email = currentState.email,
+                password = currentState.password
+            )
+
+            result.onSuccess { userProfile ->
+                Logger.d("✅ Login successful for: ${userProfile.displayName}")
                 _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.emit(LoginUIEvent.ShowErrorPopup(e.safeMessage))
+                _uiEvent.emit(LoginUIEvent.LoginSuccess)
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false) }
+                handleLoginError(error)
             }
         }
     }
@@ -146,5 +151,15 @@ class LoginViewModel @Inject constructor(
 
             else -> null
         }
+    }
+
+    private suspend fun handleLoginError(error: ApiError) {
+        val message =
+            if (error.errorCode == ApiErrorCode.INVALID_CREDENTIALS) {
+                UiText.StringResource(R.string.invalid_credentials)
+            } else {
+                UiText.DynamicString(error.message)
+            }
+        _uiEvent.emit(LoginUIEvent.ShowErrorPopup(message))
     }
 }
