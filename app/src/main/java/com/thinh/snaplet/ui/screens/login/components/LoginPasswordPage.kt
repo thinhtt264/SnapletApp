@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.FormTextField
+import com.thinh.snaplet.utils.Logger
 import pressScaleClickable
 
 @Composable
@@ -98,21 +99,6 @@ fun LoginPasswordPage(
             )
         },
         extraContent = {
-            AnimatedVisibility(
-                visible = password.isNotEmpty() && password.length < 8,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                BaseText(
-                    text = stringResource(R.string.password_requirement),
-                    typography = typography.bodySmall,
-                    color = colorScheme.onError,
-                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                )
-            }
-
-            Spacer(Modifier.height(4.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
             ) {

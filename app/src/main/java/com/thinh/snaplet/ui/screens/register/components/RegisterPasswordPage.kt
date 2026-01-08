@@ -54,6 +54,7 @@ fun RegisterPasswordPage(
         subtitle = username,
         subtitleColor = colorScheme.primary,
         buttonText = stringResource(R.string.create_account),
+        buttonEnabled = !isLoading && passwordError == null,
         isLoading = isLoading,
         onButtonClick = onRegister,
         inputField = {
