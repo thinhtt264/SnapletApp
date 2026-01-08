@@ -11,10 +11,20 @@ platform :android do
       project_dir: "."
     )
 
+    apk_path = "release/app-release.apk"
+    
+    unless File.exist?(apk_path)
+      apk_path = "app/release/app-release.apk"
+    end
+    
+    unless File.exist?(apk_path)
+      UI.user_error!("Could not find APK file. Expected at release/app-release.apk or app/release/app-release.apk")
+    end
+
     # Upload to Firebase Distribution
     firebase_app_distribution(
       app: "1:1030168532004:android:5524dc19fd99cb5b5bb4b1",
-      apk_path: "app/release/app-release.apk",
+      apk_path: apk_path,
       groups: "testers",
       release_notes: release_notes
     )
