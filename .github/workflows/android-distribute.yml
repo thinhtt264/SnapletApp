@@ -57,14 +57,12 @@ jobs:
 
       - name: Setup Keystore for signing
         run: |
-          # Decode keystore từ base64 và tạo file
           echo "${{ secrets.SNAPLET_KEYSTORE_BASE64 }}" | base64 -d > app/snaplet-release-key.jks
           
           # Tạo local.properties với thông tin keystore từ Environment Secrets
-          # Lưu ý: SNAPLET_KEYSTORE_FILE là relative path từ root project
           cat > local.properties << EOF
           sdk.dir=\$ANDROID_HOME
-          SNAPLET_KEYSTORE_FILE=app/snaplet-release-key.jks
+          SNAPLET_KEYSTORE_FILE=snaplet-release-key.jks
           SNAPLET_KEYSTORE_PASSWORD=${{ secrets.SNAPLET_KEYSTORE_PASSWORD }}
           SNAPLET_KEY_ALIAS=${{ secrets.SNAPLET_KEY_ALIAS }}
           SNAPLET_KEY_PASSWORD=${{ secrets.SNAPLET_KEY_PASSWORD }}
