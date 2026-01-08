@@ -1,0 +1,82 @@
+name: Android Build & Distribute to Firebase
+
+on:
+  pull_request:
+    types:
+      - labeled
+      - synchronize
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  qc-build:
+    name: Build Android & Distribute to Firebase
+    runs-on: ubuntu-latest
+
+    # ⭐ KEY LOGIC: chỉ chạy khi PR có label build-for-test
+    if: |
+      contains(
+        github.event.pull_request.labels.*.name,
+        'build-for-test'
+      )
+
+    steps:
+      - name: Checkout PR code (merged state)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Ruby (for Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: |
+          bundle install
+
+      - name: Build & Distribute via Fastlane
+        # env:
+        #   FIREBASE_CLI_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
+        #   FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS=app/google-services.json
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          export RELEASE_NOTES="$COMMIT_MESSAGE"
+          bundle exec fastlane build_test
+
+      # 🏷️ CI tự đổi label sau khi build xong
+      - name: Update PR labels after success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = pr.labels.map(l => l.name);
+
+            if (labels.includes('build-for-test')) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                name: 'build-for-test'
+              });
+            }
+
+            if (!labels.includes('ready-for-test')) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['ready-for-test']
+              });
+            }

@@ -13,11 +13,10 @@ platform :android do
 
     # Upload to Firebase Distribution
     firebase_app_distribution(
-      app: "YOUR_FIREBASE_APP_ID",  # Update this with your Firebase App ID
-      apk_path: "app/build/outputs/apk/release/app-release.apk",
-      groups: "testers",  # Optional: specify tester groups
+      app: "1:1030168532004:android:5524dc19fd99cb5b5bb4b1",
+      apk_path: "app/release/app-release.apk",
+      groups: "testers",
       release_notes: release_notes
     )
   end
 end
-
