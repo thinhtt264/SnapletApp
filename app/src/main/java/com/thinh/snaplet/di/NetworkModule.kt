@@ -21,31 +21,21 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    
-    private const val BASE_URL = "http://10.0.2.2:4040/api/v1/"
-    
-    // private val BASE_URL = when (BuildConfig.BUILD_TYPE) {
-    //     "debug" -> "https://api-dev.snaplet.com/v1/"
-    //     "staging" -> "https://api-staging.snaplet.com/v1/"
-    //     else -> "https://api.snaplet.com/v1/"
-    // }
-    
-    /**Unresolved reference 'tag'.
-     * Provide Gson instance
-     * Configure JSON parsing behavior
-     */
+
+    private val BASE_URL = if (BuildConfig.DEBUG) "http://10.0.2.2:4040/api/v1/"
+    else "https://geocentric-kailyn-undutifully.ngrok-free.dev/api/v1/"
+
     @Provides
     @Singleton
     fun provideGson(): Gson {
-        return GsonBuilder()
-            .serializeNulls() // Include null fields in JSON
+        return GsonBuilder().serializeNulls() // Include null fields in JSON
             .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") // ISO 8601
             .create()
     }
-    
+
     /**
-     * Provide HTTP Logging Interceptor
-     * Logs all HTTP requests/responses for debugging
+     * Provide HTTP Logging Interceptor Logs all HTTP requests/responses for
+     * debugging
      */
     @Provides
     @Singleton
@@ -60,10 +50,10 @@ object NetworkModule {
             }
         }
     }
-    
+
     /**
-     * Provide Authentication Interceptor
-     * Adds auth token to all requests from cache (non-blocking)
+     * Provide Authentication Interceptor Adds auth token to all requests from
+     * cache (non-blocking)
      */
     @Provides
     @Singleton
@@ -72,27 +62,26 @@ object NetworkModule {
     ): Interceptor {
         return Interceptor { chain ->
             val originalRequest = chain.request()
-            
+
             val token = dataStoreManager.getAccessToken()
-            
-            val requestBuilder = originalRequest.newBuilder()
-                .addHeader("Accept", "application/json")
-                .addHeader("Content-Type", "application/json")
-            
+
+            val requestBuilder =
+                originalRequest.newBuilder().addHeader("Accept", "application/json")
+                    .addHeader("Content-Type", "application/json")
+
             if (!token.isNullOrBlank()) {
                 requestBuilder.addHeader("Authorization", "Bearer $token")
             }
-            
+
             val newRequest = requestBuilder.build()
-            
+
             chain.proceed(newRequest)
         }
     }
-    
+
     /**
-     * Provide OkHttpClient
-     * Configures HTTP client with interceptors and timeouts
-     * 
+     * Provide OkHttpClient Configures HTTP client with interceptors and
+     * timeouts
      */
     @Provides
     @Singleton
@@ -107,53 +96,40 @@ object NetworkModule {
             .addInterceptor(loggingInterceptor)
 
             // Timeouts
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            
+
             // Retry configuration
             .retryOnConnectionFailure(true)
-            
+
             // Connection pool
             .connectionPool(
                 okhttp3.ConnectionPool(
-                    maxIdleConnections = 5,
-                    keepAliveDuration = 5,
-                    timeUnit = TimeUnit.MINUTES
+                    maxIdleConnections = 5, keepAliveDuration = 5, timeUnit = TimeUnit.MINUTES
                 )
             )
-            
+
             // Optional: SSL Certificate Pinning for security
             // .certificatePinner(
             //     CertificatePinner.Builder()
             //         .add("api.snaplet.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
             //         .build()
             // )
-            
+
             .build()
     }
-    
-    /**
-     * Provide Retrofit instance
-     * Main HTTP client for API calls
-     */
+
+    /** Provide Retrofit instance Main HTTP client for API calls */
     @Provides
     @Singleton
     fun provideRetrofit(
-        okHttpClient: OkHttpClient,
-        gson: Gson
+        okHttpClient: OkHttpClient, gson: Gson
     ): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
+        return Retrofit.Builder().baseUrl(BASE_URL).client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson)).build()
     }
-    
-    /**
-     * Provide ApiService
-     * Retrofit interface implementation
-     */
+
+    /** Provide ApiService Retrofit interface implementation */
     @Provides
     @Singleton
     fun provideApiService(retrofit: Retrofit): ApiService {
