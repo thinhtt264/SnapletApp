@@ -57,6 +57,7 @@ fun LoginPasswordPage(
         subtitle = email,
         subtitleColor = colorScheme.primary,
         buttonText = stringResource(R.string.login),
+        buttonEnabled = !isLoading && passwordError == null,
         isLoading = isLoading,
         onButtonClick = onLogin,
         inputField = {

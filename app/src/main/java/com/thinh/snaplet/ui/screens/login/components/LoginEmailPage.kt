@@ -45,6 +45,7 @@ fun LoginEmailPage(
         title = stringResource(R.string.login_email_title),
         subtitle = stringResource(R.string.login_subtitle),
         buttonText = stringResource(R.string.continue_text),
+        buttonEnabled = !isLoading && emailError == null,
         isLoading = isLoading,
         onButtonClick = onContinue,
         inputField = {
