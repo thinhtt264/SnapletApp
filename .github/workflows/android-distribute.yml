@@ -72,11 +72,9 @@ jobs:
           cat local.properties | grep -v PASSWORD
 
       - name: Build & Distribute via Fastlane
-        # env:
-        #   FIREBASE_CLI_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
-        #   FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+        env:
+          FIREBASE_CLI_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
         run: |
-          export GOOGLE_APPLICATION_CREDENTIALS=app/google-services.json
           COMMIT_MESSAGE=$(git log -1 --pretty=%B)
           export RELEASE_NOTES="$COMMIT_MESSAGE"
           bundle exec fastlane build_test
