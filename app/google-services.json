@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1030168532004",
+    "project_id": "snaplet-19d94",
+    "storage_bucket": "snaplet-19d94.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1030168532004:android:5524dc19fd99cb5b5bb4b1",
+        "android_client_info": {
+          "package_name": "com.thinh.snaplet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBn1E0IX9OEvQmrF2lE4qbHlLBJ785f1qM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

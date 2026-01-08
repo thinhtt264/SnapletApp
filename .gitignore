@@ -19,3 +19,7 @@ app/release
 # Keystore files
 *.jks
 *.keystore
+
+
+fastlane/report.xml
+fastlane/README.md
