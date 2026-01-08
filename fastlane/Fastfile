@@ -11,14 +11,15 @@ platform :android do
       project_dir: "."
     )
 
-    apk_path = "release/app-release.apk"
+    apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
     
-    unless File.exist?(apk_path)
+    unless apk_path && File.exist?(apk_path)
+      # Fallback: thử tìm ở vị trí chuẩn nếu biến không được set
       apk_path = "app/release/app-release.apk"
-    end
-    
-    unless File.exist?(apk_path)
-      UI.user_error!("Could not find APK file. Expected at release/app-release.apk or app/release/app-release.apk")
+      
+      unless File.exist?(apk_path)
+        UI.user_error!("Could not find APK file. Expected at app/build/outputs/apk/release/app-release.apk")
+      end
     end
 
     # Upload to Firebase Distribution
