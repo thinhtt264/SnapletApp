@@ -78,9 +78,8 @@ jobs:
           git fetch origin ${{ github.event.pull_request.base.ref }}:${{ github.event.pull_request.base.ref }}
           git fetch origin ${{ github.event.pull_request.head.ref }}:${{ github.event.pull_request.head.ref }}
           COMMIT_MESSAGE=$(git log origin/${{ github.event.pull_request.base.ref }}..origin/${{ github.event.pull_request.head.ref }} --no-merges -1 --pretty=%B)
-          echo "COMMIT_MESSAGE: $COMMIT_MESSAGE"
           export RELEASE_NOTES="$COMMIT_MESSAGE"
-          # bundle exec fastlane build_test
+          bundle exec fastlane build_test
 
       # 🏷️ CI tự đổi label sau khi build xong
       - name: Update PR labels after success
