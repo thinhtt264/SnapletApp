@@ -75,7 +75,9 @@ jobs:
         env:
           FIREBASE_CLI_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
         run: |
-          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          git fetch origin ${{ github.event.pull_request.base.ref }}:${{ github.event.pull_request.base.ref }}
+          git fetch origin ${{ github.event.pull_request.head.ref }}:${{ github.event.pull_request.head.ref }}
+          COMMIT_MESSAGE=$(git log origin/${{ github.event.pull_request.base.ref }}..origin/${{ github.event.pull_request.head.ref }} --no-merges -1 --pretty=%B)
           export RELEASE_NOTES="$COMMIT_MESSAGE"
           bundle exec fastlane build_test
 
