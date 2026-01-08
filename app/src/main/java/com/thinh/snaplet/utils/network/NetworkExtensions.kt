@@ -1,6 +1,7 @@
 package com.thinh.snaplet.utils.network
 
 import com.thinh.snaplet.data.model.BaseResponse
+import com.thinh.snaplet.utils.Logger
 import retrofit2.Response
 
 private fun getDefaultMessage(code: Int): String? {
@@ -24,28 +25,28 @@ fun Response<*>.toApiError(): ApiError {
 
     return runCatching {
         val base = GsonHolder.gson.fromJson(
-            rawJson,
-            BaseResponse::class.java
+            rawJson, BaseResponse::class.java
         ) as BaseResponse<*>
 
         val meta = base.status.meta
         val httpCode = code()
 
-        val errorCode = meta?.errorCode
-            ?.let { raw ->
-                runCatching { ApiErrorCode.valueOf(raw) }.getOrNull()
-            }
+        val errorCode = meta?.errorCode?.let { raw ->
+            runCatching { ApiErrorCode.valueOf(raw) }.getOrNull()
+        }
+
+        val message = getDefaultMessage(httpCode) ?: base.status.message ?: "Lỗi không xác định"
 
         ApiError(
             httpCode = httpCode,
-            message = getDefaultMessage(httpCode) ?: base.status.message ?: "Lỗi không xác định",
+            message = message,
             errorCode = errorCode,
             reason = meta?.reason
         )
     }.getOrElse {
         ApiError(
-            httpCode = code(),
-            message = message()
+            httpCode = 500,
+            message = getDefaultMessage(500)!!
         )
     }
 }
@@ -60,13 +61,11 @@ suspend fun <T> safeApiCall(
         val response = apiCall()
 
         if (response.isSuccessful) {
-            val body = response.body()
-                ?: return ApiResult.Failure(
-                    ApiError(
-                        httpCode = 200,
-                        message = "Empty response body"
-                    )
+            val body = response.body() ?: return ApiResult.Failure(
+                ApiError(
+                    httpCode = 200, message = "Empty response body"
                 )
+            )
 //            val meta = body.status.meta
 //
 //            return ApiResult.Failure(
@@ -87,8 +86,7 @@ suspend fun <T> safeApiCall(
     } catch (_: Exception) {
         ApiResult.Failure(
             ApiError(
-                message = getDefaultMessage(500)!!,
-                httpCode = 500
+                message = getDefaultMessage(500)!!, httpCode = 500
             )
         )
     }
