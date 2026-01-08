@@ -24,6 +24,7 @@ fun RegisterPageContent(
     title: String,
     subtitle: String,
     buttonText: String,
+    buttonEnabled: Boolean,
     isLoading: Boolean,
     onButtonClick: () -> Unit,
     inputField: @Composable () -> Unit,
@@ -73,7 +74,7 @@ fun RegisterPageContent(
             title = buttonText,
             modifier = Modifier.width(220.dp),
             contentPadding = PaddingValues(vertical = 12.dp),
-            enabled = !isLoading,
+            enabled = buttonEnabled,
             isLoading = isLoading,
             colors = ButtonDefaults.buttonColors(
                 containerColor = colorScheme.primary,

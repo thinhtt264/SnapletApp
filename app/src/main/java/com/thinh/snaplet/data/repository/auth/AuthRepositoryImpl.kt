@@ -88,45 +88,19 @@ class AuthRepositoryImpl @Inject constructor(
         return authenticated
     }
 
-    override suspend fun checkEmailAvailability(email: String): Result<Boolean> {
-        return try {
-            val response = apiService.checkEmailAvailability(email)
-
-            if (response.isSuccessful) {
-                val body = response.body()
-
-                if (body != null && body.status.code == 200) {
-                    Result.success(body.data.available)
-                } else {
-                    val errorMsg = body?.status?.message
-                    Result.failure(Exception(errorMsg))
-                }
-            } else {
-                Result.failure(Exception(response.message()))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    override suspend fun checkEmailAvailability(email: String): ApiResult<Boolean> {
+        return safeApiCall(apiCall = {
+            apiService.checkEmailAvailability(email)
+        }).mapSuccess { response ->
+            response.available
         }
     }
 
-    override suspend fun checkUsernameAvailability(username: String): Result<Boolean> {
-        return try {
-            val response = apiService.checkUsernameAvailability(username)
-
-            if (response.isSuccessful) {
-                val body = response.body()
-
-                if (body != null && body.status.code == 200) {
-                    Result.success(body.data.available)
-                } else {
-                    val errorMsg = body?.status?.message
-                    Result.failure(Exception(errorMsg))
-                }
-            } else {
-                Result.failure(Exception(response.message()))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    override suspend fun checkUsernameAvailability(username: String): ApiResult<Boolean> {
+        return safeApiCall(apiCall = {
+            apiService.checkUsernameAvailability(username)
+        }).mapSuccess { response ->
+            response.available
         }
     }
 }

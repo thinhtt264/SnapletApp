@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.FormTextField
+import com.thinh.snaplet.utils.Logger
 import pressScaleClickable
 
 @Composable

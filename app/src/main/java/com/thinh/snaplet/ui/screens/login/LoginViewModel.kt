@@ -9,6 +9,7 @@ import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.UiText
+import com.thinh.snaplet.utils.ValidationConstants
 import com.thinh.snaplet.utils.network.ApiError
 import com.thinh.snaplet.utils.network.ApiErrorCode
 import com.thinh.snaplet.utils.network.onFailure
@@ -113,13 +114,14 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = _uiState.value
 
-            _uiState.update {
-                it.copy(
-                    isLoading = true,
-                    errorMessage = null,
-                    passwordError = null
-                )
+            val passwordError = validatePassword(currentState.password)
+
+            if (passwordError != null) {
+                _uiState.update { it.copy(passwordError = passwordError) }
+                return@launch
             }
+
+            _uiState.update { it.copy(isLoading = true) }
 
             val result = authRepository.login(
                 email = currentState.email,
@@ -149,6 +151,13 @@ class LoginViewModel @Inject constructor(
             !Patterns.EMAIL_ADDRESS.matcher(email).matches() ->
                 UiText.StringResource(R.string.email_invalid)
 
+            else -> null
+        }
+    }
+
+    private fun validatePassword(password: String): UiText? {
+        return when {
+            password.length < ValidationConstants.PASSWORD_MIN_LENGTH -> UiText.StringResource(R.string.password_requirement)
             else -> null
         }
     }

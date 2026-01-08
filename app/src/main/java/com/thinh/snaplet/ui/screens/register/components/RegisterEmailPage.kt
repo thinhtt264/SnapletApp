@@ -44,6 +44,7 @@ fun RegisterEmailPage(
     RegisterPageContent(
         title = stringResource(R.string.register_email_title),
         subtitle = stringResource(R.string.create_account),
+        buttonEnabled = !isLoading,
         buttonText = stringResource(R.string.continue_text),
         isLoading = isLoading,
         onButtonClick = onContinue,

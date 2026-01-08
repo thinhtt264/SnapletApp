@@ -22,7 +22,7 @@ interface AuthRepository {
 
     suspend fun isAuthenticated(): Boolean
     
-    suspend fun checkEmailAvailability(email: String): Result<Boolean>
+    suspend fun checkEmailAvailability(email: String): ApiResult<Boolean>
     
-    suspend fun checkUsernameAvailability(username: String): Result<Boolean>
+    suspend fun checkUsernameAvailability(username: String): ApiResult<Boolean>
 }

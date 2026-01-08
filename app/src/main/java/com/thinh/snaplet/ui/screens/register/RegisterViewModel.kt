@@ -5,9 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.thinh.snaplet.R
 import com.thinh.snaplet.data.repository.auth.AuthRepository
-import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.UiText
 import com.thinh.snaplet.utils.ValidationConstants
+import com.thinh.snaplet.utils.network.onFailure
+import com.thinh.snaplet.utils.network.onSuccess
 import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
@@ -126,46 +127,30 @@ class RegisterViewModel @Inject constructor(
 
             _uiState.update { it.copy(isLoading = true, emailError = null, errorMessage = null) }
 
-            try {
-                val stateAfterDelay = _uiState.value
-                if (stateAfterDelay.currentStep != RegisterStep.EMAIL) {
-                    _uiState.update { it.copy(isLoading = false) }
+            val result = authRepository.checkEmailAvailability(currentState.email)
+
+            result.onSuccess { isAvailable ->
+                if (!isAvailable) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            emailError = UiText.StringResource(R.string.email_already_taken)
+                        )
+                    }
                     return@launch
                 }
 
-                val result = authRepository.checkEmailAvailability(currentState.email)
-
-                result.onSuccess { isAvailable ->
-                    if (!isAvailable) {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                emailError = UiText.StringResource(R.string.email_already_taken)
-                            )
-                        }
-                        return@launch
-                    }
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            currentStep = RegisterStep.USERNAME
-                        )
-                    }
-                }.onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            emailError = UiText.DynamicString(error.safeMessage)
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                Logger.e("❌ Email check failed: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        emailError = UiText.DynamicString(e.safeMessage)
+                        currentStep = RegisterStep.USERNAME
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        emailError = UiText.DynamicString(error.message)
                     )
                 }
             }
@@ -204,46 +189,30 @@ class RegisterViewModel @Inject constructor(
                     errorMessage = null
                 )
             }
+            val result = authRepository.checkUsernameAvailability(currentState.username)
 
-            try {
-                val stateAfterCheck = _uiState.value
-                if (stateAfterCheck.currentStep != RegisterStep.USERNAME) {
-                    _uiState.update { it.copy(isLoading = false) }
+            result.onSuccess { isAvailable ->
+                if (!isAvailable) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            usernameError = UiText.StringResource(R.string.username_already_taken)
+                        )
+                    }
                     return@launch
                 }
 
-                val result = authRepository.checkUsernameAvailability(currentState.username)
-
-                result.onSuccess { isAvailable ->
-                    if (!isAvailable) {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                usernameError = UiText.StringResource(R.string.username_already_taken)
-                            )
-                        }
-                        return@launch
-                    }
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            currentStep = RegisterStep.PASSWORD
-                        )
-                    }
-                }.onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            usernameError = UiText.DynamicString(error.safeMessage)
-                        )
-                    }
-                }
-            } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        usernameError = UiText.DynamicString(e.safeMessage)
+                        currentStep = RegisterStep.PASSWORD
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        usernameError = UiText.DynamicString(error.message)
                     )
                 }
             }
@@ -313,7 +282,6 @@ class RegisterViewModel @Inject constructor(
 
     private fun validatePassword(password: String): UiText? {
         return when {
-            password.isBlank() -> UiText.StringResource(R.string.password_required)
             password.length < ValidationConstants.PASSWORD_MIN_LENGTH -> UiText.StringResource(R.string.password_requirement)
             else -> null
         }
