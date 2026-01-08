@@ -11,9 +11,10 @@ permissions:
   pull-requests: write
 
 jobs:
-  qc-build:
+  build-and-distribute:
     name: Build Android & Distribute to Firebase
     runs-on: ubuntu-latest
+    environment: development
 
     # ⭐ KEY LOGIC: chỉ chạy khi PR có label build-for-test
     if: |
@@ -53,6 +54,24 @@ jobs:
       - name: Install dependencies
         run: |
           bundle install
+
+      - name: Setup Keystore for signing
+        run: |
+          # Decode keystore từ base64 và tạo file
+          echo "${{ secrets.SNAPLET_KEYSTORE_BASE64 }}" | base64 -d > app/snaplet-release-key.jks
+          
+          # Tạo local.properties với thông tin keystore từ Environment Secrets
+          # Lưu ý: SNAPLET_KEYSTORE_FILE là relative path từ root project
+          cat > local.properties << EOF
+          sdk.dir=\$ANDROID_HOME
+          SNAPLET_KEYSTORE_FILE=app/snaplet-release-key.jks
+          SNAPLET_KEYSTORE_PASSWORD=${{ secrets.SNAPLET_KEYSTORE_PASSWORD }}
+          SNAPLET_KEY_ALIAS=${{ secrets.SNAPLET_KEY_ALIAS }}
+          SNAPLET_KEY_PASSWORD=${{ secrets.SNAPLET_KEY_PASSWORD }}
+          EOF
+          
+          ls -lh app/snaplet-release-key.jks
+          cat local.properties | grep -v PASSWORD
 
       - name: Build & Distribute via Fastlane
         # env:
