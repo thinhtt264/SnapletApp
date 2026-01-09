@@ -16,7 +16,7 @@ interface AuthRepository {
         firstName: String,
         lastName: String,
         password: String
-    ): Result<UserProfile>
+    ): ApiResult<UserProfile>
 
     suspend fun logout()
 

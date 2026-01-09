@@ -9,7 +9,6 @@ import com.thinh.snaplet.utils.UiText
 import com.thinh.snaplet.utils.ValidationConstants
 import com.thinh.snaplet.utils.network.onFailure
 import com.thinh.snaplet.utils.network.onSuccess
-import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -231,25 +230,20 @@ class RegisterViewModel @Inject constructor(
 
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            try {
-                val result = authRepository.register(
-                    email = currentState.email,
-                    username = currentState.username,
-                    firstName = currentState.firstName,
-                    lastName = currentState.lastName,
-                    password = currentState.password
-                )
+            val result = authRepository.register(
+                email = currentState.email,
+                username = currentState.username,
+                firstName = currentState.firstName,
+                lastName = currentState.lastName,
+                password = currentState.password
+            )
 
-                result.onSuccess {
-                    _uiState.update { it.copy(isLoading = false) }
-                    _uiEvent.emit(RegisterUIEvent.RegisterSuccess)
-                }.onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false) }
-                    _uiEvent.emit(RegisterUIEvent.ShowErrorPopup(error.safeMessage))
-                }
-            } catch (e: Exception) {
+            result.onSuccess {
                 _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.emit(RegisterUIEvent.ShowErrorPopup(e.safeMessage))
+                _uiEvent.emit(RegisterUIEvent.RegisterSuccess)
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false) }
+                _uiEvent.emit(RegisterUIEvent.ShowErrorPopup(error.message))
             }
         }
     }

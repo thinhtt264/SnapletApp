@@ -1,7 +1,6 @@
 package com.thinh.snaplet.utils.network
 
 import com.thinh.snaplet.data.model.BaseResponse
-import com.thinh.snaplet.utils.Logger
 import retrofit2.Response
 
 private fun getDefaultMessage(code: Int): String? {
@@ -38,24 +37,21 @@ fun Response<*>.toApiError(): ApiError {
         val message = getDefaultMessage(httpCode) ?: base.status.message ?: "Lỗi không xác định"
 
         ApiError(
-            httpCode = httpCode,
-            message = message,
-            errorCode = errorCode,
-            reason = meta?.reason
+            httpCode = httpCode, message = message, errorCode = errorCode, reason = meta?.reason
         )
     }.getOrElse {
         ApiError(
-            httpCode = 500,
-            message = getDefaultMessage(500)!!
+            httpCode = 500, message = getDefaultMessage(500)!!
         )
     }
 }
 
-/** Safe API call wrapper */
-suspend fun <T> safeApiCall(
+/** Safe API call wrapper with transform */
+suspend fun <T, R> safeApiCall(
     apiCall: suspend () -> Response<BaseResponse<T>>,
-    onSuccess: suspend (T) -> Unit = {}
-): ApiResult<T> {
+    onSuccess: suspend (T) -> Unit = {},
+    transform: (T) -> R
+): ApiResult<R> {
 
     return try {
         val response = apiCall()
@@ -78,26 +74,16 @@ suspend fun <T> safeApiCall(
 //                )
 //            )
             onSuccess(body.data)
-            ApiResult.Success(body.data)
+            ApiResult.Success(transform(body.data))
         } else {
             ApiResult.Failure(response.toApiError())
         }
-
     } catch (_: Exception) {
         ApiResult.Failure(
             ApiError(
                 message = getDefaultMessage(500)!!, httpCode = 500
             )
         )
-    }
-}
-
-inline fun <T, R> ApiResult<T>.mapSuccess(
-    transform: (T) -> R
-): ApiResult<R> {
-    return when (this) {
-        is ApiResult.Success -> ApiResult.Success(transform(data))
-        is ApiResult.Failure -> this
     }
 }
 
