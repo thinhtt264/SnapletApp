@@ -21,7 +21,6 @@
     <string name="password_placeholder">Password</string>
     <string name="password_requirement">Your password must be at least 8 characters</string>
     <string name="forgot_password">Forgot password?</string>
-    <string name="password_required">Password is required</string>
     <string name="dont_have_account">Don\'t have an account?</string>
     <string name="sign_up">Sign up</string>
     <string name="continue_text">Continue</string>
