@@ -6,6 +6,7 @@ import com.thinh.snaplet.BuildConfig
 import com.thinh.snaplet.data.datasource.local.datastore.DataStoreManager
 import com.thinh.snaplet.data.datasource.remote.ApiService
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.network.FingerprintInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -88,11 +89,14 @@ object NetworkModule {
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
         authInterceptor: Interceptor,
+        fingerprintInterceptor: FingerprintInterceptor,
     ): OkHttpClient {
         return OkHttpClient.Builder()
-            // 1. Auth headers
+            // 1. Fingerprint header (first, so it's always included)
+            .addInterceptor(fingerprintInterceptor)
+            // 2. Auth headers
             .addInterceptor(authInterceptor)
-            // 2. Logging
+            // 3. Logging (last, so it logs all headers)
             .addInterceptor(loggingInterceptor)
 
             // Timeouts
