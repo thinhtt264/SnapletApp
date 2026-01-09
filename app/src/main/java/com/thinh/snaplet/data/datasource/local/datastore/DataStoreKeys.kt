@@ -10,5 +10,9 @@ object DataStoreKeys {
     object UserProfileKeys {
         const val PROFILE = "user_profile"
     }
+
+    object DeviceKeys {
+        const val FINGERPRINT = "device_fingerprint"
+    }
 }
 

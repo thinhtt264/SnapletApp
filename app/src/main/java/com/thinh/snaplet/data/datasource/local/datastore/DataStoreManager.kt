@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.utils.network.GsonHolder.gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -21,7 +22,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 @Singleton
 class DataStoreManager @Inject constructor(
-    @ApplicationContext private val context: Context, private val gson: Gson
+    @ApplicationContext private val context: Context
 ) {
 
     private val dataStore = context.dataStore
@@ -30,6 +31,7 @@ class DataStoreManager @Inject constructor(
     private val refreshTokenKey = stringPreferencesKey(DataStoreKeys.SessionKeys.REFRESH_TOKEN)
 
     private val userProfileKey = stringPreferencesKey(DataStoreKeys.UserProfileKeys.PROFILE)
+    private val fingerprintKey = stringPreferencesKey(DataStoreKeys.DeviceKeys.FINGERPRINT)
 
     private val currentAccessToken = AtomicReference<String?>(null)
     private val currentRefreshToken = AtomicReference<String?>(null)
@@ -114,6 +116,7 @@ class DataStoreManager @Inject constructor(
     suspend fun clearAll() {
         clearSession()
         clearUserProfile()
+        clearFingerprint()
         Logger.d("🗑️ All data cleared")
     }
 
@@ -140,6 +143,27 @@ class DataStoreManager @Inject constructor(
             token
         } catch (_: Exception) {
             null
+        }
+    }
+
+    suspend fun saveFingerprint(fingerprint: String) {
+        dataStore.edit { preferences ->
+            preferences[fingerprintKey] = fingerprint
+        }
+    }
+
+    suspend fun loadFingerprint(): String? {
+        return try {
+            val preferences = dataStore.data.first()
+            preferences[fingerprintKey]
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun clearFingerprint() {
+        dataStore.edit { preferences ->
+            preferences.remove(fingerprintKey)
         }
     }
 }

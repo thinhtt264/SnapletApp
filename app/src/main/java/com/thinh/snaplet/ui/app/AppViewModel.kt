@@ -2,6 +2,7 @@ package com.thinh.snaplet.ui.app
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.thinh.snaplet.data.repository.device.DeviceRepository
 import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.navigation.NavScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AppViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val deviceRepository: DeviceRepository
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(true)
@@ -29,6 +31,8 @@ class AppViewModel @Inject constructor(
     private fun bootstrap() {
         viewModelScope.launch {
             try {
+                deviceRepository.getOrCreateFingerprint()
+
                 val isAuthenticated = authRepository.isAuthenticated()
 
                 _startDestination.value =
