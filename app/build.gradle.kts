@@ -1,3 +1,4 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 import java.io.FileInputStream
 
@@ -39,6 +40,19 @@ android {
         }
     }
 
+    flavorDimensions += "environment"
+    productFlavors {
+        create("development") {
+            dimension = "environment"
+            // isDefault = true
+            buildConfigField("boolean", "IS_DEVELOPMENT", "true")
+        }
+        create("production") {
+            dimension = "environment"
+            buildConfigField("boolean", "IS_DEVELOPMENT", "false")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -59,6 +73,15 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.configureEach {
+            val versionName = variant.versionName
+            val output = this as BaseVariantOutputImpl
+            output.outputFileName = "snaplet-${versionName}.apk"
+        }
     }
 }
 
@@ -99,6 +122,9 @@ dependencies {
     
     // DataStore for local storage
     implementation(libs.androidx.datastore.preferences)
+    
+    add("developmentImplementation", libs.chucker)
+    add("productionImplementation", libs.chucker.no.op)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

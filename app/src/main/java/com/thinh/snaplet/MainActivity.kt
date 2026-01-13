@@ -17,20 +17,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * MainActivity - Entry point of the application
- *
- * Responsibilities:
- * - Handle deeplink intents
- * - Trigger overlay screens via DeepLinkManager
- * - Setup splash screen
- * - Setup edge-to-edge display
- *
- * Enterprise Pattern:
- * - Dependency injection with Hilt
- * - Separation of concerns (Activity handles Android lifecycle, Manager handles business logic)
- * - Clean architecture principles
- */
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 

@@ -30,11 +30,11 @@
 }
 
 # Keep error and warning logs for crash reporting
-# -assumenosideeffects class timber.log.Timber* {
-#     public static *** e(...);
-#     public static *** w(...);
-#     public static *** wtf(...);
-# }
+ -assumenosideeffects class timber.log.Timber* {
+     public static *** e(...);
+     public static *** w(...);
+     public static *** wtf(...);
+ }
 
 # ==================================
 # Keep line numbers for crash reports

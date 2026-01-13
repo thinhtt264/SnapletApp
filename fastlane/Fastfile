@@ -14,7 +14,6 @@ platform :android do
     apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
     
     unless apk_path && File.exist?(apk_path)
-      # Fallback: thử tìm ở vị trí chuẩn nếu biến không được set
       apk_path = "app/release/app-release.apk"
       
       unless File.exist?(apk_path)
