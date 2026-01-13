@@ -1,5 +1,9 @@
 package com.thinh.snaplet.di
 
+import android.content.Context
+import com.chuckerteam.chucker.api.ChuckerCollector
+import com.chuckerteam.chucker.api.ChuckerInterceptor
+import com.chuckerteam.chucker.api.RetentionManager
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.thinh.snaplet.BuildConfig
@@ -10,6 +14,7 @@ import com.thinh.snaplet.network.FingerprintInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -81,6 +86,30 @@ object NetworkModule {
     }
 
     /**
+     * Provide Chucker Interceptor for network debugging
+     * In debug builds: full network inspector
+     * In release builds: no-op (from library-no-op dependency)
+     */
+    @Provides
+    @Singleton
+    fun provideChuckerInterceptor(
+        @ApplicationContext context: Context
+    ): ChuckerInterceptor {
+        val chuckerCollector = ChuckerCollector(
+            context = context,
+            showNotification = false,
+            retentionPeriod = RetentionManager.Period.ONE_HOUR
+        )
+        return ChuckerInterceptor.Builder(context)
+            .collector(chuckerCollector)
+            .maxContentLength(250000L) // 250KB
+            .redactHeaders("Authorization", "Cookie")
+            .alwaysReadResponseBody(true) // Read response body even if it's large
+            .createShortcut(false)
+            .build()
+    }
+
+    /**
      * Provide OkHttpClient Configures HTTP client with interceptors and
      * timeouts
      */
@@ -90,13 +119,16 @@ object NetworkModule {
         loggingInterceptor: HttpLoggingInterceptor,
         authInterceptor: Interceptor,
         fingerprintInterceptor: FingerprintInterceptor,
+        chuckerInterceptor: ChuckerInterceptor,
     ): OkHttpClient {
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             // 1. Fingerprint header (first, so it's always included)
             .addInterceptor(fingerprintInterceptor)
             // 2. Auth headers
             .addInterceptor(authInterceptor)
-            // 3. Logging (last, so it logs all headers)
+            // 3. Chucker for network debugging (no-op in release builds)
+            .addInterceptor(chuckerInterceptor)
+            // 4. Logging (last, so it logs all headers)
             .addInterceptor(loggingInterceptor)
 
             // Timeouts
@@ -120,7 +152,7 @@ object NetworkModule {
             //         .build()
             // )
 
-            .build()
+        return builder.build()
     }
 
     /** Provide Retrofit instance Main HTTP client for API calls */

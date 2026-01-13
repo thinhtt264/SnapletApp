@@ -21,13 +21,11 @@ interface ApiService {
     
     @POST("auth/login")
     suspend fun login(
-        @Header("X-Device-Id") deviceId: String ="default-device-id",
         @Body body: LoginRequest
     ): Response<BaseResponse<LoginResponse>>
     
     @POST("auth/register")
     suspend fun register(
-        @Header("X-Device-Id") deviceId: String = "default-device-id",
         @Body body: RegisterRequest
     ): Response<BaseResponse<LoginResponse>>
     
