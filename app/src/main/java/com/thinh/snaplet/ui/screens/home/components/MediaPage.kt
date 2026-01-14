@@ -23,11 +23,11 @@ fun MediaPage(
         .clip(RoundedCornerShape(MediaItemDimensions.MEDIA_CORNER_RADIUS))
 
     val mediaIndex = page - 1
-    if (mediaIndex < uiState.mediaItems.size) {
+    if (mediaIndex < uiState.posts.size) {
         MediaItemPage(
-            media = uiState.mediaItems[mediaIndex],
-            onMediaClick = { media ->
-                Logger.d("📷 Clicked media: ${media.id}")
+            post = uiState.posts[mediaIndex],
+            onMediaClick = { post ->
+                Logger.d("📷 Clicked post: ${post.id}")
             },
             modifier = cameraModifier
         )

@@ -12,14 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.thinh.snaplet.data.model.MediaItem
+import com.thinh.snaplet.data.model.MediaType
+import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.components.ImageSize
 import com.thinh.snaplet.ui.components.OptimizedAsyncImage
 
 @Composable
 fun MediaItemPage(
-    media: MediaItem,
-    onMediaClick: (MediaItem) -> Unit,
+    post: Post,
+    onMediaClick: (Post) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -28,8 +29,8 @@ fun MediaItemPage(
     ) {
         // Full-screen image/video
         OptimizedAsyncImage(
-            imageUrl = media.url,
-            contentDescription = "Media ${media.id}",
+            imageUrl = post.url,
+            contentDescription = "Post ${post.id}",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
             resizeSize = ImageSize.Large, // High quality for full-screen
@@ -38,9 +39,10 @@ fun MediaItemPage(
         )
 
         // Video indicator if needed
-        if (media is MediaItem.Video) {
+        val firstMedia = post.media.firstOrNull()
+        if (firstMedia?.type == MediaType.VIDEO) {
             VideoIndicatorOverlay(
-                durationMs = media.durationMs,
+                durationMs = 0L, // TODO: Add duration to Media model if needed
                 modifier = Modifier.align(Alignment.BottomEnd)
             )
         }
