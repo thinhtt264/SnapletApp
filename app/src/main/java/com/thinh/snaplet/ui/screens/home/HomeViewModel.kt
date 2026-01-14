@@ -12,7 +12,6 @@ import com.thinh.snaplet.data.repository.MediaRepository
 import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.permission.Permission
 import com.thinh.snaplet.utils.permission.PermissionManager
-import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -65,14 +64,14 @@ class HomeViewModel @Inject constructor(
                         posts = feedData.data, isLoadingPosts = false, error = null
                     )
                 }
-            }.onFailure { error ->
-                Logger.e(error, "❌ Failed to load newsfeed")
+            }.onFailure { apiError ->
+                Logger.e("❌ Failed to load newsfeed: ${apiError.message}")
                 _uiState.update {
                     it.copy(
-                        isLoadingPosts = false, error = error.message
+                        isLoadingPosts = false, error = apiError.message
                     )
                 }
-                emitEvent(HomeUiEvent.ShowError(error.safeMessage))
+                emitEvent(HomeUiEvent.ShowError(apiError.message))
             }
         }
     }
