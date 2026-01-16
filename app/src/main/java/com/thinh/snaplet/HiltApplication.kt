@@ -7,9 +7,6 @@ import com.thinh.snaplet.utils.Logger
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
-
-const val LOG_TAG = "Timber"
-
 @HiltAndroidApp
 class HiltApplication : Application() {
 
@@ -19,7 +16,6 @@ class HiltApplication : Application() {
     }
 
     private fun initializeTimber() {
-        Timber.tag(LOG_TAG)
         if (BuildConfig.DEBUG) {
             Logger.plant(Timber.DebugTree())
         } else {
@@ -31,7 +27,7 @@ class HiltApplication : Application() {
         @SuppressLint("LogNotTimber")
         override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
             if (priority == Log.ERROR || priority == Log.ASSERT) {
-                Log.e(LOG_TAG, message, t)
+                Log.e("Timber", message, t)
                 // Log to crash reporting service (Firebase Crashlytics, Sentry, etc.)
                 // Example: FirebaseCrashlytics.getInstance().log("$tag: $message")
                 // if (t != null) FirebaseCrashlytics.getInstance().recordException(t)

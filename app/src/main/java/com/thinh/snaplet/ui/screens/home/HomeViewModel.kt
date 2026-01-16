@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.thinh.snaplet.data.repository.MediaRepository
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.utils.network.onFailure
+import com.thinh.snaplet.utils.network.onSuccess
 import com.thinh.snaplet.utils.permission.Permission
 import com.thinh.snaplet.utils.permission.PermissionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -75,11 +77,7 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
-
-    fun refreshNewsfeed() {
-        loadNewsfeed()
-    }
-
+    
     private fun updateCameraState(transform: (CameraState) -> CameraState) {
         _uiState.update { state ->
             state.copy(cameraState = transform(state.cameraState))
