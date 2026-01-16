@@ -93,7 +93,7 @@ private fun HomeContent(
     
     val pagerState = rememberPagerState(
         initialPage = CAMERA_PAGE_INDEX,
-        pageCount = { 1 + uiState.mediaItems.size }
+        pageCount = { 1 + uiState.posts.size }
     )
 
     var shouldBindCamera by remember { mutableStateOf(true) }
@@ -219,7 +219,7 @@ private fun getPageKey(page: Int, uiState: HomeUiState): String {
     return if (page == CAMERA_PAGE_INDEX) {
         "camera_section"
     } else {
-        uiState.mediaItems[page - 1].id
+        uiState.posts[page - 1].id
     }
 }
 

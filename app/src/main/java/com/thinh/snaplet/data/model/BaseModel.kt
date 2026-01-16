@@ -30,11 +30,21 @@ data class BaseResponse<T>(
     val data: T
 )
 
-/** Pagination metadata */
 data class Pagination(
-    @SerializedName("offset")
-    val offset: Int,
-
     @SerializedName("limit")
     val limit: Int,
+
+    @SerializedName("hasNext")
+    val hasNext: Boolean,
+
+    @SerializedName("nextCursor")
+    val nextCursor: String? = null,
+)
+
+data class PaginatedResponse<T>(
+    @SerializedName("data")
+    val data: List<T>,
+
+    @SerializedName("pagination")
+    val pagination: Pagination,
 )

@@ -4,7 +4,7 @@ import com.thinh.snaplet.data.model.LoginRequest
 import com.thinh.snaplet.data.model.LoginResponse
 import com.thinh.snaplet.data.model.RegisterRequest
 import com.thinh.snaplet.data.model.BaseResponse
-import com.thinh.snaplet.data.model.FeedData
+import com.thinh.snaplet.data.model.PostsFeedData
 import com.thinh.snaplet.data.model.Relationship
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.data.model.EmailAvailabilityData
@@ -30,10 +30,10 @@ interface ApiService {
     ): Response<BaseResponse<LoginResponse>>
     
     @GET("posts/feed")
-    suspend fun getMediaFeed(
+    suspend fun getPostsFeed(
         @Query("limit") limit: Int = 10,
-        @Query("offset") offset: Int = 0
-    ): Response<BaseResponse<FeedData>>
+        @Query("cursor") cursor: String? = null
+    ): Response<BaseResponse<PostsFeedData>>
     
     @GET("users/profile/{username}")
     suspend fun getUserProfile(

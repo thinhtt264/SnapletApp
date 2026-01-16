@@ -12,7 +12,6 @@ import com.thinh.snaplet.data.repository.MediaRepository
 import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.permission.Permission
 import com.thinh.snaplet.utils.permission.PermissionManager
-import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -47,60 +46,46 @@ class HomeViewModel @Inject constructor(
     )
     val uiEvent = _uiEvent.asSharedFlow()
 
-    // Camera state
     private val _imageCapture = mutableStateOf<ImageCapture?>(null)
     val imageCapture: ImageCapture? get() = _imageCapture.value
 
     init {
-        loadMediaFeed()
+        loadNewsfeed()
     }
 
-    /**
-     * Load media feed from repository Repository can be fake or real -
-     * ViewModel doesn't care!
-     */
-    private fun loadMediaFeed() {
+    private fun loadNewsfeed() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingMedia = true) }
+            _uiState.update { it.copy(isLoadingPosts = true) }
 
-            mediaRepository.getMediaFeed().onSuccess { mediaItems ->
-                Logger.d("📷 Loaded ${mediaItems.size} media items")
+            mediaRepository.getNewsfeed().onSuccess { feedData ->
+                Logger.d("📷 Loaded ${feedData.data.size} posts")
                 _uiState.update {
                     it.copy(
-                        mediaItems = mediaItems, isLoadingMedia = false, error = null
+                        posts = feedData.data, isLoadingPosts = false, error = null
                     )
                 }
-            }.onFailure { error ->
-                Logger.e(error, "❌ Failed to load media")
+            }.onFailure { apiError ->
+                Logger.e("❌ Failed to load newsfeed: ${apiError.message}")
                 _uiState.update {
                     it.copy(
-                        isLoadingMedia = false, error = error.message
+                        isLoadingPosts = false, error = apiError.message
                     )
                 }
-                emitEvent(HomeUiEvent.ShowError(error.safeMessage))
+                emitEvent(HomeUiEvent.ShowError(apiError.message))
             }
         }
     }
 
-    /** Refresh media feed (pull to refresh) */
-    fun refreshMedia() {
-        loadMediaFeed()
+    fun refreshNewsfeed() {
+        loadNewsfeed()
     }
 
-    /**
-     * Helper function to update CameraState without boilerplate Usage:
-     * updateCameraState { it.copy(hasCameraPermission = true) }
-     */
     private fun updateCameraState(transform: (CameraState) -> CameraState) {
         _uiState.update { state ->
             state.copy(cameraState = transform(state.cameraState))
         }
     }
 
-    /**
-     * Called when screen is initialized ViewModel decides if permission should
-     * be requested
-     */
     fun onScreenInitialized() {
         val hasPermission = permissionManager.hasPermission(Permission.Camera)
         updateCameraState { it.copy(hasCameraPermission = hasPermission) }
@@ -113,10 +98,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Called when permission result comes back from View ViewModel updates
-     * state based on result
-     */
     fun onPermissionResult(granted: Boolean) {
         updateCameraState { it.copy(hasCameraPermission = granted) }
         Logger.d("📋 Permission result: $granted")
@@ -126,23 +107,17 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /** Set ImageCapture instance when camera is ready */
     fun setImageCapture(capture: ImageCapture) {
         _imageCapture.value = capture
         updateCameraState { it.copy(isCameraActive = true) }
         Logger.d("📷 Camera is ready")
     }
 
-    /** Save preview snapshot for placeholder use */
     fun setPreviewSnapshot(bitmap: Bitmap) {
         updateCameraState { it.copy(lastPreviewSnapshot = bitmap) }
         Logger.d("📸 Preview snapshot saved (${bitmap.width}x${bitmap.height})")
     }
 
-    /**
-     * User wants to take a photo ViewModel checks state and executes business
-     * logic
-     */
     fun onCapturePhoto(context: Context) {
         if (!_uiState.value.cameraState.hasCameraPermission) {
             emitEvent(HomeUiEvent.RequestPermission(Permission.Camera))
@@ -158,7 +133,6 @@ class HomeViewModel @Inject constructor(
         takePhoto(context)
     }
 
-    /** Internal method to take photo */
     private fun takePhoto(context: Context) {
         val capture = _imageCapture.value ?: run {
             Logger.e("❌ ImageCapture is null")

@@ -4,8 +4,8 @@ import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.data.repository.auth.AuthRepositoryImpl
 import com.thinh.snaplet.data.repository.device.DeviceRepository
 import com.thinh.snaplet.data.repository.device.DeviceRepositoryImpl
-import com.thinh.snaplet.data.repository.FakeMediaRepository
 import com.thinh.snaplet.data.repository.MediaRepository
+import com.thinh.snaplet.data.repository.MediaRepositoryImpl
 import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.data.repository.UserRepositoryImpl
 import dagger.Binds
@@ -21,7 +21,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMediaRepository(
-        repository: FakeMediaRepository
+        repository: MediaRepositoryImpl
     ): MediaRepository
     
     @Binds

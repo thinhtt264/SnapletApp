@@ -2,68 +2,47 @@ package com.thinh.snaplet.data.repository
 
 import android.net.Uri
 import com.thinh.snaplet.data.datasource.remote.ApiService
-import com.thinh.snaplet.data.model.MediaItem
+import com.thinh.snaplet.data.model.Post
+import com.thinh.snaplet.data.model.PostsFeedData
 import com.thinh.snaplet.utils.Logger
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.thinh.snaplet.utils.network.ApiError
+import com.thinh.snaplet.utils.network.ApiResult
+import com.thinh.snaplet.utils.network.safeApiCall
 import javax.inject.Inject
 
 class MediaRepositoryImpl @Inject constructor(
     private val apiService: ApiService
 ) : MediaRepository {
 
-    override suspend fun getMediaFeed(): Result<List<MediaItem>> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiService.getMediaFeed(limit = 10, offset = 0)
-
-            if (!response.isSuccessful) {
-                val errorMsg = "API returned ${response.code()}: ${response.message()}"
-                Logger.e("❌ $errorMsg")
-                return@withContext Result.failure(Exception(errorMsg))
+    override suspend fun getNewsfeed(limit: Int, cursor: String?): ApiResult<PostsFeedData> {
+        return safeApiCall(
+            apiCall = {
+                apiService.getPostsFeed(limit = limit, cursor = cursor)
+            },
+            transform = { feedData ->
+                val filteredData = PostsFeedData(
+                    data = feedData.data,
+                    pagination = feedData.pagination
+                )
+                Logger.d("✅ Fetched ${feedData.data.size} posts, hasNext=${feedData.pagination.hasNext}")
+                filteredData
             }
-
-            val body = response.body()
-            if (body == null) {
-                Logger.e("❌ Response body is null")
-                return@withContext Result.failure(Exception("Empty response from server"))
-            }
-
-            if (body.status.code != 200) {
-                Logger.e("❌ API error: ${body.status.message}")
-                return@withContext Result.failure(Exception(body.status.message))
-            }
-
-            val mediaItems = body.data.data.map { photo -> photo.copy() }
-            Result.success(mediaItems)
-        } catch (e: Exception) {
-            Logger.e(e, "❌ Failed to fetch media feed")
-            Result.failure(e)
-        }
+        )
     }
 
-    override suspend fun uploadPhoto(uri: Uri): Result<MediaItem> = withContext(Dispatchers.IO) {
-        try {
-            Logger.d("📤 Uploading photo: $uri")
-
-            Result.failure(Exception("Upload not implemented yet"))
-
-        } catch (e: Exception) {
-            Logger.e(e, "❌ Upload failed")
-            Result.failure(e)
-        }
+    override suspend fun uploadPhoto(uri: Uri): ApiResult<Post> {
+        Logger.d("📤 Uploading photo: $uri")
+        //TODO
+        return ApiResult.Failure(
+            ApiError(
+                httpCode = 501,
+                message = "Upload not implemented yet"
+            )
+        )
     }
 
-    override suspend fun loadMoreMedia(lastId: String): Result<List<MediaItem>> =
-        withContext(Dispatchers.IO) {
-            try {
-                Logger.d("📡 Loading more media after: $lastId")
-
-                // TODO: Implement pagination when API is ready
-                Result.success(emptyList())
-
-            } catch (e: Exception) {
-                Logger.e(e, "❌ Failed to load more media")
-                Result.failure(e)
-            }
-        }
+    override suspend fun loadMoreMedia(cursor: String, limit: Int): ApiResult<PostsFeedData> {
+        Logger.d("📡 Loading more media with cursor: ${cursor.take(20)}...")
+        return getNewsfeed(limit = limit, cursor = cursor)
+    }
 }

@@ -1,16 +1,14 @@
 package com.thinh.snaplet.ui.screens.home
 
 import android.graphics.Bitmap
-import com.thinh.snaplet.data.model.MediaItem
+import com.thinh.snaplet.data.model.Post
 
 data class HomeUiState(
     val cameraState: CameraState,
 
-    // Media feed states
-    val mediaItems: List<MediaItem> = emptyList(),
-    val isLoadingMedia: Boolean = false,
+    val posts: List<Post> = emptyList(),
+    val isLoadingPosts: Boolean = false,
 
-    // Error handling
     val error: String? = null
 )
 
