@@ -33,6 +33,7 @@ class AuthRepositoryImpl @Inject constructor(
                     result.token.accessToken, result.token.refreshToken
                 )
                 dataStoreManager.saveUserProfile(result.user)
+                _authState.value = AuthState.Authenticated
             },
             transform = { response -> response.user }
         )
@@ -59,6 +60,7 @@ class AuthRepositoryImpl @Inject constructor(
                     refreshToken = result.token.refreshToken
                 )
                 dataStoreManager.saveUserProfile(result.user)
+                _authState.value = AuthState.Authenticated
             },
             transform = { response -> response.user }
         )
@@ -81,7 +83,7 @@ class AuthRepositoryImpl @Inject constructor(
         _authState.value = if (authenticated) AuthState.Authenticated
         else AuthState.Unauthenticated
 
-        return authenticated
+        return _authState.value is AuthState.Authenticated
     }
 
     override suspend fun checkEmailAvailability(email: String): ApiResult<Boolean> {
