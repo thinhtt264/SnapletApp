@@ -12,8 +12,6 @@ import com.thinh.snaplet.utils.UiText
 import com.thinh.snaplet.utils.ValidationConstants
 import com.thinh.snaplet.utils.network.ApiError
 import com.thinh.snaplet.utils.network.ApiErrorCode
-import com.thinh.snaplet.utils.network.onFailure
-import com.thinh.snaplet.utils.network.onSuccess
 import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
@@ -90,22 +88,12 @@ class LoginViewModel @Inject constructor(
                 return@launch
             }
 
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
-            try {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false, currentStep = LoginStep.PASSWORD
-                    )
-                }
-
-            } catch (e: Exception) {
-                Logger.e("❌ Email validation failed: ${e.message}")
-                _uiState.update {
-                    it.copy(
-                        isLoading = false, emailError = UiText.DynamicString(e.safeMessage)
-                    )
-                }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    currentStep = LoginStep.PASSWORD
+                )
             }
         }
     }
@@ -128,14 +116,17 @@ class LoginViewModel @Inject constructor(
                 password = currentState.password
             )
 
-            result.onSuccess { userProfile ->
-                Logger.d("✅ Login successful for: ${userProfile.displayName}")
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.emit(LoginUIEvent.LoginSuccess)
-            }.onFailure { error ->
-                _uiState.update { it.copy(isLoading = false) }
-                handleLoginError(error)
-            }
+            result.fold(
+                onSuccess = { userProfile ->
+                    Logger.d("✅ Login successful for: ${userProfile.displayName}")
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(LoginUIEvent.LoginSuccess)
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    handleLoginError(error)
+                }
+            )
         }
     }
 

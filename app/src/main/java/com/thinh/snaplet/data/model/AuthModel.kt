@@ -75,3 +75,14 @@ data class UsernameAvailabilityData(
     val available: Boolean
 )
 
+/**
+ * Refresh Token Request
+ */
+data class RefreshTokenRequest(
+    @SerializedName("refreshToken")
+    val refreshToken: String,
+    
+    @SerializedName("accessToken")
+    val accessToken: String
+)
+

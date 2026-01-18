@@ -7,8 +7,6 @@ import com.thinh.snaplet.R
 import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.utils.UiText
 import com.thinh.snaplet.utils.ValidationConstants
-import com.thinh.snaplet.utils.network.onFailure
-import com.thinh.snaplet.utils.network.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -128,31 +126,34 @@ class RegisterViewModel @Inject constructor(
 
             val result = authRepository.checkEmailAvailability(currentState.email)
 
-            result.onSuccess { isAvailable ->
-                if (!isAvailable) {
+            result.fold(
+                onSuccess = { isAvailable ->
+                    if (!isAvailable) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                emailError = UiText.StringResource(R.string.email_already_taken)
+                            )
+                        }
+                        return@launch
+                    }
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            emailError = UiText.StringResource(R.string.email_already_taken)
+                            currentStep = RegisterStep.USERNAME
                         )
                     }
-                    return@launch
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            emailError = UiText.DynamicString(error.message)
+                        )
+                    }
                 }
-
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        currentStep = RegisterStep.USERNAME
-                    )
-                }
-            }.onFailure { error ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        emailError = UiText.DynamicString(error.message)
-                    )
-                }
-            }
+            )
         }
     }
 
@@ -190,31 +191,34 @@ class RegisterViewModel @Inject constructor(
             }
             val result = authRepository.checkUsernameAvailability(currentState.username)
 
-            result.onSuccess { isAvailable ->
-                if (!isAvailable) {
+            result.fold(
+                onSuccess = { isAvailable ->
+                    if (!isAvailable) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                usernameError = UiText.StringResource(R.string.username_already_taken)
+                            )
+                        }
+                        return@launch
+                    }
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            usernameError = UiText.StringResource(R.string.username_already_taken)
+                            currentStep = RegisterStep.PASSWORD
                         )
                     }
-                    return@launch
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            usernameError = UiText.DynamicString(error.message)
+                        )
+                    }
                 }
-
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        currentStep = RegisterStep.PASSWORD
-                    )
-                }
-            }.onFailure { error ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        usernameError = UiText.DynamicString(error.message)
-                    )
-                }
-            }
+            )
         }
     }
 
@@ -238,13 +242,16 @@ class RegisterViewModel @Inject constructor(
                 password = currentState.password
             )
 
-            result.onSuccess {
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.emit(RegisterUIEvent.RegisterSuccess)
-            }.onFailure { error ->
-                _uiState.update { it.copy(isLoading = false) }
-                _uiEvent.emit(RegisterUIEvent.ShowErrorPopup(error.message))
-            }
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(RegisterUIEvent.RegisterSuccess)
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(RegisterUIEvent.ShowErrorPopup(error.message))
+                }
+            )
         }
     }
 

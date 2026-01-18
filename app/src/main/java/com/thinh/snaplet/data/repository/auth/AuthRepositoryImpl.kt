@@ -4,8 +4,11 @@ import AuthState
 import com.thinh.snaplet.data.datasource.local.datastore.DataStoreManager
 import com.thinh.snaplet.data.datasource.remote.ApiService
 import com.thinh.snaplet.data.model.LoginRequest
+import com.thinh.snaplet.data.model.RefreshTokenRequest
 import com.thinh.snaplet.data.model.RegisterRequest
+import com.thinh.snaplet.data.model.TokenResponse
 import com.thinh.snaplet.data.model.UserProfile
+import com.thinh.snaplet.utils.network.ApiError
 import com.thinh.snaplet.utils.network.ApiResult
 import com.thinh.snaplet.utils.network.safeApiCall
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,6 +68,11 @@ class AuthRepositoryImpl @Inject constructor(
         dataStoreManager.clearSession()
         _authState.value = AuthState.Unauthenticated
     }
+    
+    override suspend fun forceLogout() {
+        dataStoreManager.clearSession()
+        _authState.value = AuthState.Unauthenticated
+    }
 
     override suspend fun isAuthenticated(): Boolean {
         val authenticated =
@@ -91,6 +99,37 @@ class AuthRepositoryImpl @Inject constructor(
                 apiService.checkUsernameAvailability(username)
             },
             transform = { response -> response.available }
+        )
+    }
+
+    override suspend fun refreshToken(): ApiResult<TokenResponse> {
+        val accessToken = dataStoreManager.getAccessToken()
+        val refreshToken = dataStoreManager.getRefreshToken()
+
+        if (accessToken.isNullOrBlank() || refreshToken.isNullOrBlank()) {
+            return ApiResult.Failure(
+                ApiError(
+                    httpCode = 401,
+                    message = "Access token or refresh token not found"
+                )
+            )
+        }
+
+        return safeApiCall(
+            apiCall = {
+                apiService.refreshToken(
+                    RefreshTokenRequest(
+                        refreshToken = refreshToken,
+                        accessToken = accessToken
+                    )
+                )
+            },
+            onSuccess = { result ->
+                dataStoreManager.saveTokens(
+                    accessToken = result.accessToken,
+                    refreshToken = result.refreshToken
+                )
+            }
         )
     }
 }

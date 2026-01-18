@@ -9,8 +9,10 @@ import com.google.gson.GsonBuilder
 import com.thinh.snaplet.BuildConfig
 import com.thinh.snaplet.data.datasource.local.datastore.DataStoreManager
 import com.thinh.snaplet.data.datasource.remote.ApiService
-import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.network.FingerprintInterceptor
+import com.thinh.snaplet.network.TokenAuthenticator
+import com.thinh.snaplet.network.TokenRefreshCoordinator
+import com.thinh.snaplet.utils.Logger
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -86,9 +88,9 @@ object NetworkModule {
     }
 
     /**
-     * Provide Chucker Interceptor for network debugging
-     * In debug builds: full network inspector
-     * In release builds: no-op (from library-no-op dependency)
+     * Provide Chucker Interceptor for network debugging In debug builds:
+     * full network inspector In release builds: no-op (from library-no-op
+     * dependency)
      */
     @Provides
     @Singleton
@@ -100,13 +102,36 @@ object NetworkModule {
             showNotification = false,
             retentionPeriod = RetentionManager.Period.ONE_HOUR
         )
-        return ChuckerInterceptor.Builder(context)
-            .collector(chuckerCollector)
+        return ChuckerInterceptor.Builder(context).collector(chuckerCollector)
             .maxContentLength(250000L) // 250KB
             .redactHeaders("Authorization", "Cookie")
             .alwaysReadResponseBody(true) // Read response body even if it's large
-            .createShortcut(false)
-            .build()
+            .createShortcut(false).build()
+    }
+
+    /**
+     * Provide TokenRefreshCoordinator Manages token refresh operations with
+     * mutex lock and request cancellation
+     */
+    @Provides
+    @Singleton
+    fun provideTokenRefreshCoordinator(
+        authRepository: dagger.Lazy<com.thinh.snaplet.data.repository.auth.AuthRepository>
+    ): TokenRefreshCoordinator {
+        return TokenRefreshCoordinator(authRepository)
+    }
+
+    /**
+     * Provide TokenAuthenticator Handles 401 responses and token refresh using
+     * OkHttp Authenticator pattern
+     */
+    @Provides
+    @Singleton
+    fun provideTokenAuthenticator(
+        tokenRefreshCoordinator: TokenRefreshCoordinator,
+        authRepository: dagger.Lazy<com.thinh.snaplet.data.repository.auth.AuthRepository>
+    ): TokenAuthenticator {
+        return TokenAuthenticator(tokenRefreshCoordinator, authRepository)
     }
 
     /**
@@ -120,16 +145,20 @@ object NetworkModule {
         authInterceptor: Interceptor,
         fingerprintInterceptor: FingerprintInterceptor,
         chuckerInterceptor: ChuckerInterceptor,
+        tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
             // 1. Fingerprint header (first, so it's always included)
             .addInterceptor(fingerprintInterceptor)
-            // 2. Auth headers
+            // 2. Auth interceptor (adds Authorization headers)
             .addInterceptor(authInterceptor)
             // 3. Chucker for network debugging (no-op in release builds)
             .addInterceptor(chuckerInterceptor)
             // 4. Logging (last, so it logs all headers)
             .addInterceptor(loggingInterceptor)
+
+            // Authenticator (handles 401 responses and token refresh)
+            .authenticator(tokenAuthenticator)
 
             // Timeouts
             .connectTimeout(30, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
@@ -145,12 +174,12 @@ object NetworkModule {
                 )
             )
 
-            // Optional: SSL Certificate Pinning for security
-            // .certificatePinner(
-            //     CertificatePinner.Builder()
-            //         .add("api.snaplet.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-            //         .build()
-            // )
+        // Optional: SSL Certificate Pinning for security
+        // .certificatePinner(
+        //     CertificatePinner.Builder()
+        //         .add("api.snaplet.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+        //         .build()
+        // )
 
         return builder.build()
     }

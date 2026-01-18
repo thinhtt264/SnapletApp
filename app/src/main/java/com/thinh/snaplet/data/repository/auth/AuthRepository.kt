@@ -1,6 +1,7 @@
 package com.thinh.snaplet.data.repository.auth
 
 import AuthState
+import com.thinh.snaplet.data.model.TokenResponse
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.utils.network.ApiResult
 import kotlinx.coroutines.flow.StateFlow
@@ -19,10 +20,14 @@ interface AuthRepository {
     ): ApiResult<UserProfile>
 
     suspend fun logout()
+    
+    suspend fun forceLogout()
 
     suspend fun isAuthenticated(): Boolean
     
     suspend fun checkEmailAvailability(email: String): ApiResult<Boolean>
     
     suspend fun checkUsernameAvailability(username: String): ApiResult<Boolean>
+    
+    suspend fun refreshToken(): ApiResult<TokenResponse>
 }
