@@ -11,6 +11,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,6 +23,8 @@ import androidx.navigation.compose.rememberNavController
 import com.chuckerteam.chucker.api.Chucker
 import com.thinh.snaplet.BuildConfig
 import com.thinh.snaplet.navigation.NavGraph
+import com.thinh.snaplet.navigation.NavScreen
+import com.thinh.snaplet.ui.app.AppUiEvent
 import com.thinh.snaplet.ui.app.AppViewModel
 import com.thinh.snaplet.ui.screens.friend_request.FriendRequestOverlayScreen
 import com.thinh.snaplet.ui.theme.SnapletTheme
@@ -33,6 +36,29 @@ fun MainScreen(
 ) {
     SnapletTheme {
         val startDestination by appViewModel.startDestination.collectAsState()
+        val navController = rememberNavController()
+
+        LaunchedEffect(Unit) {
+            appViewModel.uiEvent.collect { event ->
+                when (event) {
+                    is AppUiEvent.NavigateToAuthGraph -> {
+                        navController.navigate(NavScreen.AuthGraph.route) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+
+                    is AppUiEvent.NavigateToHomeGraph -> {
+                        navController.navigate(NavScreen.HomeGraph.route) {
+                            popUpTo(NavScreen.AuthGraph.route) { inclusive = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            }
+        }
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -40,8 +66,6 @@ fun MainScreen(
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize()) {
                 startDestination?.let {
-                    val navController = rememberNavController()
-
                     NavGraph(
                         startDestination = it,
                         navController = navController,

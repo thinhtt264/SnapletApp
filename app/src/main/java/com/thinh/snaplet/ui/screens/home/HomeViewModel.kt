@@ -10,8 +10,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.thinh.snaplet.data.repository.MediaRepository
 import com.thinh.snaplet.utils.Logger
-import com.thinh.snaplet.utils.network.onFailure
-import com.thinh.snaplet.utils.network.onSuccess
 import com.thinh.snaplet.utils.permission.Permission
 import com.thinh.snaplet.utils.permission.PermissionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -59,22 +57,25 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingPosts = true) }
 
-            mediaRepository.getNewsfeed().onSuccess { feedData ->
-                Logger.d("📷 Loaded ${feedData.data.size} posts")
-                _uiState.update {
-                    it.copy(
-                        posts = feedData.data, isLoadingPosts = false, error = null
-                    )
+            mediaRepository.getNewsfeed().fold(
+                onSuccess = { feedData ->
+                    Logger.d("📷 Loaded ${feedData.data.size} posts")
+                    _uiState.update {
+                        it.copy(
+                            posts = feedData.data, isLoadingPosts = false, error = null
+                        )
+                    }
+                },
+                onFailure = { apiError ->
+                    Logger.e("❌ Failed to load newsfeed: ${apiError.message}")
+                    _uiState.update {
+                        it.copy(
+                            isLoadingPosts = false, error = apiError.message
+                        )
+                    }
+                    emitEvent(HomeUiEvent.ShowError(apiError.message))
                 }
-            }.onFailure { apiError ->
-                Logger.e("❌ Failed to load newsfeed: ${apiError.message}")
-                _uiState.update {
-                    it.copy(
-                        isLoadingPosts = false, error = apiError.message
-                    )
-                }
-                emitEvent(HomeUiEvent.ShowError(apiError.message))
-            }
+            )
         }
     }
     

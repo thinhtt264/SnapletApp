@@ -48,9 +48,7 @@ class FriendRequestViewModel @Inject constructor(
             Logger.d("✅ User profile loaded, showing overlay")
             FriendRequestUiState.Visible(userProfile = userProfile)
         }, onFailure = { error ->
-            val errorMessage = error.safeMessage
-            Logger.e("❌ Failed to load user profile: $errorMessage")
-            FriendRequestUiState.Error(errorMessage = errorMessage)
+            FriendRequestUiState.Error(errorMessage = error.message)
         })
     }
 

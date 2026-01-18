@@ -62,17 +62,6 @@ suspend fun <T, R> safeApiCall(
                     httpCode = 200, message = "Empty response body"
                 )
             )
-//            val meta = body.status.meta
-//
-//            return ApiResult.Failure(
-//                ApiError(
-//                    httpCode = body.status.code,
-//                    message = body.status.message,
-//                    errorCode = meta?.errorCode
-//                        ?.let { ApiErrorCode.valueOf(it) },
-//                    reason = meta?.reason
-//                )
-//            )
             onSuccess(body.data)
             ApiResult.Success(transform(body.data))
         } else {
@@ -85,6 +74,17 @@ suspend fun <T, R> safeApiCall(
             )
         )
     }
+}
+
+suspend fun <T> safeApiCall(
+    apiCall: suspend () -> Response<BaseResponse<T>>,
+    onSuccess: suspend (T) -> Unit = {}
+): ApiResult<T> {
+    return safeApiCall(
+        apiCall = apiCall,
+        onSuccess = onSuccess,
+        transform = { it }
+    )
 }
 
 inline fun <T> ApiResult<T>.onSuccess(

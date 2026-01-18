@@ -24,26 +24,23 @@ fun NavGraph(
     startDestination: String = NavScreen.AuthGraph.route,
 ) {
     NavHost(
-        navController = navController, startDestination = startDestination, modifier = modifier,
+        navController = navController,
+        startDestination = startDestination,
+        modifier = modifier,
         enterTransition = {
             slideIntoContainer(
-                AnimatedContentTransitionScope.SlideDirection.Left,
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION,
-                    easing = FastOutSlowInEasing
+                AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(
+                    durationMillis = NAV_ANIM_DURATION, easing = FastOutSlowInEasing
                 )
             )
         },
         exitTransition = {
             slideOutOfContainer(
-                AnimatedContentTransitionScope.SlideDirection.Left,
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION,
-                    easing = FastOutSlowInEasing
+                AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(
+                    durationMillis = NAV_ANIM_DURATION, easing = FastOutSlowInEasing
                 )
             )
-        }
-    ) {
+        }) {
         authGraph(navController = navController)
         homeGraph(navController = navController)
     }
@@ -64,36 +61,25 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
         startDestination = NavScreen.Onboarding.route, route = NavScreen.AuthGraph.route
     ) {
         composable(route = NavScreen.Onboarding.route) {
-            Onboarding(
-                onNavigateToLogin = {
-                    navController.navigate(NavScreen.Login.route) {
-                        popUpTo(NavScreen.Onboarding.route) { inclusive = true }
-                    }
-                },
-                onNavigateToRegister = {
-                    navController.navigate(NavScreen.Register.route) {
-                        popUpTo(NavScreen.Onboarding.route) { inclusive = true }
-                    }
+            Onboarding(onNavigateToLogin = {
+                navController.navigate(NavScreen.Login.route) {
+                    popUpTo(NavScreen.Onboarding.route) { inclusive = true }
                 }
-            )
+            }, onNavigateToRegister = {
+                navController.navigate(NavScreen.Register.route) {
+                    popUpTo(NavScreen.Onboarding.route) { inclusive = true }
+                }
+            })
         }
 
         composable(route = NavScreen.Login.route) {
-            Login(onLoginSuccess = {
-                navController.navigate(NavScreen.HomeGraph.route) {
-                    popUpTo(NavScreen.AuthGraph.route) { inclusive = true }
-                }
-            }, onRegisterClick = {
+            Login(onRegisterClick = {
                 navController.navigate(NavScreen.Register.route)
             })
         }
 
         composable(route = NavScreen.Register.route) {
-            Register(onRegisterSuccess = {
-                navController.navigate(NavScreen.HomeGraph.route) {
-                    popUpTo(NavScreen.AuthGraph.route) { inclusive = true }
-                }
-            }, onLoginClick = {
+            Register(onLoginClick = {
                 navController.navigate(NavScreen.Login.route)
             })
         }

@@ -3,6 +3,8 @@ package com.thinh.snaplet.data.datasource.remote
 import com.thinh.snaplet.data.model.LoginRequest
 import com.thinh.snaplet.data.model.LoginResponse
 import com.thinh.snaplet.data.model.RegisterRequest
+import com.thinh.snaplet.data.model.RefreshTokenRequest
+import com.thinh.snaplet.data.model.TokenResponse
 import com.thinh.snaplet.data.model.BaseResponse
 import com.thinh.snaplet.data.model.PostsFeedData
 import com.thinh.snaplet.data.model.Relationship
@@ -54,4 +56,9 @@ interface ApiService {
     suspend fun checkUsernameAvailability(
         @Query("username") username: String
     ): Response<BaseResponse<UsernameAvailabilityData>>
+    
+    @POST("auth/refresh")
+    suspend fun refreshToken(
+        @Body body: RefreshTokenRequest
+    ): Response<BaseResponse<TokenResponse>>
 }

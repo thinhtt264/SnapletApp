@@ -26,7 +26,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -47,7 +46,6 @@ import com.thinh.snaplet.ui.screens.login.components.LoginPasswordPage
 @Composable
 fun Login(
     viewModel: LoginViewModel = hiltViewModel(),
-    onLoginSuccess: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -61,7 +59,7 @@ fun Login(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is LoginUIEvent.LoginSuccess -> onLoginSuccess()
+                is LoginUIEvent.LoginSuccess -> {}
                 is LoginUIEvent.NavigateToRegister -> onRegisterClick()
                 is LoginUIEvent.ShowErrorPopup -> {
                     errorDialogMessage = event.message.asString(context)

@@ -5,6 +5,8 @@ import com.thinh.snaplet.data.datasource.remote.ApiService
 import com.thinh.snaplet.data.model.Relationship
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.utils.network.ApiResult
+import com.thinh.snaplet.utils.network.safeApiCall
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,57 +17,26 @@ class UserRepositoryImpl @Inject constructor(
     private val dataStoreManager: DataStoreManager,
 ) : UserRepository {
 
-    override suspend fun getUserProfile(userName: String): Result<UserProfile> {
-        return try {
-            val response = apiService.getUserProfile(userName)
-
-            if (response.isSuccessful) {
-                val body = response.body()
-
-                if (body != null && body.status.code == 200) {
-                    val userProfile = body.data
-                    Result.success(userProfile)
-                } else {
-                    val errorMsg = body?.status?.message
-                    Result.failure(Exception(errorMsg))
-                }
-            } else {
-                val errorMsg = "HTTP ${response.code()}: ${response.message()}"
-                Result.failure(Exception(errorMsg))
+    override suspend fun getUserProfile(userName: String): ApiResult<UserProfile> {
+        return safeApiCall(
+            apiCall = {
+                apiService.getUserProfile(userName)
             }
-        } catch (e: Exception) {
-            Logger.e("❌ Failed to fetch user profile: ${e.message}")
-            Result.failure(e)
-        }
+        )
     }
 
-    override suspend fun sendFriendRequest(userId: String): Result<Relationship> {
-        return try {
-            Logger.d("📤 Sending friend request to user ID: $userId")
-
-            val requestBody = mapOf("targetUserId" to userId)
-            val response = apiService.sendFriendRequest(requestBody)
-
-            if (response.isSuccessful) {
-                val body = response.body()
-
-                if (body != null && body.status.code == 200) {
-                    val relationship = body.data
-                    Logger.d("✅ Friend request sent successfully. Relationship ID: ${relationship.id}, Status: ${relationship.status}")
-                    Result.success(relationship)
-                } else {
-                    val errorMsg = body?.status?.message
-                    Logger.e("❌ API error: $errorMsg")
-                    Result.failure(Exception(errorMsg))
-                }
-            } else {
-                val errorMsg = "HTTP ${response.code()}: ${response.message()}"
-                Result.failure(Exception(errorMsg))
+    override suspend fun sendFriendRequest(userId: String): ApiResult<Relationship> {
+        Logger.d("📤 Sending friend request to user ID: $userId")
+        
+        return safeApiCall(
+            apiCall = {
+                val requestBody = mapOf("targetUserId" to userId)
+                apiService.sendFriendRequest(requestBody)
+            },
+            onSuccess = { relationship ->
+                Logger.d("✅ Friend request sent successfully. Relationship ID: ${relationship.id}, Status: ${relationship.status}")
             }
-        } catch (e: Exception) {
-            Logger.e("❌ Failed to send friend request: ${e.message}")
-            Result.failure(e)
-        }
+        )
     }
 
     override fun observeMyUserProfile(): Flow<UserProfile?> {

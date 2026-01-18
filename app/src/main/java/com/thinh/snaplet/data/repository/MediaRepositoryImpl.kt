@@ -19,13 +19,8 @@ class MediaRepositoryImpl @Inject constructor(
             apiCall = {
                 apiService.getPostsFeed(limit = limit, cursor = cursor)
             },
-            transform = { feedData ->
-                val filteredData = PostsFeedData(
-                    data = feedData.data,
-                    pagination = feedData.pagination
-                )
+            onSuccess = { feedData ->
                 Logger.d("✅ Fetched ${feedData.data.size} posts, hasNext=${feedData.pagination.hasNext}")
-                filteredData
             }
         )
     }

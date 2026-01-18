@@ -46,7 +46,6 @@ import com.thinh.snaplet.ui.screens.register.components.RegisterUsernamePage
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Register(
-    onRegisterSuccess: () -> Unit,
     onLoginClick: () -> Unit,
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
@@ -59,7 +58,7 @@ fun Register(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is RegisterUIEvent.RegisterSuccess -> onRegisterSuccess()
+                is RegisterUIEvent.RegisterSuccess -> {}
                 is RegisterUIEvent.NavigateToLogin -> onLoginClick()
                 is RegisterUIEvent.ShowErrorPopup -> {
                     errorDialogMessage = event.message
@@ -108,7 +107,7 @@ fun Register(
         }
 
         val scrollState = rememberScrollState()
-        
+
         StepAnimatedContent(
             currentStep = uiState.currentStep,
             stepOrder = { step ->
