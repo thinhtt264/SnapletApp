@@ -20,27 +20,8 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Size
 
-/**
- * Optimized async image component for heavy images
- * 
- * Features:
- * - Memory optimization with size limits
- * - Disk & memory caching
- * - Loading & error states
- * - Crossfade animation
- * - Configurable resize strategy
- * 
- * Usage:
- * ```
- * OptimizedAsyncImage(
- *     imageUrl = "https://example.com/image.jpg",
- *     contentDescription = "Photo",
- *     resizeSize = ImageSize.Medium
- * )
- * ```
- */
 @Composable
-fun OptimizedAsyncImage(
+fun AsyncImage(
     imageUrl: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
@@ -188,7 +169,7 @@ enum class ImageSize(val pixels: Int) {
  * Extension function for easier usage with custom sizes
  */
 @Composable
-fun OptimizedAsyncImage(
+fun AsyncImage(
     imageUrl: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
@@ -198,8 +179,8 @@ fun OptimizedAsyncImage(
     showErrorIcon: Boolean = true
 ) {
     val size = customSizePixels ?: ImageSize.Medium.pixels
-    
-    OptimizedAsyncImage(
+
+    AsyncImage(
         imageUrl = imageUrl,
         contentDescription = contentDescription,
         modifier = modifier,

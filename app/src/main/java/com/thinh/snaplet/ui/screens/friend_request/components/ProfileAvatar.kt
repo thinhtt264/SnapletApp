@@ -15,9 +15,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
-import com.thinh.snaplet.ui.components.OptimizedAsyncImage
 import com.thinh.snaplet.ui.theme.Gray
 
 @Composable
@@ -37,7 +37,7 @@ internal fun ProfileAvatar(
             .padding(4.dp)
     ) {
         if (avatarUrl != null) {
-            OptimizedAsyncImage(
+            AsyncImage(
                 imageUrl = avatarUrl,
                 contentDescription = "Avatar of $displayName",
                 modifier = Modifier
