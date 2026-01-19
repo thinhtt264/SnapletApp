@@ -3,6 +3,10 @@ package com.thinh.snaplet.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
@@ -48,7 +52,21 @@ fun NavGraph(
 
 fun NavGraphBuilder.homeGraph(navController: NavHostController) {
     navigation(
-        startDestination = NavScreen.Home.route, route = NavScreen.HomeGraph.route
+        startDestination = NavScreen.Home.route, route = NavScreen.HomeGraph.route,
+        enterTransition = {
+            fadeIn(tween(120)) + scaleIn(
+                initialScale = 0.92f,
+                animationSpec = tween(120, easing = FastOutSlowInEasing)
+            )
+        },
+
+        exitTransition = {
+            fadeOut(tween(90)) + scaleOut(
+                targetScale = 0.95f,
+                animationSpec = tween(90)
+            )
+        }
+
     ) {
         composable(route = NavScreen.Home.route) {
             Home()

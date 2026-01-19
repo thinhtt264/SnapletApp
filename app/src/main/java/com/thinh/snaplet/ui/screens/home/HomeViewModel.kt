@@ -2,6 +2,7 @@ package com.thinh.snaplet.ui.screens.home
 
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.compose.runtime.mutableStateOf
@@ -78,7 +79,18 @@ class HomeViewModel @Inject constructor(
             )
         }
     }
-    
+
+    fun onSwitchCamera() {
+        updateCameraState { state ->
+            val newLens = if (state.lensFacing == CameraSelector.LENS_FACING_BACK) {
+                CameraSelector.LENS_FACING_FRONT
+            } else {
+                CameraSelector.LENS_FACING_BACK
+            }
+            state.copy(lensFacing = newLens)
+        }
+    }
+
     private fun updateCameraState(transform: (CameraState) -> CameraState) {
         _uiState.update { state ->
             state.copy(cameraState = transform(state.cameraState))
