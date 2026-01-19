@@ -1,5 +1,6 @@
 package com.thinh.snaplet.ui.screens.home.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,6 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -15,13 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
-import com.thinh.snaplet.ui.theme.Gray
 import com.thinh.snaplet.utils.formatTimeAgo
 
 @Composable
@@ -49,6 +51,25 @@ fun MediaItemPage(
                 showLoadingIndicator = true,
                 showErrorIcon = true
             )
+
+            post.caption?.let {
+                Box(
+                    modifier = Modifier
+                        .zIndex(99f)
+                        .align(Alignment.BottomCenter)
+                        .offset(y = (-24).dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(0.6f),
+                            shape = CircleShape
+                        )
+                        .padding(vertical = 8.dp, horizontal = 12.dp)
+                ) {
+                    BaseText(
+                        text = it,
+                        typography = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -75,15 +96,14 @@ fun MediaItemPage(
 
             BaseText(
                 text = post.firstName,
-                typography = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
+                typography = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             BaseText(
                 text = " ${formatTimeAgo(post.createdAt)}",
                 typography = MaterialTheme.typography.bodyMedium,
-                color = Gray
+                color = MaterialTheme.colorScheme.secondary
             )
         }
     }
