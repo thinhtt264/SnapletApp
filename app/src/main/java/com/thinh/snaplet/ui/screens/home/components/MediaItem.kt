@@ -1,75 +1,90 @@
 package com.thinh.snaplet.ui.screens.home.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.thinh.snaplet.data.model.MediaType
 import com.thinh.snaplet.data.model.Post
+import com.thinh.snaplet.ui.components.AsyncImage
+import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
-import com.thinh.snaplet.ui.components.OptimizedAsyncImage
+import com.thinh.snaplet.ui.theme.Gray
+import com.thinh.snaplet.utils.formatTimeAgo
 
 @Composable
 fun MediaItemPage(
     post: Post,
     onMediaClick: (Post) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = Modifier
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Full-screen image/video
-        OptimizedAsyncImage(
-            imageUrl = post.url,
-            contentDescription = "Post ${post.id}",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-            resizeSize = ImageSize.Large, // High quality for full-screen
-            showLoadingIndicator = true,
-            showErrorIcon = true
-        )
-
-        // Video indicator if needed
-        val firstMedia = post.media.firstOrNull()
-        if (firstMedia?.type == MediaType.VIDEO) {
-            VideoIndicatorOverlay(
-                durationMs = 0L, // TODO: Add duration to Media model if needed
-                modifier = Modifier.align(Alignment.BottomEnd)
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                imageUrl = post.url,
+                contentDescription = "Post ${post.id}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                resizeSize = ImageSize.Large, // High quality for full-screen
+                showLoadingIndicator = true,
+                showErrorIcon = true
             )
         }
 
-        // Future: Add TikTok-style UI overlays
-        // - Like, Comment, Share buttons on the right
-        // - User info, description at the bottom
-        // - Progress indicator for videos
-    }
-}
+        Spacer(Modifier.height(12.dp))
 
-/** Video indicator overlay (for future video support) */
-@Composable
-private fun VideoIndicatorOverlay(
-    durationMs: Long,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .padding(8.dp)
-            .background(
-                color = Color.Black.copy(alpha = 0.7f),
-                shape = RoundedCornerShape(4.dp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Avatar
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+            ) {
+                AsyncImage(
+                    imageUrl = post.avatarUrl ?: "",
+                    contentDescription = "Avatar of ${post.displayName}",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    resizeSize = ImageSize.Small,
+                    showLoadingIndicator = true
+                )
+            }
+
+            BaseText(
+                text = post.firstName,
+                typography = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        // Future: Show duration text
-        // BaseText(text = formatDuration(durationMs))
+
+            BaseText(
+                text = " ${formatTimeAgo(post.createdAt)}",
+                typography = MaterialTheme.typography.bodyMedium,
+                color = Gray
+            )
+        }
     }
 }

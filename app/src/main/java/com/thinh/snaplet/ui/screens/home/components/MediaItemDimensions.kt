@@ -9,7 +9,7 @@ object MediaItemDimensions {
     
     val MEDIA_TOP_PADDING: Dp = 100.dp
     
-    val MEDIA_CORNER_RADIUS: Dp = 15.dp
+    val MEDIA_CORNER_RADIUS: Dp = 32.dp
     
     val MEDIA_BOTTOM_PADDING: Dp = 56.dp
 }
