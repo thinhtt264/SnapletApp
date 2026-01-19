@@ -1,6 +1,7 @@
 package com.thinh.snaplet.ui.screens.home
 
 import android.graphics.Bitmap
+import androidx.camera.core.CameraSelector
 import com.thinh.snaplet.data.model.Post
 
 data class HomeUiState(
@@ -18,5 +19,6 @@ data class CameraState(
     val showCameraPreview: Boolean = false,
     val lastPreviewSnapshot: Bitmap? = null,
     val hasCameraPermission: Boolean = false,
+    val lensFacing: Int = CameraSelector.LENS_FACING_FRONT
 )
 

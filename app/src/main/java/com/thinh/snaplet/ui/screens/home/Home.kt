@@ -195,6 +195,7 @@ private fun MediaPager(
                     shouldBindCamera = shouldBindCamera,
                     onRequestPermission = viewModel::onScreenInitialized,
                     onCapturePhoto = { viewModel.onCapturePhoto(context) },
+                    onSwitchCamera = viewModel::onSwitchCamera,
                     modifier = Modifier.fillMaxSize()
                 )
             }

@@ -2,28 +2,18 @@ package com.thinh.snaplet.ui.screens.home.components
 
 import android.graphics.Bitmap
 import androidx.camera.core.ImageCapture
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,15 +26,8 @@ import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.CameraPreview
 import com.thinh.snaplet.ui.components.PrimaryButton
 import com.thinh.snaplet.ui.screens.home.CameraState
-import kotlinx.coroutines.delay
-import pressScaleClickable
 
-private val CAPTURE_BUTTON_TOP_PADDING = 56.dp
-private val CAPTURE_BUTTON_SIZE = 80.dp
-private val CAPTURE_BUTTON_INNER_SIZE = 60.dp
-private val CAPTURE_BUTTON_BORDER_WIDTH = 6.dp
-private const val CAPTURE_BUTTON_SCALE = 0.85f
-private const val CAPTURE_ANIMATION_DURATION = 150
+private val CAPTURE_BUTTON_TOP_PADDING = 44.dp
 
 @Composable
 fun CameraPage(
@@ -54,6 +37,7 @@ fun CameraPage(
     shouldBindCamera: Boolean,
     onRequestPermission: () -> Unit,
     onCapturePhoto: () -> Unit,
+    onSwitchCamera: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -68,8 +52,9 @@ fun CameraPage(
             onRequestPermission = onRequestPermission
         )
 
-        CaptureButton(
-            onClick = onCapturePhoto,
+        CameraAction(
+            onCapturePhoto = onCapturePhoto,
+            onSwitchCamera = onSwitchCamera,
             modifier = Modifier.padding(top = CAPTURE_BUTTON_TOP_PADDING)
         )
     }
@@ -95,6 +80,7 @@ private fun CameraPreviewSection(
             onImageCaptureReady = onImageCaptureReady,
             onSnapshotHandlerReady = onSnapshotHandlerReady,
             shouldBindCamera = shouldBindCamera,
+            lensFacing = cameraState.lensFacing,
             placeholderBitmap = cameraState.lastPreviewSnapshot
         )
     } else {
@@ -140,52 +126,5 @@ private fun CameraPermissionDenied(
                 ),
             )
         }
-    }
-}
-
-@Composable
-private fun CaptureButton(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isPressed) {
-            MaterialTheme.colorScheme.secondary
-        } else {
-            Color.White
-        },
-        animationSpec = tween(durationMillis = CAPTURE_ANIMATION_DURATION),
-        label = "capture_button_color"
-    )
-
-    Box(
-        modifier = modifier
-            .size(CAPTURE_BUTTON_SIZE)
-            .border(
-                width = CAPTURE_BUTTON_BORDER_WIDTH,
-                color = MaterialTheme.colorScheme.primary,
-                shape = CircleShape
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .size(CAPTURE_BUTTON_INNER_SIZE)
-                .background(
-                    color = backgroundColor,
-                    shape = CircleShape
-                )
-                .pressScaleClickable(
-                    onClick = {
-                        delay(2000)
-                        onClick() },
-                    scaleOnPress = CAPTURE_BUTTON_SCALE,
-                    interactionSource = interactionSource
-                )
-        )
     }
 }

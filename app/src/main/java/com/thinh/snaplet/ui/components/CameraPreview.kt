@@ -3,6 +3,7 @@ package com.thinh.snaplet.ui.components
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Rational
+import android.view.Surface
 import android.view.ViewGroup
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -43,6 +44,7 @@ private const val FADE_OUT_DURATION = 400
 fun CameraPreview(
     modifier: Modifier = Modifier,
     shouldBindCamera: Boolean = true,
+    lensFacing: Int = CameraSelector.LENS_FACING_FRONT,
     placeholderBitmap: Bitmap?,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onSnapshotHandlerReady: (() -> Bitmap?) -> Unit
@@ -70,6 +72,7 @@ fun CameraPreview(
             CameraPreviewView(
                 context = context,
                 lifecycleOwner = lifecycleOwner,
+                lensFacing = lensFacing,
                 onPreviewViewCreated = { currentPreviewView = it },
                 onImageCaptureReady = onImageCaptureReady,
                 onStreamingStateChanged = { isStreaming ->
@@ -89,24 +92,44 @@ fun CameraPreview(
 private fun CameraPreviewView(
     context: Context,
     lifecycleOwner: LifecycleOwner,
+    lensFacing: Int,
     onPreviewViewCreated: (PreviewView) -> Unit,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onStreamingStateChanged: (Boolean) -> Unit
 ) {
     val executor = remember { ContextCompat.getMainExecutor(context) }
+    var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var previewView by remember { mutableStateOf<PreviewView?>(null) }
+
+    // Initialize CameraProvider
+    LaunchedEffect(context) {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        cameraProviderFuture.addListener({
+            cameraProvider = cameraProviderFuture.get()
+        }, executor)
+    }
+
+    // Bind/Re-bind camera when dependencies change
+    LaunchedEffect(cameraProvider, previewView, lensFacing) {
+        val provider = cameraProvider
+        val view = previewView
+        if (provider != null && view != null) {
+            bindCameraUseCases(
+                cameraProvider = provider,
+                previewView = view,
+                lensFacing = lensFacing,
+                lifecycleOwner = lifecycleOwner,
+                onImageCaptureReady = onImageCaptureReady,
+                onStreamingStateChanged = onStreamingStateChanged
+            )
+        }
+    }
 
     AndroidView(
         factory = { ctx ->
-            createPreviewView(ctx).also { previewView ->
-                onPreviewViewCreated(previewView)
-                setupCamera(
-                    context = ctx,
-                    previewView = previewView,
-                    lifecycleOwner = lifecycleOwner,
-                    executor = executor,
-                    onImageCaptureReady = onImageCaptureReady,
-                    onStreamingStateChanged = onStreamingStateChanged
-                )
+            createPreviewView(ctx).also {
+                previewView = it
+                onPreviewViewCreated(it)
             }
         },
         modifier = Modifier.fillMaxSize()
@@ -145,45 +168,34 @@ private fun createPreviewView(context: Context): PreviewView {
     }
 }
 
-private fun setupCamera(
-    context: Context,
-    previewView: PreviewView,
-    lifecycleOwner: LifecycleOwner,
-    executor: Executor,
-    onImageCaptureReady: (ImageCapture) -> Unit,
-    onStreamingStateChanged: (Boolean) -> Unit
-) {
-    previewView.post {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-
-        cameraProviderFuture.addListener({
-            try {
-                val cameraProvider = cameraProviderFuture.get()
-                bindCameraUseCases(
-                    cameraProvider = cameraProvider,
-                    previewView = previewView,
-                    lifecycleOwner = lifecycleOwner,
-                    onImageCaptureReady = onImageCaptureReady,
-                    onStreamingStateChanged = onStreamingStateChanged
-                )
-            } catch (e: Exception) {
-                Logger.e("Camera binding failed: ${e.message}", e)
-            }
-        }, executor)
-    }
-}
-
 private fun bindCameraUseCases(
     cameraProvider: ProcessCameraProvider,
     previewView: PreviewView,
+    lensFacing: Int,
     lifecycleOwner: LifecycleOwner,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onStreamingStateChanged: (Boolean) -> Unit
 ) {
-    Logger.d("Binding camera use cases...")
+    Logger.d("Binding camera use cases (lensFacing: $lensFacing)...")
 
     val width = previewView.width
     val height = previewView.height
+    
+    // If width or height is 0, we might need to wait for layout
+    if (width <= 0 || height <= 0) {
+        previewView.post {
+            bindCameraUseCases(
+                cameraProvider,
+                previewView,
+                lensFacing,
+                lifecycleOwner,
+                onImageCaptureReady,
+                onStreamingStateChanged
+            )
+        }
+        return
+    }
+
     Logger.d("PreviewView size: ${width}x${height}")
 
     // Build preview use case
@@ -200,7 +212,7 @@ private fun bindCameraUseCases(
 
     // Create viewport and use case group
     val aspectRatio = Rational(width, height)
-    val rotation = previewView.display.rotation
+    val rotation = previewView.display?.rotation ?: Surface.ROTATION_0
     val viewPort = ViewPort.Builder(aspectRatio, rotation).build()
 
     val useCaseGroup = UseCaseGroup.Builder()
@@ -210,10 +222,16 @@ private fun bindCameraUseCases(
         .build()
 
     // Bind to lifecycle
-    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+    val cameraSelector = CameraSelector.Builder()
+        .requireLensFacing(lensFacing)
+        .build()
 
-    cameraProvider.unbindAll()
-    cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
+    try {
+        cameraProvider.unbindAll()
+        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
+    } catch (e: Exception) {
+        Logger.e("Camera binding failed: ${e.message}", e)
+    }
 
     // Monitor streaming state
     observeStreamingState(previewView, lifecycleOwner, onStreamingStateChanged)
@@ -239,17 +257,18 @@ private fun observeStreamingState(
 
             else -> {
                 Logger.d("📹 Camera stream state: $streamState")
+                if (isStreamingReady) {
+                    isStreamingReady = false
+                    onStreamingStateChanged(false)
+                }
             }
         }
     }
 }
 
 private fun captureSnapshot(previewView: PreviewView): Bitmap? {
-    return previewView.bitmap?.also { bitmap ->
-        Logger.d("📸 Captured bitmap: ${bitmap.width}x${bitmap.height}")
-    } ?: run {
+    return previewView.bitmap ?: run {
         Logger.e("❌ Failed to capture bitmap - bitmap is null")
         null
     }
 }
-
