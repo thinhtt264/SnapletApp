@@ -118,17 +118,98 @@ jobs:
                 }
               `;
               
-              const issueResult = await github.graphql(issueQuery, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issueNumber: issue.number
-              });
+              let projectItems = [];
               
-              const projectItems = issueResult.repository.issue.projectItems.nodes;
-              
-              // Nếu issue không có trong project nào, bỏ qua
-              if (projectItems.length === 0) {
-                console.log(`  ⚠️  Issue #${issue.number} is not in any project, skipping...`);
+              try {
+                const issueResult = await github.graphql(issueQuery, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issueNumber: issue.number
+                });
+                
+                console.log(`  🔍 Query result for issue #${issue.number}:`, JSON.stringify(issueResult, null, 2));
+                
+                const issueNode = issueResult.repository.issue;
+                const issueId = issueNode.id;
+                projectItems = issueNode.projectItems.nodes;
+                
+                console.log(`  📦 Found ${projectItems.length} repository project item(s) for issue #${issue.number}`);
+                console.log(`  🆔 Issue node ID: ${issueId}`);
+                
+                // Nếu không có trong repository project, thử query organization projects
+                if (projectItems.length === 0) {
+                  console.log(`  🔍 Checking organization projects for issue #${issue.number}...`);
+                  
+                  try {
+                    const orgQuery = `
+                      query($login: String!) {
+                        organization(login: $login) {
+                          projectV2Items(first: 10, filter: { contentId: $issueId }) {
+                            nodes {
+                              id
+                              fieldValues(first: 50) {
+                                nodes {
+                                  ... on ProjectV2ItemFieldSingleSelectValue {
+                                    field {
+                                      ... on ProjectV2FieldCommon {
+                                        id
+                                        name
+                                      }
+                                    }
+                                    name
+                                  }
+                                }
+                              }
+                              project {
+                                id
+                                title
+                                fields(first: 50) {
+                                  nodes {
+                                    ... on ProjectV2Field {
+                                      id
+                                      name
+                                    }
+                                    ... on ProjectV2SingleSelectField {
+                                      id
+                                      name
+                                      options {
+                                        id
+                                        name
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    `;
+                    
+                    const orgResult = await github.graphql(orgQuery, {
+                      login: context.repo.owner,
+                      issueId: issueId
+                    });
+                    
+                    if (orgResult.organization && orgResult.organization.projectV2Items) {
+                      const orgProjectItems = orgResult.organization.projectV2Items.nodes;
+                      console.log(`  📦 Found ${orgProjectItems.length} organization project item(s)`);
+                      projectItems = orgProjectItems;
+                    }
+                  } catch (orgError) {
+                    console.log(`  ⚠️  Could not query organization projects:`, orgError.message);
+                    // Có thể owner không phải là organization, hoặc không có quyền
+                  }
+                }
+                
+                // Nếu vẫn không có project items, bỏ qua
+                if (projectItems.length === 0) {
+                  console.log(`  ⚠️  Issue #${issue.number} is not in any project (repository or organization), skipping...`);
+                  continue;
+                }
+              } catch (queryError) {
+                console.error(`  ❌ Error querying issue #${issue.number}:`, queryError.message);
+                console.error(`  📝 Error details:`, JSON.stringify(queryError, null, 2));
                 continue;
               }
 
