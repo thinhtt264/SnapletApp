@@ -11,6 +11,7 @@ permissions:
   pull-requests: read
   issues: read
   repository-projects: write
+  projects: read
 
 jobs:
   update-issue-status:
@@ -184,6 +185,7 @@ jobs:
               // Nếu không tìm thấy trong repository projects, thử user projects
               if (projectItems.length === 0) {
                 try {
+                  console.log(`  🔍 Querying user projects for user: ${context.repo.owner}`);
                   const userProjectsQuery = `
                     query($login: String!) {
                       user(login: $login) {
@@ -212,22 +214,22 @@ jobs:
                                     }
                                   }
                                 }
-                                project {
-                                  id
-                                  title
-                                  fields(first: 50) {
-                                    nodes {
-                                      ... on ProjectV2Field {
-                                        id
-                                        name
-                                      }
-                                      ... on ProjectV2SingleSelectField {
-                                        id
-                                        name
-                                        options {
-                                          id
-                                          name
-                                        }
+                            project {
+                              id
+                              title
+                              fields(first: 50) {
+                                nodes {
+                                  ... on ProjectV2Field {
+                                    id
+                                    name
+                                  }
+                                  ... on ProjectV2SingleSelectField {
+                                    id
+                                    name
+                                    options {
+                                      id
+                                      name
+                                    }
                                       }
                                     }
                                   }
@@ -244,8 +246,11 @@ jobs:
                     login: context.repo.owner
                   });
                   
+                  console.log(`  📊 Found ${userProjectsResult.user?.projectsV2?.nodes?.length || 0} user project(s)`);
+                  
                   if (userProjectsResult.user && userProjectsResult.user.projectsV2) {
                     for (const project of userProjectsResult.user.projectsV2.nodes) {
+                      console.log(`  🔍 Checking user project: "${project.title}" (${project.items.nodes.length} items)`);
                       // Filter items trong code để tìm issue
                       const matchingItems = project.items.nodes.filter(item => 
                         item.content && item.content.id === issueId
@@ -267,9 +272,10 @@ jobs:
                 }
               }
               
-              // Nếu vẫn không tìm thấy, thử organization projects
+              // Nếu vẫn không tìm thấy, thử organization projects (chỉ nếu owner là organization)
               if (projectItems.length === 0) {
                 try {
+                  console.log(`  🔍 Querying organization projects for: ${context.repo.owner}`);
                   const orgProjectsQuery = `
                     query($login: String!) {
                       organization(login: $login) {
@@ -313,9 +319,6 @@ jobs:
                                         options {
                                           id
                                           name
-                                        }
-                                      }
-                                    }
                                   }
                                 }
                               }
@@ -324,8 +327,11 @@ jobs:
                         }
                       }
                     }
-                  `;
-                  
+                  }
+                }
+              }
+            `;
+
                   const orgProjectsResult = await github.graphql(orgProjectsQuery, {
                     login: context.repo.owner
                   });
@@ -349,7 +355,12 @@ jobs:
                     }
                   }
                 } catch (orgError) {
-                  console.log(`  ⚠️  Could not query organization projects:`, orgError.message);
+                  // Bỏ qua lỗi nếu owner không phải organization (đây là expected behavior)
+                  if (orgError.message && orgError.message.includes('Could not resolve to an Organization')) {
+                    console.log(`  ℹ️  Owner "${context.repo.owner}" is not an organization, skipping organization projects query`);
+                  } else {
+                    console.log(`  ⚠️  Could not query organization projects:`, orgError.message);
+                  }
                 }
               }
               
@@ -398,24 +409,24 @@ jobs:
                 
                 try {
                   const updateMutation = `
-                    mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
-                      updateProjectV2ItemFieldValue(input: {
-                        projectId: $projectId
-                        itemId: $itemId
-                        fieldId: $fieldId
-                        value: { singleSelectOptionId: $optionId }
-                      }) {
-                        projectV2Item {
-                          id
-                        }
+                  mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                    updateProjectV2ItemFieldValue(input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: { singleSelectOptionId: $optionId }
+                    }) {
+                      projectV2Item {
+                        id
                       }
                     }
+                  }
                   `;
                   
                   await github.graphql(updateMutation, {
-                    projectId: project.id,
-                    itemId: item.id,
-                    fieldId: statusField.id,
+                  projectId: project.id,
+                  itemId: item.id,
+                  fieldId: statusField.id,
                     optionId: targetOption.id
                   });
                   
