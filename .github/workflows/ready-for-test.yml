@@ -5,7 +5,7 @@ on:
     types:
       - labeled
       - unlabeled
-
+      
 permissions:
   contents: read
   pull-requests: read
@@ -16,8 +16,12 @@ permissions:
 jobs:
   update-issue-status:
     runs-on: ubuntu-latest
-    # Chỉ chạy khi label là 'ready-for-test'
-    if: github.event.label.name == 'ready-for-test'
+    # Chỉ chạy khi:
+    # 1. pull_request event với label 'ready-for-test'
+    # 2. push event (để test trên branch)
+    if: |
+      (github.event_name == 'pull_request' && github.event.label.name == 'ready-for-test') ||
+      (github.event_name == 'push')
     
     steps:
       - name: Update Linked Issues Status
@@ -25,6 +29,12 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Chỉ chạy với pull_request event
+            if (context.eventName !== 'pull_request') {
+              console.log('ℹ️  This workflow only runs on pull_request events. Skipping...');
+              return;
+            }
+            
             const prNumber = context.payload.pull_request.number;
             const action = context.payload.action; // 'labeled' hoặc 'unlabeled'
             const targetStatus = action === 'labeled' ? 'Ready4Test' : 'In progress';
