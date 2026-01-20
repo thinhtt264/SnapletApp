@@ -1,10 +1,12 @@
-name: Update Linked Issues Status
+name: Update Linked Issues Status (Test)
 
 on:
   pull_request:
     types:
       - labeled
       - unlabeled
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -21,6 +23,12 @@ jobs:
     if: github.event.label.name == 'ready-for-test'
     
     steps:
+      - name: Debug - Log event data
+        run: |
+          echo "Event action: ${{ github.event.action }}"
+          echo "Label name: ${{ github.event.label.name }}"
+          echo "PR number: ${{ github.event.pull_request.number }}"
+      
       - name: Update Linked Issues Status
         uses: actions/github-script@v7
         with:
@@ -28,10 +36,13 @@ jobs:
           script: |
             const prNumber = context.payload.pull_request.number;
             const action = context.payload.action; // 'labeled' hoặc 'unlabeled'
+            const labelName = context.payload.label?.name || 'unknown';
             const targetStatus = action === 'labeled' ? 'Ready4Test' : 'In progress';
             
+            console.log(`🚀 Workflow triggered!`);
             console.log(`Processing PR #${prNumber}`);
             console.log(`Action: ${action}`);
+            console.log(`Label name: ${labelName}`);
             console.log(`Target status: ${targetStatus}`);
             
             // GraphQL query để lấy linked issues từ PR
