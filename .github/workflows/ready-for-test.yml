@@ -214,22 +214,22 @@ jobs:
                                     }
                                   }
                                 }
-                            project {
-                              id
-                              title
-                              fields(first: 50) {
-                                nodes {
-                                  ... on ProjectV2Field {
-                                    id
-                                    name
-                                  }
-                                  ... on ProjectV2SingleSelectField {
-                                    id
-                                    name
-                                    options {
-                                      id
-                                      name
-                                    }
+                                project {
+                                  id
+                                  title
+                                  fields(first: 50) {
+                                    nodes {
+                                      ... on ProjectV2Field {
+                                        id
+                                        name
+                                      }
+                                      ... on ProjectV2SingleSelectField {
+                                        id
+                                        name
+                                        options {
+                                          id
+                                          name
+                                        }
                                       }
                                     }
                                   }
