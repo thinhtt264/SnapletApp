@@ -32,8 +32,8 @@ jobs:
             console.log(`Action: ${action}`);
             console.log(`Target status: ${targetStatus}`);
             
-            // GraphQL query để lấy linked issues và project items
-            const query = `
+            // GraphQL query để lấy linked issues từ PR
+            const prQuery = `
               query($owner: String!, $repo: String!, $number: Int!) {
                 repository(owner: $owner, name: $repo) {
                   pullRequest(number: $number) {
@@ -41,44 +41,6 @@ jobs:
                       nodes {
                         id
                         number
-                        projectItems(first: 10) {
-                          nodes {
-                            id
-                            fieldValues(first: 50) {
-                              nodes {
-                                ... on ProjectV2ItemFieldSingleSelectValue {
-                                  field {
-                                    ... on ProjectV2FieldCommon {
-                                      id
-                                      name
-                                    }
-                                  }
-                                  name
-                                }
-                              }
-                            }
-                            project {
-                              id
-                              title
-                              fields(first: 50) {
-                                nodes {
-                                  ... on ProjectV2Field {
-                                    id
-                                    name
-                                  }
-                                  ... on ProjectV2SingleSelectField {
-                                    id
-                                    name
-                                    options {
-                                      id
-                                      name
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
                       }
                     }
                   }
@@ -86,14 +48,13 @@ jobs:
               }
             `;
 
-            const variables = {
+            const prResult = await github.graphql(prQuery, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               number: prNumber
-            };
-
-            const result = await github.graphql(query, variables);
-            const issues = result.repository.pullRequest.closingIssuesReferences.nodes;
+            });
+            
+            const issues = prResult.repository.pullRequest.closingIssuesReferences.nodes;
 
             // Nếu không có linked issues, bỏ qua
             if (issues.length === 0) {
@@ -107,14 +68,72 @@ jobs:
             for (const issue of issues) {
               console.log(`\n📋 Processing issue #${issue.number}`);
               
+              // Query trực tiếp từ issue để lấy project items (đảm bảo lấy đầy đủ)
+              const issueQuery = `
+                query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    issue(number: $issueNumber) {
+                      id
+                      number
+                      projectItems(first: 10) {
+                        nodes {
+                          id
+                          fieldValues(first: 50) {
+                            nodes {
+                              ... on ProjectV2ItemFieldSingleSelectValue {
+                                field {
+                                  ... on ProjectV2FieldCommon {
+                                    id
+                                    name
+                                  }
+                                }
+                                name
+                              }
+                            }
+                          }
+                          project {
+                            id
+                            title
+                            fields(first: 50) {
+                              nodes {
+                                ... on ProjectV2Field {
+                                  id
+                                  name
+                                }
+                                ... on ProjectV2SingleSelectField {
+                                  id
+                                  name
+                                  options {
+                                    id
+                                    name
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+              
+              const issueResult = await github.graphql(issueQuery, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issueNumber: issue.number
+              });
+              
+              const projectItems = issueResult.repository.issue.projectItems.nodes;
+              
               // Nếu issue không có trong project nào, bỏ qua
-              if (issue.projectItems.nodes.length === 0) {
+              if (projectItems.length === 0) {
                 console.log(`  ⚠️  Issue #${issue.number} is not in any project, skipping...`);
                 continue;
               }
 
               // Xử lý từng project item của issue
-              for (const item of issue.projectItems.nodes) {
+              for (const item of projectItems) {
                 const project = item.project;
                 console.log(`  📁 Checking project: "${project.title}"`);
                 
