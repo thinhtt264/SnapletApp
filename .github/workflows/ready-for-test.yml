@@ -69,13 +69,14 @@ jobs:
               console.log(`\n📋 Processing issue #${issue.number}`);
               
               // Query trực tiếp từ issue để lấy project items (đảm bảo lấy đầy đủ)
+              // Note: projectItems nên trả về tất cả project items (user, org, repo projects)
               const issueQuery = `
                 query($owner: String!, $repo: String!, $issueNumber: Int!) {
                   repository(owner: $owner, name: $repo) {
                     issue(number: $issueNumber) {
                       id
                       number
-                      projectItems(first: 10) {
+                      projectItems(first: 20) {
                         nodes {
                           id
                           fieldValues(first: 50) {
@@ -94,6 +95,7 @@ jobs:
                           project {
                             id
                             title
+                            number
                             fields(first: 50) {
                               nodes {
                                 ... on ProjectV2Field {
@@ -136,45 +138,52 @@ jobs:
                 console.log(`  📦 Found ${projectItems.length} repository project item(s) for issue #${issue.number}`);
                 console.log(`  🆔 Issue node ID: ${issueId}`);
                 
-                // Nếu không có trong repository project, thử query organization projects
+                // Nếu không có trong repository project, thử query user/organization projects
                 if (projectItems.length === 0) {
-                  console.log(`  🔍 Checking organization projects for issue #${issue.number}...`);
+                  console.log(`  🔍 Checking user/organization projects for issue #${issue.number}...`);
                   
+                  // Thử query user projects trước (vì owner có thể là user)
                   try {
-                    const orgQuery = `
+                    const userQuery = `
                       query($login: String!) {
-                        organization(login: $login) {
-                          projectV2Items(first: 10, filter: { contentId: $issueId }) {
+                        user(login: $login) {
+                          projectV2(first: 20) {
                             nodes {
                               id
-                              fieldValues(first: 50) {
+                              title
+                              items(first: 10, filter: { contentId: $issueId }) {
                                 nodes {
-                                  ... on ProjectV2ItemFieldSingleSelectValue {
-                                    field {
-                                      ... on ProjectV2FieldCommon {
-                                        id
+                                  id
+                                  fieldValues(first: 50) {
+                                    nodes {
+                                      ... on ProjectV2ItemFieldSingleSelectValue {
+                                        field {
+                                          ... on ProjectV2FieldCommon {
+                                            id
+                                            name
+                                          }
+                                        }
                                         name
                                       }
                                     }
-                                    name
                                   }
-                                }
-                              }
-                              project {
-                                id
-                                title
-                                fields(first: 50) {
-                                  nodes {
-                                    ... on ProjectV2Field {
-                                      id
-                                      name
-                                    }
-                                    ... on ProjectV2SingleSelectField {
-                                      id
-                                      name
-                                      options {
-                                        id
-                                        name
+                                  project {
+                                    id
+                                    title
+                                    fields(first: 50) {
+                                      nodes {
+                                        ... on ProjectV2Field {
+                                          id
+                                          name
+                                        }
+                                        ... on ProjectV2SingleSelectField {
+                                          id
+                                          name
+                                          options {
+                                            id
+                                            name
+                                          }
+                                        }
                                       }
                                     }
                                   }
@@ -186,25 +195,227 @@ jobs:
                       }
                     `;
                     
-                    const orgResult = await github.graphql(orgQuery, {
+                    const userResult = await github.graphql(userQuery, {
                       login: context.repo.owner,
                       issueId: issueId
                     });
                     
-                    if (orgResult.organization && orgResult.organization.projectV2Items) {
-                      const orgProjectItems = orgResult.organization.projectV2Items.nodes;
-                      console.log(`  📦 Found ${orgProjectItems.length} organization project item(s)`);
-                      projectItems = orgProjectItems;
+                    if (userResult.user && userResult.user.projectV2) {
+                      // Tìm project có chứa issue này
+                      for (const project of userResult.user.projectV2.nodes) {
+                        if (project.items.nodes.length > 0) {
+                          console.log(`  📦 Found issue in user project: "${project.title}"`);
+                          projectItems = project.items.nodes;
+                          // Thêm project info vào mỗi item
+                          projectItems.forEach(item => {
+                            item.project = project;
+                          });
+                          break;
+                        }
+                      }
                     }
-                  } catch (orgError) {
-                    console.log(`  ⚠️  Could not query organization projects:`, orgError.message);
-                    // Có thể owner không phải là organization, hoặc không có quyền
+                  } catch (userError) {
+                    console.log(`  ⚠️  Could not query user projects:`, userError.message);
+                    // Có thể owner là organization, không phải user
+                  }
+                  
+                  // Nếu vẫn chưa tìm thấy, thử query organization projects
+                  if (projectItems.length === 0) {
+                    try {
+                      const orgQuery = `
+                        query($login: String!) {
+                          organization(login: $login) {
+                            projectV2(first: 20) {
+                              nodes {
+                                id
+                                title
+                                items(first: 10, filter: { contentId: $issueId }) {
+                                  nodes {
+                                    id
+                                    fieldValues(first: 50) {
+                                      nodes {
+                                        ... on ProjectV2ItemFieldSingleSelectValue {
+                                          field {
+                                            ... on ProjectV2FieldCommon {
+                                              id
+                                              name
+                                            }
+                                          }
+                                          name
+                                        }
+                                      }
+                                    }
+                                    project {
+                                      id
+                                      title
+                                      fields(first: 50) {
+                                        nodes {
+                                          ... on ProjectV2Field {
+                                            id
+                                            name
+                                          }
+                                          ... on ProjectV2SingleSelectField {
+                                            id
+                                            name
+                                            options {
+                                              id
+                                              name
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      `;
+                      
+                      const orgResult = await github.graphql(orgQuery, {
+                        login: context.repo.owner,
+                        issueId: issueId
+                      });
+                      
+                      if (orgResult.organization && orgResult.organization.projectV2) {
+                        // Tìm project có chứa issue này
+                        for (const project of orgResult.organization.projectV2.nodes) {
+                          if (project.items.nodes.length > 0) {
+                            console.log(`  📦 Found issue in organization project: "${project.title}"`);
+                            projectItems = project.items.nodes;
+                            // Thêm project info vào mỗi item
+                            projectItems.forEach(item => {
+                              item.project = project;
+                            });
+                            break;
+                          }
+                        }
+                      }
+                    } catch (orgError) {
+                      console.log(`  ⚠️  Could not query organization projects:`, orgError.message);
+                    }
+                  }
+                }
+                
+                // Nếu vẫn không có project items, thử query tất cả projects và tìm issue
+                if (projectItems.length === 0) {
+                  console.log(`  🔍 Trying alternative approach: query all projects and find issue...`);
+                  
+                  try {
+                    // Query tất cả projects của owner (user hoặc org)
+                    const allProjectsQuery = `
+                      query($login: String!) {
+                        user(login: $login) {
+                          projectV2(first: 20) {
+                            nodes {
+                              id
+                              title
+                              number
+                            }
+                          }
+                        }
+                        organization(login: $login) {
+                          projectV2(first: 20) {
+                            nodes {
+                              id
+                              title
+                              number
+                            }
+                          }
+                        }
+                      }
+                    `;
+                    
+                    const allProjectsResult = await github.graphql(allProjectsQuery, {
+                      login: context.repo.owner
+                    });
+                    
+                    const allProjects = [
+                      ...(allProjectsResult.user?.projectV2?.nodes || []),
+                      ...(allProjectsResult.organization?.projectV2?.nodes || [])
+                    ];
+                    
+                    console.log(`  📋 Found ${allProjects.length} total project(s) to check`);
+                    
+                    // Query từng project để tìm issue
+                    for (const project of allProjects) {
+                      try {
+                        const projectItemsQuery = `
+                          query($projectId: ID!, $issueId: ID!) {
+                            node(id: $projectId) {
+                              ... on ProjectV2 {
+                                items(first: 10, filter: { contentId: $issueId }) {
+                                  nodes {
+                                    id
+                                    fieldValues(first: 50) {
+                                      nodes {
+                                        ... on ProjectV2ItemFieldSingleSelectValue {
+                                          field {
+                                            ... on ProjectV2FieldCommon {
+                                              id
+                                              name
+                                            }
+                                          }
+                                          name
+                                        }
+                                      }
+                                    }
+                                    project {
+                                      id
+                                      title
+                                      fields(first: 50) {
+                                        nodes {
+                                          ... on ProjectV2Field {
+                                            id
+                                            name
+                                          }
+                                          ... on ProjectV2SingleSelectField {
+                                            id
+                                            name
+                                            options {
+                                              id
+                                              name
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        `;
+                        
+                        const projectItemsResult = await github.graphql(projectItemsQuery, {
+                          projectId: project.id,
+                          issueId: issueId
+                        });
+                        
+                        if (projectItemsResult.node && projectItemsResult.node.items.nodes.length > 0) {
+                          console.log(`  ✅ Found issue in project: "${project.title}" (ID: ${project.id})`);
+                          projectItems = projectItemsResult.node.items.nodes;
+                          // Thêm project info vào mỗi item
+                          projectItems.forEach(item => {
+                            item.project = projectItemsResult.node;
+                          });
+                          break;
+                        }
+                      } catch (projError) {
+                        // Skip project nếu có lỗi
+                        continue;
+                      }
+                    }
+                  } catch (allProjError) {
+                    console.log(`  ⚠️  Could not query all projects:`, allProjError.message);
                   }
                 }
                 
                 // Nếu vẫn không có project items, bỏ qua
                 if (projectItems.length === 0) {
-                  console.log(`  ⚠️  Issue #${issue.number} is not in any project (repository or organization), skipping...`);
+                  console.log(`  ⚠️  Issue #${issue.number} is not in any project, skipping...`);
+                  console.log(`  💡 Make sure the issue is added to a Project V2 (not classic project)`);
                   continue;
                 }
               } catch (queryError) {
