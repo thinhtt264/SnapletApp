@@ -4,80 +4,36 @@ on:
   pull_request:
     types:
       - labeled
+      - unlabeled
 
 permissions:
   contents: read
   pull-requests: read
   issues: read
   repository-projects: write
-  actions: read
 
 jobs:
   update-issue-status:
     runs-on: ubuntu-latest
-    if: |
-      github.event.action == 'labeled' &&
-      github.event.label.name == 'ready-for-test'
+    # Chỉ chạy khi label là 'ready-for-test'
+    if: github.event.label.name == 'ready-for-test'
+    
     steps:
-      - name: Wait a moment for build workflow to complete
-        run: sleep 5
-      
-      - name: Check build workflow status
-        uses: actions/github-script@v7
-        id: check-build
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const prSha = context.payload.pull_request.head.sha;
-            
-            console.log(`Checking build status for PR #${prNumber} (SHA: ${prSha})`);
-            
-            // Tìm workflow run của "Android Build & Distribute to Firebase" cho PR này
-            const workflowRuns = await github.rest.actions.listWorkflowRunsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'android-distribute.yml',
-              head_sha: prSha,
-              per_page: 10
-            });
-            
-            if (workflowRuns.data.workflow_runs.length === 0) {
-              console.log('No build workflow runs found for this PR');
-              core.setFailed('Build workflow has not run for this PR yet');
-              return;
-            }
-            
-            // Lấy workflow run mới nhất
-            const latestRun = workflowRuns.data.workflow_runs[0];
-            console.log(`Found build workflow run: ${latestRun.id}, status: ${latestRun.status}, conclusion: ${latestRun.conclusion}`);
-            
-            // Kiểm tra xem workflow đã hoàn thành và thành công chưa
-            if (latestRun.status !== 'completed') {
-              console.log(`Build workflow is still running (status: ${latestRun.status})`);
-              core.setFailed(`Build workflow is still running. Current status: ${latestRun.status}`);
-              return;
-            }
-            
-            if (latestRun.conclusion !== 'success') {
-              console.log(`Build workflow did not succeed (conclusion: ${latestRun.conclusion})`);
-              core.setFailed(`Build workflow did not succeed. Conclusion: ${latestRun.conclusion}`);
-              return;
-            }
-            
-            console.log('✅ Build workflow completed successfully');
-            core.setOutput('build_success', 'true');
-      
       - name: Update Linked Issues Status
-        if: steps.check-build.outputs.build_success == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const prNumber = context.payload.pull_request.number;
-            console.log(`Processing PR #${prNumber} - updating linked issues status`);
+            const action = context.payload.action; // 'labeled' hoặc 'unlabeled'
+            const targetStatus = action === 'labeled' ? 'Ready4Test' : 'In progress';
             
-            const query = `
+            console.log(`Processing PR #${prNumber}`);
+            console.log(`Action: ${action}`);
+            console.log(`Target status: ${targetStatus}`);
+            
+            // GraphQL query để lấy linked issues từ PR
+            const prQuery = `
               query($owner: String!, $repo: String!, $number: Int!) {
                 repository(owner: $owner, name: $repo) {
                   pullRequest(number: $number) {
@@ -85,38 +41,71 @@ jobs:
                       nodes {
                         id
                         number
-                        projectItems(first: 10) {
-                          nodes {
-                            id
-                            fieldValues(first: 50) {
-                              nodes {
-                                ... on ProjectV2ItemFieldSingleSelectValue {
-                                  field {
-                                    ... on ProjectV2FieldCommon {
-                                      id
-                                      name
-                                    }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const prResult = await github.graphql(prQuery, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              number: prNumber
+            });
+            
+            const issues = prResult.repository.pullRequest.closingIssuesReferences.nodes;
+
+            // Nếu không có linked issues, bỏ qua
+            if (issues.length === 0) {
+              console.log('ℹ️  No linked issues found for this PR. Skipping...');
+              return;
+            }
+
+            console.log(`✅ Found ${issues.length} linked issue(s)`);
+
+            // Xử lý từng linked issue
+            for (const issue of issues) {
+              console.log(`\n📋 Processing issue #${issue.number}`);
+              
+              // Query trực tiếp từ issue để lấy project items
+              const issueQuery = `
+                query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    issue(number: $issueNumber) {
+                      id
+                      number
+                      projectItems(first: 20) {
+                        nodes {
+                          id
+                          fieldValues(first: 50) {
+                            nodes {
+                              ... on ProjectV2ItemFieldSingleSelectValue {
+                                field {
+                                  ... on ProjectV2FieldCommon {
+                                    id
+                                    name
                                   }
-                                  name
                                 }
+                                name
                               }
                             }
-                            project {
-                              id
-                              title
-                              fields(first: 50) {
-                                nodes {
-                                  ... on ProjectV2Field {
+                          }
+                          project {
+                            id
+                            title
+                            fields(first: 50) {
+                              nodes {
+                                ... on ProjectV2Field {
+                                  id
+                                  name
+                                }
+                                ... on ProjectV2SingleSelectField {
+                                  id
+                                  name
+                                  options {
                                     id
                                     name
-                                  }
-                                  ... on ProjectV2SingleSelectField {
-                                    id
-                                    name
-                                    options {
-                                      id
-                                      name
-                                    }
                                   }
                                 }
                               }
@@ -127,34 +116,34 @@ jobs:
                     }
                   }
                 }
-              }
-            `;
-
-            const variables = {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              number: prNumber
-            };
-
-            const result = await github.graphql(query, variables);
-            const issues = result.repository.pullRequest.closingIssuesReferences.nodes;
-
-            if (issues.length === 0) {
-              console.log('❌ No linked issues found for this PR.');
-              return;
-            }
-
-            console.log(`✅ Found ${issues.length} linked issue(s)`);
-
-            for (const issue of issues) {
-              console.log(`\n📋 Processing issue #${issue.number}`);
+              `;
               
-              if (issue.projectItems.nodes.length === 0) {
-                console.log(`  ⚠️  Issue #${issue.number} is not in any project, skipping...`);
+              let projectItems = [];
+              
+              try {
+                const issueResult = await github.graphql(issueQuery, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issueNumber: issue.number
+                });
+                
+                const issueNode = issueResult.repository.issue;
+                projectItems = issueNode.projectItems.nodes;
+                
+                console.log(`  📦 Found ${projectItems.length} project item(s) for issue #${issue.number}`);
+                
+                // Nếu không có project items, bỏ qua
+                if (projectItems.length === 0) {
+                  console.log(`  ⚠️  Issue #${issue.number} is not in any project, skipping...`);
+                  continue;
+                }
+              } catch (queryError) {
+                console.error(`  ❌ Error querying issue #${issue.number}:`, queryError.message);
                 continue;
               }
 
-              for (const item of issue.projectItems.nodes) {
+              // Xử lý từng project item của issue
+              for (const item of projectItems) {
                 const project = item.project;
                 console.log(`  📁 Checking project: "${project.title}"`);
                 
@@ -166,7 +155,7 @@ jobs:
                   continue;
                 }
 
-                // Kiểm tra status hiện tại của issue trong project
+                // Lấy status hiện tại của issue trong project
                 const currentStatusValue = item.fieldValues.nodes.find(
                   fv => fv.field && fv.field.name === 'Status'
                 );
@@ -174,24 +163,24 @@ jobs:
                 const currentStatus = currentStatusValue ? currentStatusValue.name : null;
                 console.log(`  📊 Current status: ${currentStatus || 'Not set'}`);
 
-                // Nếu đã là Ready4Test thì skip
-                if (currentStatus === 'Ready4Test') {
-                  console.log(`  ✅ Issue #${issue.number} already has status 'Ready4Test' in project "${project.title}", skipping update...`);
+                // Tìm option tương ứng với target status
+                const targetOption = statusField.options.find(o => o.name === targetStatus);
+                if (!targetOption) {
+                  console.log(`  ⚠️  Could not find '${targetStatus}' option in 'Status' field of project "${project.title}", skipping...`);
                   continue;
                 }
 
-                // Tìm option Ready4Test
-                const readyForTestOption = statusField.options.find(o => o.name === 'Ready4Test');
-                if (!readyForTestOption) {
-                  console.log(`  ⚠️  Could not find 'Ready4Test' option in 'Status' field of project "${project.title}", skipping...`);
+                // Nếu status hiện tại đã là target status, bỏ qua
+                if (currentStatus === targetStatus) {
+                  console.log(`  ✅ Issue #${issue.number} already has status '${targetStatus}' in project "${project.title}", skipping update...`);
                   continue;
                 }
 
-                // Update status sang Ready4Test
-                console.log(`  🔄 Updating status from "${currentStatus || 'Not set'}" to "Ready4Test"...`);
+                // Thực hiện update status
+                console.log(`  🔄 Updating status from "${currentStatus || 'Not set'}" to "${targetStatus}"...`);
                 
                 try {
-                  await github.graphql(`
+                  const updateMutation = `
                     mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
                       updateProjectV2ItemFieldValue(input: {
                         projectId: $projectId
@@ -204,16 +193,19 @@ jobs:
                         }
                       }
                     }
-                  `, {
+                  `;
+                  
+                  await github.graphql(updateMutation, {
                     projectId: project.id,
                     itemId: item.id,
                     fieldId: statusField.id,
-                    optionId: readyForTestOption.id
+                    optionId: targetOption.id
                   });
                   
-                  console.log(`  ✅ Successfully updated issue #${issue.number} status to 'Ready4Test' in project "${project.title}"`);
+                  console.log(`  ✅ Successfully updated issue #${issue.number} status to '${targetStatus}' in project "${project.title}"`);
                 } catch (error) {
                   console.error(`  ❌ Failed to update issue #${issue.number} status:`, error.message);
+                  console.error(`  📝 Error details:`, error);
                 }
               }
             }
