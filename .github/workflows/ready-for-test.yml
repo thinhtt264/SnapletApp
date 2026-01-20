@@ -319,6 +319,9 @@ jobs:
                                         options {
                                           id
                                           name
+                                        }
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -327,11 +330,8 @@ jobs:
                         }
                       }
                     }
-                  }
-                }
-              }
-            `;
-
+                  `;
+                  
                   const orgProjectsResult = await github.graphql(orgProjectsQuery, {
                     login: context.repo.owner
                   });
