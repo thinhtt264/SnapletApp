@@ -105,9 +105,14 @@ jobs:
                         nodes {
                           id
                           title
-                          items(first: 10, filter: { contentId: $issueId }) {
+                          items(first: 100) {
                             nodes {
                               id
+                              content {
+                                ... on Issue {
+                                  id
+                                }
+                              }
                               fieldValues(first: 50) {
                                 nodes {
                                   ... on ProjectV2ItemFieldSingleSelectValue {
@@ -151,15 +156,19 @@ jobs:
                 
                 const repoProjectsResult = await github.graphql(repoProjectsQuery, {
                   owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issueId: issueId
+                  repo: context.repo.repo
                 });
                 
                 if (repoProjectsResult.repository && repoProjectsResult.repository.projectsV2) {
                   for (const project of repoProjectsResult.repository.projectsV2.nodes) {
-                    if (project.items.nodes.length > 0) {
+                    // Filter items trong code để tìm issue
+                    const matchingItems = project.items.nodes.filter(item => 
+                      item.content && item.content.id === issueId
+                    );
+                    
+                    if (matchingItems.length > 0) {
                       console.log(`  📦 Found issue in repository project: "${project.title}"`);
-                      projectItems = project.items.nodes;
+                      projectItems = matchingItems;
                       // Thêm project info vào mỗi item
                       projectItems.forEach(item => {
                         item.project = project;
@@ -176,15 +185,20 @@ jobs:
               if (projectItems.length === 0) {
                 try {
                   const userProjectsQuery = `
-                    query($login: String!, $issueId: ID!) {
+                    query($login: String!) {
                       user(login: $login) {
                         projectsV2(first: 20) {
                           nodes {
                             id
                             title
-                            items(first: 10, filter: { contentId: $issueId }) {
+                            items(first: 100) {
                               nodes {
                                 id
+                                content {
+                                  ... on Issue {
+                                    id
+                                  }
+                                }
                                 fieldValues(first: 50) {
                                   nodes {
                                     ... on ProjectV2ItemFieldSingleSelectValue {
@@ -227,15 +241,19 @@ jobs:
                   `;
                   
                   const userProjectsResult = await github.graphql(userProjectsQuery, {
-                    login: context.repo.owner,
-                    issueId: issueId
+                    login: context.repo.owner
                   });
                   
                   if (userProjectsResult.user && userProjectsResult.user.projectsV2) {
                     for (const project of userProjectsResult.user.projectsV2.nodes) {
-                      if (project.items.nodes.length > 0) {
+                      // Filter items trong code để tìm issue
+                      const matchingItems = project.items.nodes.filter(item => 
+                        item.content && item.content.id === issueId
+                      );
+                      
+                      if (matchingItems.length > 0) {
                         console.log(`  📦 Found issue in user project: "${project.title}"`);
-                        projectItems = project.items.nodes;
+                        projectItems = matchingItems;
                         // Thêm project info vào mỗi item
                         projectItems.forEach(item => {
                           item.project = project;
@@ -253,15 +271,20 @@ jobs:
               if (projectItems.length === 0) {
                 try {
                   const orgProjectsQuery = `
-                    query($login: String!, $issueId: ID!) {
+                    query($login: String!) {
                       organization(login: $login) {
                         projectsV2(first: 20) {
                           nodes {
                             id
                             title
-                            items(first: 10, filter: { contentId: $issueId }) {
+                            items(first: 100) {
                               nodes {
                                 id
+                                content {
+                                  ... on Issue {
+                                    id
+                                  }
+                                }
                                 fieldValues(first: 50) {
                                   nodes {
                                     ... on ProjectV2ItemFieldSingleSelectValue {
@@ -304,15 +327,19 @@ jobs:
                   `;
                   
                   const orgProjectsResult = await github.graphql(orgProjectsQuery, {
-                    login: context.repo.owner,
-                    issueId: issueId
+                    login: context.repo.owner
                   });
                   
                   if (orgProjectsResult.organization && orgProjectsResult.organization.projectsV2) {
                     for (const project of orgProjectsResult.organization.projectsV2.nodes) {
-                      if (project.items.nodes.length > 0) {
+                      // Filter items trong code để tìm issue
+                      const matchingItems = project.items.nodes.filter(item => 
+                        item.content && item.content.id === issueId
+                      );
+                      
+                      if (matchingItems.length > 0) {
                         console.log(`  📦 Found issue in organization project: "${project.title}"`);
-                        projectItems = project.items.nodes;
+                        projectItems = matchingItems;
                         // Thêm project info vào mỗi item
                         projectItems.forEach(item => {
                           item.project = project;
