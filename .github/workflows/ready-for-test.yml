@@ -11,6 +11,8 @@ permissions:
   pull-requests: read
   issues: read
   repository-projects: write
+  # Thêm permissions để đọc projects
+  projects: read
 
 jobs:
   update-issue-status:
@@ -145,9 +147,9 @@ jobs:
                   // Thử query user projects trước (vì owner có thể là user)
                   try {
                     const userQuery = `
-                      query($login: String!) {
+                      query($login: String!, $issueId: ID!) {
                         user(login: $login) {
-                          projectV2(first: 20) {
+                          projectsV2(first: 20) {
                             nodes {
                               id
                               title
@@ -200,9 +202,9 @@ jobs:
                       issueId: issueId
                     });
                     
-                    if (userResult.user && userResult.user.projectV2) {
+                    if (userResult.user && userResult.user.projectsV2) {
                       // Tìm project có chứa issue này
-                      for (const project of userResult.user.projectV2.nodes) {
+                      for (const project of userResult.user.projectsV2.nodes) {
                         if (project.items.nodes.length > 0) {
                           console.log(`  📦 Found issue in user project: "${project.title}"`);
                           projectItems = project.items.nodes;
@@ -223,9 +225,9 @@ jobs:
                   if (projectItems.length === 0) {
                     try {
                       const orgQuery = `
-                        query($login: String!) {
+                        query($login: String!, $issueId: ID!) {
                           organization(login: $login) {
-                            projectV2(first: 20) {
+                            projectsV2(first: 20) {
                               nodes {
                                 id
                                 title
@@ -278,9 +280,9 @@ jobs:
                         issueId: issueId
                       });
                       
-                      if (orgResult.organization && orgResult.organization.projectV2) {
+                      if (orgResult.organization && orgResult.organization.projectsV2) {
                         // Tìm project có chứa issue này
-                        for (const project of orgResult.organization.projectV2.nodes) {
+                        for (const project of orgResult.organization.projectsV2.nodes) {
                           if (project.items.nodes.length > 0) {
                             console.log(`  📦 Found issue in organization project: "${project.title}"`);
                             projectItems = project.items.nodes;
@@ -307,7 +309,7 @@ jobs:
                     const allProjectsQuery = `
                       query($login: String!) {
                         user(login: $login) {
-                          projectV2(first: 20) {
+                          projectsV2(first: 20) {
                             nodes {
                               id
                               title
@@ -316,7 +318,7 @@ jobs:
                           }
                         }
                         organization(login: $login) {
-                          projectV2(first: 20) {
+                          projectsV2(first: 20) {
                             nodes {
                               id
                               title
@@ -332,8 +334,8 @@ jobs:
                     });
                     
                     const allProjects = [
-                      ...(allProjectsResult.user?.projectV2?.nodes || []),
-                      ...(allProjectsResult.organization?.projectV2?.nodes || [])
+                      ...(allProjectsResult.user?.projectsV2?.nodes || []),
+                      ...(allProjectsResult.organization?.projectsV2?.nodes || [])
                     ];
                     
                     console.log(`  📋 Found ${allProjects.length} total project(s) to check`);
