@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -24,6 +25,7 @@ import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
+import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.formatTimeAgo
 
 @Composable
@@ -38,21 +40,31 @@ fun MediaItemPage(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Full-screen image/video
+        val media = post.media.first()
+        val transform = media.transform
+
         Box(
             modifier = modifier,
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
-                imageUrl = post.url,
+                imageUrl = media.originalUrl.orEmpty(),
                 contentDescription = "Post ${post.id}",
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        transform?.let {
+                            rotationZ = it.rotation.toFloat()
+                            scaleX = it.scaleX
+                            scaleY = it.scaleY
+                        }
+                    },
                 contentScale = ContentScale.Crop,
-                resizeSize = ImageSize.Large, // High quality for full-screen
                 showLoadingIndicator = true,
                 showErrorIcon = true
             )
 
-            post.caption?.let {
+            if(post.caption?.isNotBlank() == true) {
                 Box(
                     modifier = Modifier
                         .zIndex(99f)
@@ -65,7 +77,7 @@ fun MediaItemPage(
                         .padding(vertical = 8.dp, horizontal = 12.dp)
                 ) {
                     BaseText(
-                        text = it,
+                        text = post.caption,
                         typography = MaterialTheme.typography.titleMedium,
                     )
                 }
@@ -103,7 +115,7 @@ fun MediaItemPage(
             BaseText(
                 text = " ${formatTimeAgo(post.createdAt)}",
                 typography = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

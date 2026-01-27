@@ -1,6 +1,7 @@
 package com.thinh.snaplet.data.model
 
 import com.google.gson.annotations.SerializedName
+import com.thinh.snaplet.data.model.media.Media
 
 data class Post(
     @SerializedName("id")
@@ -38,9 +39,17 @@ data class Post(
 ) {
     val displayName: String
         get() = "$firstName $lastName"
-
-    val url: String
-        get() = media.firstOrNull()?.originalUrl ?: ""
 }
+
+data class CreatePostRequest(
+    @SerializedName("mediaIds")
+    val mediaIds: List<String>,
+
+    @SerializedName("caption")
+    val caption: String? = null,
+
+    @SerializedName("visibility")
+    val visibility: String
+)
 
 typealias PostsFeedData = PaginatedResponse<Post>

@@ -42,5 +42,9 @@ class UserRepositoryImpl @Inject constructor(
     override fun observeMyUserProfile(): Flow<UserProfile?> {
         return dataStoreManager.getUserProfileFlow()
     }
+
+    override suspend fun getCurrentUserProfile(): UserProfile? {
+        return dataStoreManager.loadUserProfile()
+    }
 }
 

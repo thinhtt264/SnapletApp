@@ -2,7 +2,6 @@ package com.thinh.snaplet.data.model
 
 import com.google.gson.annotations.SerializedName
 
-/** Standard API Response Structure */
 data class ResponseStatus(
     @SerializedName("code")
     val code: Int,

@@ -12,5 +12,7 @@ interface UserRepository {
     suspend fun sendFriendRequest(userId: String): ApiResult<Relationship>
     
     fun observeMyUserProfile(): Flow<UserProfile?>
+    
+    suspend fun getCurrentUserProfile(): UserProfile?
 }
 

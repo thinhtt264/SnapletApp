@@ -74,7 +74,7 @@ fun RegisterEmailPage(
                 BaseText(
                     text = stringResource(R.string.already_have_account),
                     typography = typography.bodyMedium,
-                    color = colorScheme.secondary
+                    color = colorScheme.onSurface
                 )
                 Spacer(Modifier.size(4.dp))
                 BaseText(

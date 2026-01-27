@@ -31,3 +31,6 @@ platform :android do
     )
   end
 end
+
+
+##fastlane android build_test release_notes:"Notes"

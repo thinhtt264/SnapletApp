@@ -4,18 +4,15 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
-val Throwable.safeMessage: String
-    get() = message?.takeIf { it.isNotBlank() } ?: "Lỗi không xác định"
-
 fun formatTimeAgo(createdAt: String): String {
     return try {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
         dateFormat.timeZone = TimeZone.getTimeZone("UTC")
         val createdTime = dateFormat.parse(createdAt)?.time ?: return ""
-        
+
         val now = System.currentTimeMillis()
         val diff = now - createdTime
-        
+
         when {
             diff < 60_000 -> "${diff / 1000}s" // seconds
             diff < 3_600_000 -> "${diff / 60_000}m" // minutes
@@ -25,7 +22,7 @@ fun formatTimeAgo(createdAt: String): String {
             diff < 31_536_000_000 -> "${diff / 2_592_000_000}mo" // months
             else -> "${diff / 31_536_000_000}y" // years
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         ""
     }
 }

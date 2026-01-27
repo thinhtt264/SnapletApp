@@ -1,6 +1,5 @@
 package com.thinh.snaplet.ui.screens.home
 
-import android.content.Context
 import android.graphics.Bitmap
 import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -20,29 +19,35 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.thinh.snaplet.ui.components.PermissionHandler
-import com.thinh.snaplet.ui.screens.home.components.*
+import com.thinh.snaplet.ui.screens.home.components.CameraPage
+import com.thinh.snaplet.ui.screens.home.components.MediaPage
 import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.permission.Permission
 
 private const val CAMERA_PAGE_INDEX = 0
 
 @Composable
-fun Home(
-    viewModel: HomeViewModel = hiltViewModel()
-) {
+fun Home() {
+    val viewModel: HomeViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+
+    val pageCount = 1 + uiState.posts.size
+    val pagerState = rememberPagerState(
+        initialPage = CAMERA_PAGE_INDEX,
+        pageCount = { pageCount }
+    )
 
     PermissionHandler(
         permission = Permission.Camera,
         onPermissionResult = viewModel::onPermissionResult
     ) { requestPermission ->
         UiEventHandler(
-            viewModel = viewModel,
-            requestPermission = requestPermission
+            requestPermission = requestPermission,
+            onScrollToFirstPost = { pagerState.animateScrollToPage(1) }
         )
 
         HomeContent(
-            viewModel = viewModel,
+            pagerState = pagerState,
             uiState = uiState
         )
     }
@@ -50,51 +55,43 @@ fun Home(
 
 @Composable
 private fun UiEventHandler(
-    viewModel: HomeViewModel,
-    requestPermission: () -> Unit
+    requestPermission: () -> Unit,
+    onScrollToFirstPost: suspend () -> Unit
 ) {
+    val viewModel: HomeViewModel = hiltViewModel()
+
     LaunchedEffect(Unit) {
         viewModel.onScreenInitialized()
 
         viewModel.uiEvent.collect { event ->
-            handleUiEvent(event, requestPermission)
-        }
-    }
-}
+            when (event) {
+                is HomeUiEvent.RequestPermission -> {
+                    Logger.d("🔐 Executing permission request from ViewModel")
+                    requestPermission()
+                }
 
-private fun handleUiEvent(
-    event: HomeUiEvent,
-    requestPermission: () -> Unit
-) {
-    when (event) {
-        is HomeUiEvent.RequestPermission -> {
-            Logger.d("🔐 Executing permission request from ViewModel")
-            requestPermission()
-        }
+                is HomeUiEvent.ShowError -> {
+                    // TODO: Show error toast/snackbar
+                    Logger.e("⚠️ Error: ${event.message}")
+                }
 
-        is HomeUiEvent.ShowError -> {
-            // TODO: Show error toast/snackbar
-            Logger.e("⚠️ Error: ${event.message}")
-        }
+                is HomeUiEvent.ShowSuccess -> {
+                    // TODO: Show success toast/snackbar
+                    Logger.d("✅ Success: ${event.message}")
+                }
 
-        is HomeUiEvent.ShowSuccess -> {
-            // TODO: Show success toast/snackbar
-            Logger.d("✅ Success: ${event.message}")
+                is HomeUiEvent.ScrollToFirstPost -> onScrollToFirstPost()
+            }
         }
     }
 }
 
 @Composable
 private fun HomeContent(
-    viewModel: HomeViewModel,
+    pagerState: PagerState,
     uiState: HomeUiState
 ) {
-    val context = LocalContext.current
-    
-    val pagerState = rememberPagerState(
-        initialPage = CAMERA_PAGE_INDEX,
-        pageCount = { 1 + uiState.posts.size }
-    )
+    val viewModel: HomeViewModel = hiltViewModel()
 
     var shouldBindCamera by remember { mutableStateOf(true) }
     var captureSnapshotHandler by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
@@ -117,7 +114,6 @@ private fun HomeContent(
     MediaPager(
         pagerState = pagerState,
         uiState = uiState,
-        context = context,
         viewModel = viewModel,
         shouldBindCamera = shouldBindCamera,
         cameraCallbacks = cameraCallbacks
@@ -174,11 +170,12 @@ private fun CameraBindingController(
 private fun MediaPager(
     pagerState: PagerState,
     uiState: HomeUiState,
-    context: Context,
     viewModel: HomeViewModel,
     shouldBindCamera: Boolean,
     cameraCallbacks: CameraCallbacks
 ) {
+    val context = LocalContext.current
+
     VerticalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
@@ -196,6 +193,9 @@ private fun MediaPager(
                     onRequestPermission = viewModel::onScreenInitialized,
                     onCapturePhoto = { viewModel.onCapturePhoto(context) },
                     onSwitchCamera = viewModel::onSwitchCamera,
+                    onCancelCapture = viewModel::onCancelCapture,
+                    onUploadPost = viewModel::onUploadPost,
+                    isUploading = uiState.isUploading,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -210,7 +210,6 @@ private fun MediaPager(
     }
 }
 
-// Helper functions
 @OptIn(ExperimentalFoundationApi::class)
 private fun isOnCameraPage(pagerState: PagerState): Boolean {
     return pagerState.currentPage == CAMERA_PAGE_INDEX

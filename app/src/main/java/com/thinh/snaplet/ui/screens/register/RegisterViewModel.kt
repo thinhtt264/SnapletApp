@@ -57,7 +57,15 @@ class RegisterViewModel @Inject constructor(
     }
 
     fun onPasswordChange(password: String) {
-        _uiState.update { it.copy(password = password, passwordError = null, errorMessage = null) }
+        val passwordError = validatePassword(password)
+
+        _uiState.update {
+            it.copy(
+                password = password,
+                passwordError = passwordError,
+                errorMessage = null
+            )
+        }
     }
 
     fun onPasswordVisibilityToggle() {
@@ -225,12 +233,6 @@ class RegisterViewModel @Inject constructor(
     fun onRegister() {
         viewModelScope.launch {
             val currentState = _uiState.value
-
-            val passwordError = validatePassword(currentState.password)
-            if (passwordError != null) {
-                _uiState.update { it.copy(passwordError = passwordError) }
-                return@launch
-            }
 
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 

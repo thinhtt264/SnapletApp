@@ -29,7 +29,7 @@ fun RegisterPageContent(
     onButtonClick: () -> Unit,
     inputField: @Composable () -> Unit,
     modifier: Modifier = Modifier,
-    subtitleColor: Color = colorScheme.secondary,
+    subtitleColor: Color = colorScheme.onSurface,
     extraContent: @Composable (() -> Unit)? = null,
     bottomContent: @Composable (() -> Unit)? = null
 ) {

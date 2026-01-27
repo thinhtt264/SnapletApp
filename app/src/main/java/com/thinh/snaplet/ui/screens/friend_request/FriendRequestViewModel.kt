@@ -6,7 +6,6 @@ import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.deeplink.DeepLinkEvent
 import com.thinh.snaplet.utils.deeplink.DeepLinkManager
-import com.thinh.snaplet.utils.safeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -16,9 +16,10 @@ import androidx.core.view.WindowInsetsControllerCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = GoldenPollen,
-    secondary = Gray,
-    tertiary = Gray,
+    secondary = DarkGray,
+    tertiary = DarkGray,
     surface = Black90,
+    onSurface = Gray,
     background = Black,
     onBackground = Color.White,
     onError = Color.Red
@@ -26,9 +27,10 @@ private val DarkColorScheme = darkColorScheme(
 
 private val LightColorScheme = lightColorScheme(
     primary = GoldenPollen,
-    secondary = Gray,
-    tertiary = Gray,
+    secondary = DarkGray,
+    tertiary = DarkGray,
     surface = Black90,
+    onSurface = Gray,
     background = Black,
     onBackground = Color.White,
     onError = Color.Red

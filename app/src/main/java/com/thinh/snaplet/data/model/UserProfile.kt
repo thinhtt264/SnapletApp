@@ -24,4 +24,3 @@ data class UserProfile(
     val displayName: String
         get() = "$firstName $lastName".trim()
 }
-

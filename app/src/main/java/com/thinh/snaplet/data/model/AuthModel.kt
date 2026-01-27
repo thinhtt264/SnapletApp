@@ -2,13 +2,6 @@ package com.thinh.snaplet.data.model
 
 import com.google.gson.annotations.SerializedName
 
-/**
- * Authentication Models
- */
-
-/**
- * Login Request
- */
 data class LoginRequest(
     @SerializedName("email")
     val email: String,
@@ -17,9 +10,6 @@ data class LoginRequest(
     val password: String
 )
 
-/**
- * Register Request
- */
 data class RegisterRequest(
     @SerializedName("email")
     val email: String,
@@ -37,9 +27,6 @@ data class RegisterRequest(
     val password: String
 )
 
-/**
- * Token Response
- */
 data class TokenResponse(
     @SerializedName("accessToken")
     val accessToken: String,
@@ -48,9 +35,6 @@ data class TokenResponse(
     val refreshToken: String
 )
 
-/**
- * Login Response
- */
 data class LoginResponse(
     @SerializedName("token")
     val token: TokenResponse,
@@ -59,25 +43,16 @@ data class LoginResponse(
     val user: UserProfile
 )
 
-/**
- * Email Availability
- */
 data class EmailAvailabilityData(
     @SerializedName("available")
     val available: Boolean
 )
 
-/**
- * Username Availability
- */
 data class UsernameAvailabilityData(
     @SerializedName("available")
     val available: Boolean
 )
 
-/**
- * Refresh Token Request
- */
 data class RefreshTokenRequest(
     @SerializedName("refreshToken")
     val refreshToken: String,
@@ -85,4 +60,3 @@ data class RefreshTokenRequest(
     @SerializedName("accessToken")
     val accessToken: String
 )
-

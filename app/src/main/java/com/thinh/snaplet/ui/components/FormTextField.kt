@@ -50,7 +50,7 @@ fun FormTextField(
             placeholder = {
                 BaseText(
                     text = placeholder,
-                    color = colorScheme.secondary.copy(alpha = 0.6f)
+                    color = colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             },
             keyboardType = keyboardType,
