@@ -147,8 +147,6 @@ private fun CameraBindingController(
     onSnapshotCaptured: (Bitmap) -> Unit
 ) {
     LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
-        Logger.d("📄 Page: ${pagerState.currentPage}, Scrolling: ${pagerState.isScrollInProgress}")
-
         when {
             isOnCameraPage(pagerState) && !pagerState.isScrollInProgress -> {
                 onShouldBindCameraChanged(true)

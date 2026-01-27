@@ -174,8 +174,6 @@ private fun bindCameraUseCases(
     onImageCaptureReady: (ImageCapture) -> Unit,
     onStreamingStateChanged: (Boolean) -> Unit
 ) {
-    Logger.d("Binding camera use cases (lensFacing: $lensFacing)...")
-
     val width = previewView.width
     val height = previewView.height
 
@@ -194,19 +192,13 @@ private fun bindCameraUseCases(
         return
     }
 
-    Logger.d("PreviewView size: ${width}x${height}")
-
-    // Build preview use case
     val preview = Preview.Builder()
         .build()
         .also { it.surfaceProvider = previewView.surfaceProvider }
 
-    // Create viewport and use case group
     val aspectRatio = Rational(width, height)
     val rotation = previewView.display?.rotation ?: Surface.ROTATION_0
     
-    // Build image capture use case with target rotation
-    // This ensures the saved image has correct orientation
     val imageCapture = ImageCapture.Builder()
         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
         .setTargetRotation(rotation)
@@ -257,7 +249,7 @@ private fun observeStreamingState(
             }
 
             else -> {
-                Logger.d("📹 Camera stream state: $streamState")
+                // Logger.d("📹 Camera stream state: $streamState")
                 if (isStreamingReady) {
                     isStreamingReady = false
                     onStreamingStateChanged(false)
