@@ -26,7 +26,7 @@ fun AsyncImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    resizeSize: ImageSize = ImageSize.Medium,
+    resizeSize: ImageSize = ImageSize.Small,
     showLoadingIndicator: Boolean = true,
     showErrorIcon: Boolean = true,
     loadingBackgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
@@ -127,19 +127,19 @@ enum class ImageSize(val pixels: Int) {
      * Thumbnail size (e.g., for small previews)
      * ~200KB in memory per image
      */
-    Thumbnail(300),
+    Thumbnail(256),
     
     /**
      * Small size (e.g., for grid items)
      * ~500KB in memory per image
      */
-    Small(600),
+    Small(512),
     
     /**
      * Medium size (e.g., for list items, default)
      * ~1MB in memory per image
      */
-    Medium(1200),
+    Medium(1024),
     
     /**
      * Large size (e.g., for detail screens)
@@ -178,7 +178,7 @@ fun AsyncImage(
     showLoadingIndicator: Boolean = true,
     showErrorIcon: Boolean = true
 ) {
-    val size = customSizePixels ?: ImageSize.Medium.pixels
+    val size = customSizePixels ?: ImageSize.Small.pixels
 
     AsyncImage(
         imageUrl = imageUrl,

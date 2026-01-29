@@ -83,7 +83,7 @@ fun LoginPasswordPage(
                                 Icons.Filled.Visibility
                             },
                             contentDescription = "Toggle Password Visibility",
-                            tint = colorScheme.secondary
+                            tint = colorScheme.onSurface
                         )
                     }
                 },

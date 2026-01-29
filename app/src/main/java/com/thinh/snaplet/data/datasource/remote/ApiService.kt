@@ -11,6 +11,12 @@ import com.thinh.snaplet.data.model.Relationship
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.data.model.EmailAvailabilityData
 import com.thinh.snaplet.data.model.UsernameAvailabilityData
+import com.thinh.snaplet.data.model.media.RequestUploadRequest
+import com.thinh.snaplet.data.model.media.UploadRequestData
+import com.thinh.snaplet.data.model.media.ConfirmUploadRequest
+import com.thinh.snaplet.data.model.media.ConfirmUploadData
+import com.thinh.snaplet.data.model.CreatePostRequest
+import com.thinh.snaplet.data.model.Post
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -61,4 +67,19 @@ interface ApiService {
     suspend fun refreshToken(
         @Body body: RefreshTokenRequest
     ): Response<BaseResponse<TokenResponse>>
+    
+    @POST("media/upload/request")
+    suspend fun requestUpload(
+        @Body body: RequestUploadRequest
+    ): Response<BaseResponse<UploadRequestData>>
+    
+    @POST("media/upload/confirm")
+    suspend fun confirmUpload(
+        @Body body: ConfirmUploadRequest
+    ): Response<BaseResponse<ConfirmUploadData>>
+    
+    @POST("posts")
+    suspend fun createPost(
+        @Body body: CreatePostRequest
+    ): Response<BaseResponse<Post>>
 }

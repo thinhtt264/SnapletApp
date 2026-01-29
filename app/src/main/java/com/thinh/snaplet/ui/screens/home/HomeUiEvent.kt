@@ -2,13 +2,6 @@ package com.thinh.snaplet.ui.screens.home
 
 import com.thinh.snaplet.utils.permission.Permission
 
-/**
- * UI Events emitted from ViewModel to View
- * Following MVVM + Clean Architecture principles
- * 
- * ViewModel decides WHAT should happen
- * View executes HOW it happens
- */
 sealed class HomeUiEvent {
     /**
      * Request permission from user
@@ -25,5 +18,11 @@ sealed class HomeUiEvent {
      * Show success message to user
      */
     data class ShowSuccess(val message: String) : HomeUiEvent()
+    
+    /**
+     * Scroll to first post (after camera page)
+     * Used when temp post is created to show it immediately
+     */
+    object ScrollToFirstPost : HomeUiEvent()
 }
 

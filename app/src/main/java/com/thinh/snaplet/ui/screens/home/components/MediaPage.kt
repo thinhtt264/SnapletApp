@@ -1,12 +1,8 @@
 package com.thinh.snaplet.ui.screens.home.components
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import com.thinh.snaplet.ui.screens.home.HomeUiState
 import com.thinh.snaplet.utils.Logger
 
@@ -15,20 +11,15 @@ fun MediaPage(
     page: Int,
     uiState: HomeUiState
 ) {
-    val cameraModifier = Modifier
-        .fillMaxWidth()
-        .height(MediaItemDimensions.MEDIA_HEIGHT)
-        .padding(top = MediaItemDimensions.MEDIA_TOP_PADDING)
-        .clip(RoundedCornerShape(MediaItemDimensions.MEDIA_CORNER_RADIUS))
-
     val mediaIndex = page - 1
     if (mediaIndex < uiState.posts.size) {
+        val post = uiState.posts[mediaIndex]
+        val uploadStatus = uiState.uploadStatuses[post.id]
         MediaItemPage(
-            post = uiState.posts[mediaIndex],
-            onMediaClick = { post ->
-                Logger.d("📷 Clicked post: ${post.id}")
-            },
-            modifier = cameraModifier
+            modifier = Modifier.fillMaxSize(),
+            post = post,
+            uploadStatus = uploadStatus,
+            onMediaClick = { Logger.d("📷 Clicked post: ${it.id}") }
         )
     }
 }

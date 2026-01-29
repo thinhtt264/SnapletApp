@@ -34,7 +34,6 @@ fun FriendRequestOverlayScreen(
 
     when (val state = uiState) {
         is FriendRequestUiState.Visible -> {
-            // Only show overlay when user profile is successfully loaded
             FriendRequestOverlayContent(
                 isVisible = true,
                 state = state,

@@ -5,9 +5,9 @@ platform :android do
   lane :build_test do |options|
     release_notes = options[:release_notes] || ENV["RELEASE_NOTES"] || "New release"
     
-    # Build release APK
+    # Build developmentRelease APK
     gradle(
-      task: "assembleRelease",
+      task: "assembleDevelopmentRelease",
       project_dir: "."
     )
 
@@ -31,3 +31,6 @@ platform :android do
     )
   end
 end
+
+
+##fastlane android build_test release_notes:"Notes"

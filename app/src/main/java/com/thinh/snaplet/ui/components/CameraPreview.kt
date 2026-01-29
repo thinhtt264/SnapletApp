@@ -33,12 +33,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.thinh.snaplet.ui.theme.MotionTokens
 import com.thinh.snaplet.utils.Logger
-import java.util.concurrent.Executor
 
 private const val STREAMING_READY_DELAY = 100L
-private const val FADE_IN_DURATION = 300
-private const val FADE_OUT_DURATION = 400
 
 @Composable
 fun CameraPreview(
@@ -143,8 +141,8 @@ private fun CameraPlaceholderOverlay(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = tween(FADE_IN_DURATION)),
-        exit = fadeOut(animationSpec = tween(FADE_OUT_DURATION))
+        enter = fadeIn(animationSpec = tween(MotionTokens.Slow)),
+        exit = fadeOut(animationSpec = tween(MotionTokens.Slow))
     ) {
         snapshot?.let { bitmap ->
             Image(
@@ -176,11 +174,9 @@ private fun bindCameraUseCases(
     onImageCaptureReady: (ImageCapture) -> Unit,
     onStreamingStateChanged: (Boolean) -> Unit
 ) {
-    Logger.d("Binding camera use cases (lensFacing: $lensFacing)...")
-
     val width = previewView.width
     val height = previewView.height
-    
+
     // If width or height is 0, we might need to wait for layout
     if (width <= 0 || height <= 0) {
         previewView.post {
@@ -196,23 +192,20 @@ private fun bindCameraUseCases(
         return
     }
 
-    Logger.d("PreviewView size: ${width}x${height}")
-
-    // Build preview use case
     val preview = Preview.Builder()
         .build()
         .also { it.surfaceProvider = previewView.surfaceProvider }
 
-    // Build image capture use case
+    val aspectRatio = Rational(width, height)
+    val rotation = previewView.display?.rotation ?: Surface.ROTATION_0
+    
     val imageCapture = ImageCapture.Builder()
         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+        .setTargetRotation(rotation)
         .build()
 
     onImageCaptureReady(imageCapture)
 
-    // Create viewport and use case group
-    val aspectRatio = Rational(width, height)
-    val rotation = previewView.display?.rotation ?: Surface.ROTATION_0
     val viewPort = ViewPort.Builder(aspectRatio, rotation).build()
 
     val useCaseGroup = UseCaseGroup.Builder()
@@ -256,7 +249,7 @@ private fun observeStreamingState(
             }
 
             else -> {
-                Logger.d("📹 Camera stream state: $streamState")
+                // Logger.d("📹 Camera stream state: $streamState")
                 if (isStreamingReady) {
                     isStreamingReady = false
                     onStreamingStateChanged(false)

@@ -2,9 +2,6 @@ package com.thinh.snaplet.data.model
 
 import com.google.gson.annotations.SerializedName
 
-/**
- * Relationship model representing friend connection status
- */
 data class Relationship(
     @SerializedName("id")
     val id: String,
@@ -16,7 +13,7 @@ data class Relationship(
     val user2Id: String,
     
     @SerializedName("status")
-    val status: String, // "pending", "accepted", "blocked"
+    val status: String,
     
     @SerializedName("initiator")
     val initiator: String,
@@ -27,4 +24,3 @@ data class Relationship(
     @SerializedName("updatedAt")
     val updatedAt: String
 )
-

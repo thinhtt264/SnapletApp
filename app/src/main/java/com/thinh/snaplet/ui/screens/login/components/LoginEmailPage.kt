@@ -75,7 +75,7 @@ fun LoginEmailPage(
                 BaseText(
                     text = stringResource(R.string.dont_have_account),
                     typography = typography.bodyMedium,
-                    color = colorScheme.secondary
+                    color = colorScheme.onSurface
                 )
                 Spacer(Modifier.size(4.dp))
                 BaseText(

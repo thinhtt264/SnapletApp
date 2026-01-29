@@ -52,7 +52,7 @@ fun Onboarding(
                 )
                 Spacer(Modifier.height(20.dp))
                 BaseText(
-                    color = colorScheme.secondary,
+                    color = colorScheme.onSurface,
                     typography = typography.headlineSmall,
                     textAlign = TextAlign.Center,
                     text = stringResource(R.string.onboarding_subtitle)

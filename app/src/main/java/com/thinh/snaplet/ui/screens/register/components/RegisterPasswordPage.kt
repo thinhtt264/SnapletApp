@@ -86,26 +86,12 @@ fun RegisterPasswordPage(
                                 Icons.Filled.Visibility
                             },
                             contentDescription = "Toggle Password Visibility",
-                            tint = colorScheme.secondary
+                            tint = colorScheme.onSurface
                         )
                     }
                 },
                 modifier = Modifier.focusRequester(focusRequester)
             )
-        },
-        extraContent = {
-            AnimatedVisibility(
-                visible = password.isNotEmpty() && password.length < 8,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                BaseText(
-                    text = stringResource(R.string.password_requirement),
-                    typography = typography.bodySmall,
-                    color = colorScheme.onError,
-                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                )
-            }
         }
     )
 }
