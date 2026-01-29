@@ -16,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.thinh.snaplet.ui.components.PermissionHandler
 import com.thinh.snaplet.ui.screens.home.components.CameraPage
@@ -114,7 +113,6 @@ private fun HomeContent(
     MediaPager(
         pagerState = pagerState,
         uiState = uiState,
-        viewModel = viewModel,
         shouldBindCamera = shouldBindCamera,
         cameraCallbacks = cameraCallbacks
     )
@@ -168,12 +166,9 @@ private fun CameraBindingController(
 private fun MediaPager(
     pagerState: PagerState,
     uiState: HomeUiState,
-    viewModel: HomeViewModel,
     shouldBindCamera: Boolean,
     cameraCallbacks: CameraCallbacks
 ) {
-    val context = LocalContext.current
-
     VerticalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
@@ -184,16 +179,9 @@ private fun MediaPager(
         when (page) {
             CAMERA_PAGE_INDEX -> {
                 CameraPage(
-                    cameraState = uiState.cameraState,
                     onImageCaptureReady = cameraCallbacks.onImageCaptureReady,
                     onSnapshotHandlerReady = cameraCallbacks.onSnapshotHandlerReady,
                     shouldBindCamera = shouldBindCamera,
-                    onRequestPermission = viewModel::onScreenInitialized,
-                    onCapturePhoto = { viewModel.onCapturePhoto(context) },
-                    onSwitchCamera = viewModel::onSwitchCamera,
-                    onCancelCapture = viewModel::onCancelCapture,
-                    onUploadPost = viewModel::onUploadPost,
-                    isUploading = uiState.isUploading,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -227,11 +215,9 @@ private fun captureAndSaveSnapshot(
 ) {
     captureSnapshotHandler?.invoke()?.let { bitmap ->
         onSnapshotCaptured(bitmap)
-        Logger.d("✅ Snapshot saved to ViewModel")
     } ?: Logger.e("❌ Failed to capture snapshot")
 }
 
-// Data classes
 private data class CameraCallbacks(
     val onImageCaptureReady: (ImageCapture) -> Unit,
     val onSnapshotHandlerReady: (() -> Bitmap?) -> Unit

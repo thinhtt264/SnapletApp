@@ -3,15 +3,18 @@ package com.thinh.snaplet.ui.screens.home.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,72 +28,115 @@ import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
-import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.ui.screens.home.UploadStatus
 import com.thinh.snaplet.utils.formatTimeAgo
+
+private const val TOP_SPACE_RATIO = 0.15f
 
 @Composable
 fun MediaItemPage(
-    post: Post,
-    onMediaClick: (Post) -> Unit,
     modifier: Modifier = Modifier,
+    post: Post,
+    uploadStatus: UploadStatus? = null,
+    onMediaClick: (Post) -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Full-screen image/video
-        val media = post.media.first()
-        val transform = media.transform
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val screenHeight = maxHeight
+        val topPadding = screenHeight * TOP_SPACE_RATIO
 
-        Box(
-            modifier = modifier,
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AsyncImage(
-                imageUrl = media.originalUrl.orEmpty(),
-                contentDescription = "Post ${post.id}",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        transform?.let {
-                            rotationZ = it.rotation.toFloat()
-                            scaleX = it.scaleX
-                            scaleY = it.scaleY
-                        }
-                    },
-                contentScale = ContentScale.Crop,
-                showLoadingIndicator = true,
-                showErrorIcon = true
-            )
+            Spacer(Modifier.height(topPadding))
 
-            if(post.caption?.isNotBlank() == true) {
-                Box(
-                    modifier = Modifier
-                        .zIndex(99f)
-                        .align(Alignment.BottomCenter)
-                        .offset(y = (-24).dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surface.copy(0.6f),
-                            shape = CircleShape
-                        )
-                        .padding(vertical = 8.dp, horizontal = 12.dp)
-                ) {
-                    BaseText(
-                        text = post.caption,
-                        typography = MaterialTheme.typography.titleMedium,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(MediaItemDimensions.MEDIA_HEIGHT)
+                    .clip(RoundedCornerShape(MediaItemDimensions.MEDIA_CORNER_RADIUS))
+            ) {
+                PostMediaContent(post = post)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            PostMetadata(
+                post = post,
+                uploadStatus = uploadStatus
+            )
+        }
+    }
+}
+
+@Composable
+private fun PostMediaContent(post: Post) {
+    val media = post.media.first()
+    val transform = media.transform
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AsyncImage(
+            imageUrl = media.originalUrl.orEmpty(),
+            contentDescription = "Post ${post.id}",
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    transform?.let {
+                        rotationZ = it.rotation.toFloat()
+                        scaleX = it.scaleX
+                        scaleY = it.scaleY
+                    }
+                },
+            contentScale = ContentScale.Crop,
+            showLoadingIndicator = true,
+            showErrorIcon = true
+        )
+
+        if (post.caption?.isNotBlank() == true) {
+            Box(
+                modifier = Modifier
+                    .zIndex(99f)
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 12.dp)
+                    .padding(horizontal = 12.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface.copy(0.6f),
+                        shape = CircleShape
                     )
-                }
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+            ) {
+                BaseText(
+                    text = post.caption,
+                    typography = MaterialTheme.typography.titleMedium,
+                )
             }
         }
+    }
+}
 
-        Spacer(Modifier.height(12.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Avatar
+@Composable
+private fun PostMetadata(
+    modifier: Modifier = Modifier,
+    post: Post,
+    uploadStatus: UploadStatus?
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (uploadStatus is UploadStatus.Uploading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = MaterialTheme.colorScheme.onBackground,
+                strokeWidth = 2.dp
+            )
+            BaseText(
+                text = "Uploading....",
+                typography = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        } else {
             Box(
                 modifier = Modifier
                     .size(28.dp)
@@ -101,22 +147,21 @@ fun MediaItemPage(
                     contentDescription = "Avatar of ${post.displayName}",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    resizeSize = ImageSize.Small,
+                    resizeSize = ImageSize.Thumbnail,
                     showLoadingIndicator = true
                 )
             }
-
             BaseText(
                 text = post.firstName,
                 typography = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
-
-            BaseText(
-                text = " ${formatTimeAgo(post.createdAt)}",
-                typography = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
+
+        BaseText(
+            text = " ${formatTimeAgo(post.createdAt)}",
+            typography = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

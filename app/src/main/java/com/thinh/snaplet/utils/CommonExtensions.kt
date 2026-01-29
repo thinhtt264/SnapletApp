@@ -11,7 +11,7 @@ fun formatTimeAgo(createdAt: String): String {
         val createdTime = dateFormat.parse(createdAt)?.time ?: return ""
 
         val now = System.currentTimeMillis()
-        val diff = now - createdTime
+        val diff = kotlin.math.abs(now - createdTime)
 
         when {
             diff < 60_000 -> "${diff / 1000}s" // seconds

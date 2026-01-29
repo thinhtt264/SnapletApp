@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -48,7 +49,7 @@ class HomeViewModel @Inject constructor(
         )
     )
 
-    val uiState: StateFlow<HomeUiState> = _uiState
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val _uiEvent = MutableSharedFlow<HomeUiEvent>(
         replay = 0, extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.SUSPEND
@@ -98,6 +99,10 @@ class HomeViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(cameraState = transform(state.cameraState))
         }
+    }
+
+    fun updateCurrentCaption(caption: String) {
+        _uiState.update { it.copy(currentCaption = caption) }
     }
 
     fun onScreenInitialized() {
@@ -180,6 +185,7 @@ class HomeViewModel @Inject constructor(
         val imagePath = _uiState.value.cameraState.capturedImagePath
         FileUtils.deleteFileFromPath(imagePath)
         updateCameraState { it.copy(capturedImagePath = null) }
+        _uiState.update { it.copy(currentCaption = null) }
     }
 
     fun onUploadPost() {
@@ -200,6 +206,7 @@ class HomeViewModel @Inject constructor(
             }
 
             val tempPostId = "temp_${System.currentTimeMillis()}"
+            val caption = _uiState.value.currentCaption
 
             val isFrontCamera =
                 _uiState.value.cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
@@ -213,33 +220,39 @@ class HomeViewModel @Inject constructor(
                 id = tempPostId,
                 imagePath = imagePath,
                 userProfile = userProfile,
-                transform = transform
+                transform = transform,
+                caption = caption
             )
 
             _uiState.update { state ->
                 state.copy(
                     posts = listOf(tempPost) + state.posts,
                     cameraState = state.cameraState.copy(capturedImagePath = null),
-                    uploadStatuses = state.uploadStatuses,
-                    tempPostImagePaths = state.tempPostImagePaths
+                    currentCaption = null,
+                    uploadStatuses = state.uploadStatuses + (tempPostId to UploadStatus.Uploading),
+                    tempPosts = state.tempPosts + tempPost
                 )
             }
 
             _uiEvent.emit(HomeUiEvent.ScrollToFirstPost)
 
-            performUpload(tempPostId, imagePath, transform)
+            performUpload(tempPostId, imagePath, transform, caption)
         }
     }
 
-    private fun performCratePost(mediaIds: List<String>) {
+    private fun performCratePost(mediaIds: List<String>, caption: String?) {
         viewModelScope.launch {
-            val caption = _uiState.value.uploadState.caption
             mediaRepository.createPost(mediaIds, caption, "friend-only")
             emitEvent(HomeUiEvent.ShowSuccess("Post uploaded successfully"))
         }
     }
 
-    private fun performUpload(tempPostId: String, imagePath: String, transform: ImageTransform) {
+    private fun performUpload(
+        tempPostId: String,
+        imagePath: String,
+        transform: ImageTransform,
+        caption: String?
+    ) {
         viewModelScope.launch {
             try {
                 val uploadRequestData = mediaRepository.requestUpload(
@@ -276,7 +289,7 @@ class HomeViewModel @Inject constructor(
 
                 mediaRepository.confirmUpload(listOf(uploadItem.mediaId))
                     .fold(onSuccess = { confirmData ->
-                        performCratePost(confirmData.media.map { it.id })
+                        performCratePost(confirmData.media.map { it.id }, caption)
                         setUploadStatus(tempPostId, UploadStatus.Success)
                     }, onFailure = { error ->
                         setUploadStatus(
@@ -296,22 +309,29 @@ class HomeViewModel @Inject constructor(
     }
 
     fun retryUpload(tempPostId: String) {
-        val imagePath = _uiState.value.tempPostImagePaths[tempPostId] ?: run {
-            Logger.e("❌ Cannot retry: Image path not found for post: $tempPostId")
-            emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Image not found"))
+        val tempPost = _uiState.value.tempPosts.find { it.id == tempPostId } ?: run {
+            Logger.e("❌ Cannot retry: TempPost not found: $tempPostId")
+            emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Post data not found"))
             return
         }
 
-        val post = _uiState.value.posts.find { it.id == tempPostId }
-        val transform = post?.media?.firstOrNull()?.transform ?: ImageTransform(
-            rotation = 0,
-            scaleX = 1f,
-            scaleY = 1f
-        )
+        val media = tempPost.media.firstOrNull() ?: run {
+            Logger.e("❌ Cannot retry: Media not found in post: $tempPostId")
+            emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Media not found"))
+            return
+        }
+
+        val imagePath = media.originalUrl?.removePrefix("file://") ?: run {
+            Logger.e("❌ Cannot retry: Image path not found: $tempPostId")
+            emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Image path not found"))
+            return
+        }
+
+        val transform = media.transform ?: ImageTransform(rotation = 0, scaleX = 1f, scaleY = 1f)
 
         setUploadStatus(tempPostId, UploadStatus.Uploading)
 
-        performUpload(tempPostId, imagePath, transform)
+        performUpload(tempPostId, imagePath, transform, tempPost.caption)
     }
 
     private fun setUploadStatus(tempPostId: String, status: UploadStatus) {
@@ -326,7 +346,8 @@ class HomeViewModel @Inject constructor(
         id: String,
         imagePath: String,
         userProfile: UserProfile,
-        transform: ImageTransform
+        transform: ImageTransform,
+        caption: String? = null
     ): Post {
         val file = File(imagePath)
         val fileUri = "file://${file.absolutePath}"
@@ -347,7 +368,7 @@ class HomeViewModel @Inject constructor(
             lastName = userProfile.lastName,
             avatarUrl = userProfile.avatarUrl,
             media = listOf(tempMedia),
-            caption = null,
+            caption = caption,
             visibility = "friend-only", // Default visibility
             createdAt = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
                 .format(System.currentTimeMillis()),
@@ -360,7 +381,7 @@ class HomeViewModel @Inject constructor(
             state.copy(
                 posts = state.posts.filterNot { it.id == tempPostId },
                 uploadStatuses = state.uploadStatuses - tempPostId,
-                tempPostImagePaths = state.tempPostImagePaths - tempPostId
+                tempPosts = state.tempPosts.filterNot { it.id == tempPostId }
             )
         }
         Logger.d("🗑️ Removed temporary post: $tempPostId")

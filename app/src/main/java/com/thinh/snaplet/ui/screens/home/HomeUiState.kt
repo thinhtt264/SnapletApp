@@ -4,9 +4,11 @@ import android.graphics.Bitmap
 import androidx.camera.core.CameraSelector
 import com.thinh.snaplet.data.model.Post
 
+typealias TempPost = Post
+
 data class HomeUiState(
     val cameraState: CameraState,
-    val uploadState: UploadState = UploadState(),
+    val currentCaption: String? = null, // Caption for current capture
 
     val posts: List<Post> = emptyList(),
     val isLoadingPosts: Boolean = false,
@@ -15,7 +17,7 @@ data class HomeUiState(
     val error: String? = null,
 
     val uploadStatuses: Map<String, UploadStatus> = emptyMap(),
-    val tempPostImagePaths: Map<String, String> = emptyMap()
+    val tempPosts: List<TempPost> = emptyList() // List of temp posts with all info for retry
 )
 
 sealed class UploadStatus {
@@ -23,10 +25,6 @@ sealed class UploadStatus {
     data class Failed(val errorMessage: String) : UploadStatus()
     object Success : UploadStatus()
 }
-
-data class UploadState(
-    val caption: String? = null,
-)
 
 data class CameraState(
     val isCameraActive: Boolean = false,

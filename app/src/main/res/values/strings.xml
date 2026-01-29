@@ -50,4 +50,5 @@
     <string name="last_name_required">Họ là bắt buộc</string>
     <string name="error">Lỗi</string>
     <string name="invalid_credentials">Email hoặc mật khẩu không đúng</string>
+    <string name="add_caption_placeholder">Thêm một tin nhắn</string>
 </resources>

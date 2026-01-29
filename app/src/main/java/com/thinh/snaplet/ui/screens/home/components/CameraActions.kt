@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.ui.theme.GoldenPollen
-import kotlinx.coroutines.delay
 import pressScaleClickable
 
 private val CAPTURE_BUTTON_SIZE = 96.dp
@@ -64,7 +63,7 @@ fun CameraAction(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(all = 40.dp),
+            .padding(horizontal = 36.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -112,7 +111,7 @@ fun CameraAction(
                     modifier = Modifier.size(ICON_SIZE)
                 )
             }
-        } else CaptureButton(modifier, onCapturePhoto)
+        } else CaptureButton(onCapturePhoto = onCapturePhoto)
 
         Icon(
             Icons.Outlined.Cached,
@@ -126,7 +125,7 @@ fun CameraAction(
 }
 
 @Composable
-fun CaptureButton(modifier: Modifier, onCapturePhoto: () -> Unit) {
+fun CaptureButton(modifier: Modifier = Modifier, onCapturePhoto: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -189,14 +188,9 @@ fun CaptureButton(modifier: Modifier, onCapturePhoto: () -> Unit) {
                 .fillMaxSize()
                 .scale(buttonScale)
                 .padding(6.dp)
-                .background(
-                    color = backgroundColor, shape = CircleShape
-                )
+                .background(color = backgroundColor, shape = CircleShape)
                 .pressScaleClickable(
-                    onClick = {
-                        delay(3000)
-                        onCapturePhoto()
-                    },
+                    onClick = onCapturePhoto,
                     interactionSource = interactionSource
                 )
         )
