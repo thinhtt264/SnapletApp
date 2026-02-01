@@ -68,10 +68,11 @@ fun CameraPage(
     val focusManager = LocalFocusManager.current
 
     BoxWithConstraints(
-        modifier = modifier.pointerInput(Unit) {
-            detectTapGestures(onTap = { focusManager.clearFocus() })
-        }
-    ) {
+        modifier = modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            }) {
         val screenHeight = maxHeight
         val density = LocalDensity.current
         val topPadding = screenHeight * TOP_SPACE_RATIO
@@ -79,7 +80,8 @@ fun CameraPage(
         val imeHeightPx = WindowInsets.ime.getBottom(density).toFloat()
 
         val overlapPx = remember(imeHeightPx) {
-            val mediaBottomPx = with(density) { (topPadding + MediaItemDimensions.MEDIA_HEIGHT).toPx() }
+            val mediaBottomPx =
+                with(density) { (topPadding + MediaItemDimensions.MEDIA_HEIGHT).toPx() }
             val screenHeightPx = with(density) { screenHeight.toPx() }
             val availableSpacePx = screenHeightPx - imeHeightPx
             (mediaBottomPx - availableSpacePx).coerceAtLeast(0f)
@@ -101,8 +103,7 @@ fun CameraPage(
                 .fillMaxWidth()
                 .height(MediaItemDimensions.MEDIA_HEIGHT)
                 .graphicsLayer { translationY = mediaOffsetPx }
-                .clip(RoundedCornerShape(MediaItemDimensions.MEDIA_CORNER_RADIUS))
-        ) {
+                .clip(RoundedCornerShape(MediaItemDimensions.MEDIA_CORNER_RADIUS))) {
             MediaDisplaySection(
                 cameraState = cameraState,
                 currentCaption = currentCaption,
@@ -117,8 +118,7 @@ fun CameraPage(
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .graphicsLayer { translationY = actionOffsetPx }
-        ) {
+                .graphicsLayer { translationY = actionOffsetPx }) {
             CameraAction(
                 modifier = Modifier.navigationBarsPadding(),
                 capturedImagePath = cameraState.capturedImagePath,
@@ -207,30 +207,22 @@ private fun CaptionInput(
             .padding(horizontal = 12.dp)
     ) {
         TextField(
-            value = caption,
-            onValueChange = onCaptionChange,
-            modifier = Modifier
-                .background(
-                    color = MaterialTheme.colorScheme.surface.copy(0.6f),
-                    shape = CircleShape
-                ),
-            placeholder = {
+            value = caption, onValueChange = onCaptionChange, modifier = Modifier.background(
+                    color = MaterialTheme.colorScheme.surface.copy(0.6f), shape = CircleShape
+                ), placeholder = {
                 BaseText(
                     text = stringResource(R.string.add_caption_placeholder),
                     textAlign = TextAlign.Center,
                     typography = MaterialTheme.typography.titleMedium,
                     color = Color.White
                 )
-            },
-            colors = TextFieldDefaults.colors(
+            }, colors = TextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
                 cursorColor = MaterialTheme.colorScheme.onSurface
-            ),
-            maxLines = 2,
-            shape = CircleShape
+            ), maxLines = 2, shape = CircleShape
         )
     }
 }

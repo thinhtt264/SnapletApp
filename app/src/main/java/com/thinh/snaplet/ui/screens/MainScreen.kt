@@ -83,8 +83,8 @@ fun MainScreen(
                         modifier = Modifier
                             .zIndex(1000f)
                             .align(Alignment.TopCenter)
-                            .offset(y = 32.dp)
-                            .size(32.dp)
+                            .offset(y = 28.dp)
+                            .size(28.dp)
                             .pressScaleClickable {
                                 try {
                                     val chuckerIntent = Chucker.getLaunchIntent(context)

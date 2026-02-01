@@ -40,7 +40,7 @@ fun Modifier.pressScaleClickable(
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
     scaleOnPress: Float = 0.96f,
-    onClick: suspend () -> Unit
+    onClick: () -> Unit
 ): Modifier = composed {
     val finalInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
 

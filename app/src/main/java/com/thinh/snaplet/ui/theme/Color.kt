@@ -5,6 +5,6 @@ import androidx.compose.ui.graphics.Color
 val GoldenPollen = Color(0xFFffb703)
 val Black = Color(0xFF050505)
 val Black90 = Color(0xFF171717)
-val DarkGray = Color(0xFF504a4a)
+val DarkGray = Color(0xFF2A2A2A)
 val Gray = Color(0xFFb3b3b3)
 val Red = Color(0xFFff5252)
