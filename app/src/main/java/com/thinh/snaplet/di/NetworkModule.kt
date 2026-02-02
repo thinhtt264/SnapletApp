@@ -31,7 +31,7 @@ import javax.inject.Singleton
 object NetworkModule {
 
     private val BASE_URL = if (BuildConfig.DEBUG) "http://10.0.2.2:4040/api/v1/"
-    else "https://25e18af76720.ngrok-free.app/api/v1/"
+    else "https://snaplet-core-service.onrender.com/api/v1/"
 
     @Provides
     @Singleton
