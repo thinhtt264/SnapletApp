@@ -2,7 +2,6 @@ package com.thinh.snaplet.ui.screens.home
 
 import android.graphics.Bitmap
 import androidx.camera.core.ImageCapture
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +11,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -22,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.thinh.snaplet.data.model.Post
@@ -36,52 +37,127 @@ import kotlinx.coroutines.launch
 
 private const val CAMERA_PAGE_INDEX = 0
 
+
+@Immutable
+data class CameraActions(
+    val onImageCaptureReady: (ImageCapture) -> Unit,
+    val onSnapshotHandlerReady: (() -> Bitmap?) -> Unit,
+    val onCapturePhoto: () -> Unit,
+    val onSwitchCamera: () -> Unit,
+    val onCancelCapture: () -> Unit,
+    val onUploadPost: () -> Unit,
+    val onCaptionChange: (String) -> Unit,
+    val onRequestPermission: () -> Unit
+)
+
 @Composable
-fun Home() {
-    val viewModel: HomeViewModel = hiltViewModel()
+fun Home(viewModel: HomeViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val pageCount = 1 + uiState.posts.size
     val pagerState = rememberPagerState(
-        initialPage = CAMERA_PAGE_INDEX, pageCount = { pageCount })
+        initialPage = CAMERA_PAGE_INDEX,
+        pageCount = { pageCount }
+    )
+
+    var snapshotHandler by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
+
+    val cameraActions = remember(viewModel) {
+        CameraActions(
+            onImageCaptureReady = viewModel::setImageCapture,
+            onSnapshotHandlerReady = { snapshotHandler = it },
+            onCapturePhoto = { viewModel.onCapturePhoto(context) },
+            onSwitchCamera = viewModel::onSwitchCamera,
+            onCancelCapture = viewModel::onCancelCapture,
+            onUploadPost = viewModel::onUploadPost,
+            onCaptionChange = viewModel::updateCurrentCaption,
+            onRequestPermission = viewModel::onScreenInitialized
+        )
+    }
+
+    // Camera binding control based on page position
+    CameraBindingEffect(
+        pagerState = pagerState,
+        shouldBindCamera = uiState.cameraState.shouldBindCamera,
+        snapshotHandler = snapshotHandler,
+        onCameraPageVisible = viewModel::onCameraPageVisible,
+        onCameraPageHidden = viewModel::onCameraPageHidden,
+        onSnapshotCaptured = viewModel::setPreviewSnapshot
+    )
 
     PermissionHandler(
-        permission = Permission.Camera, onPermissionResult = viewModel::onPermissionResult
+        permission = Permission.Camera,
+        onPermissionResult = viewModel::onPermissionResult
     ) { requestPermission ->
-        UiEventHandler(
-            requestPermission = requestPermission,
-            onScrollToFirstPost = { pagerState.animateScrollToPage(1) })
 
-        HomeContent(
-            pagerState = pagerState, uiState = uiState
+        // Handle UI events from ViewModel
+        UiEventEffect(
+            viewModel = viewModel,
+            requestPermission = requestPermission,
+            onScrollToFirstPost = { pagerState.animateScrollToPage(1) }
+        )
+
+        HomeScreen(
+            pagerState = pagerState,
+            uiState = uiState,
+            cameraActions = cameraActions,
+            onNavigateToCameraPage = {
+                scope.launch { pagerState.animateScrollToPage(CAMERA_PAGE_INDEX) }
+            }
         )
     }
 }
 
 @Composable
-private fun UiEventHandler(
-    requestPermission: () -> Unit, onScrollToFirstPost: suspend () -> Unit
+private fun CameraBindingEffect(
+    pagerState: PagerState,
+    shouldBindCamera: Boolean,
+    snapshotHandler: (() -> Bitmap?)?,
+    onCameraPageVisible: () -> Unit,
+    onCameraPageHidden: () -> Unit,
+    onSnapshotCaptured: (Bitmap) -> Unit
 ) {
-    val viewModel: HomeViewModel = hiltViewModel()
+    val isOnCameraPage = pagerState.currentPage == CAMERA_PAGE_INDEX
 
+    LaunchedEffect(isOnCameraPage, pagerState.isScrollInProgress) {
+        when {
+            isOnCameraPage && !pagerState.isScrollInProgress -> {
+                onCameraPageVisible()
+            }
+
+            !isOnCameraPage && shouldBindCamera -> {
+                snapshotHandler?.invoke()?.let(onSnapshotCaptured)
+                    ?: Logger.e("Failed to capture snapshot")
+                onCameraPageHidden()
+            }
+        }
+    }
+}
+
+@Composable
+private fun UiEventEffect(
+    viewModel: HomeViewModel,
+    requestPermission: () -> Unit,
+    onScrollToFirstPost: suspend () -> Unit
+) {
     LaunchedEffect(Unit) {
         viewModel.onScreenInitialized()
 
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is HomeUiEvent.RequestPermission -> {
-                    Logger.d("🔐 Executing permission request from ViewModel")
+                    Logger.d("Executing permission request from ViewModel")
                     requestPermission()
                 }
 
                 is HomeUiEvent.ShowError -> {
-                    // TODO: Show error toast/snackbar
-                    Logger.e("⚠️ Error: ${event.message}")
+                    Logger.e("Error: ${event.message}")
                 }
 
                 is HomeUiEvent.ShowSuccess -> {
-                    // TODO: Show success toast/snackbar
-                    Logger.d("✅ Success: ${event.message}")
+                    Logger.d("Success: ${event.message}")
                 }
 
                 is HomeUiEvent.ScrollToFirstPost -> onScrollToFirstPost()
@@ -91,53 +167,33 @@ private fun UiEventHandler(
 }
 
 @Composable
-private fun HomeContent(
-    pagerState: PagerState, uiState: HomeUiState
+private fun HomeScreen(
+    pagerState: PagerState,
+    uiState: HomeUiState,
+    cameraActions: CameraActions,
+    onNavigateToCameraPage: () -> Unit
 ) {
-    val viewModel: HomeViewModel = hiltViewModel()
-
-    val scope = rememberCoroutineScope()
-
-    var shouldBindCamera by remember { mutableStateOf(true) }
-    var captureSnapshotHandler by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
-
-    val cameraCallbacks = rememberCameraCallbacks(
-        viewModel = viewModel, onSnapshotHandlerChanged = { handler ->
-            captureSnapshotHandler = handler
-        })
-
-    val isGlobalBottomAction by remember {
+    val showGlobalBottomAction by remember {
         derivedStateOf {
             val absolutePosition = pagerState.currentPage + pagerState.currentPageOffsetFraction
             absolutePosition > 1.0f
         }
     }
 
-    LaunchedEffect(pagerState.currentPage) {
-        Logger.d("${pagerState.currentPage}")
-    }
-
-    CameraBindingController(
-        pagerState = pagerState,
-        shouldBindCamera = shouldBindCamera,
-        captureSnapshotHandler = captureSnapshotHandler,
-        onShouldBindCameraChanged = { shouldBind -> shouldBindCamera = shouldBind },
-        onSnapshotCaptured = viewModel::setPreviewSnapshot
-    )
+    val userScrollEnabled = !uiState.cameraState.isEditMode
 
     Box(modifier = Modifier.fillMaxSize()) {
-        MediaPager(
+        HomePager(
             pagerState = pagerState,
             posts = uiState.posts,
             uploadStatuses = uiState.uploadStatuses,
-            shouldBindCamera = shouldBindCamera,
-            cameraCallbacks = cameraCallbacks,
-            showLocalBottomAction = !isGlobalBottomAction,
-            onCaptureClick = {
-                scope.launch {
-                    pagerState.animateScrollToPage(0)
-                }
-            }
+            cameraState = uiState.cameraState,
+            currentCaption = uiState.currentCaption,
+            isUploading = uiState.isUploading,
+            showLocalBottomAction = !showGlobalBottomAction,
+            userScrollEnabled = userScrollEnabled,
+            cameraActions = cameraActions,
+            onNavigateToCameraPage = onNavigateToCameraPage
         )
 
         TopAction(
@@ -150,14 +206,10 @@ private fun HomeContent(
                 .padding(all = 16.dp)
         )
 
-        if (isGlobalBottomAction) {
+        if (showGlobalBottomAction) {
             BottomAction(
                 onGridClick = { /* TODO */ },
-                onCaptureClick = {
-                    scope.launch {
-                        pagerState.animateScrollToPage(0)
-                    }
-                },
+                onCaptureClick = onNavigateToCameraPage,
                 onMoreClick = { /* TODO */ },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -170,80 +222,43 @@ private fun HomeContent(
 }
 
 @Composable
-private fun rememberCameraCallbacks(
-    viewModel: HomeViewModel, onSnapshotHandlerChanged: ((() -> Bitmap?) -> Unit)
-): CameraCallbacks {
-    return remember {
-        CameraCallbacks(onImageCaptureReady = { imageCapture ->
-            viewModel.setImageCapture(imageCapture)
-        }, onSnapshotHandlerReady = { handler ->
-            onSnapshotHandlerChanged(handler)
-        })
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun CameraBindingController(
-    pagerState: PagerState,
-    shouldBindCamera: Boolean,
-    captureSnapshotHandler: (() -> Bitmap?)?,
-    onShouldBindCameraChanged: (Boolean) -> Unit,
-    onSnapshotCaptured: (Bitmap) -> Unit
-) {
-    LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
-        when {
-            isOnCameraPage(pagerState) && !pagerState.isScrollInProgress -> {
-                onShouldBindCameraChanged(true)
-            }
-
-            !isOnCameraPage(pagerState) && shouldBindCamera -> {
-                captureAndSaveSnapshot(
-                    captureSnapshotHandler = captureSnapshotHandler,
-                    onSnapshotCaptured = onSnapshotCaptured
-                )
-                onShouldBindCameraChanged(false)
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun MediaPager(
+private fun HomePager(
     pagerState: PagerState,
     posts: List<Post>,
     uploadStatuses: Map<String, UploadStatus>,
-    shouldBindCamera: Boolean,
-    cameraCallbacks: CameraCallbacks,
+    cameraState: CameraState,
+    currentCaption: String?,
+    isUploading: Boolean,
     showLocalBottomAction: Boolean,
-    onCaptureClick: () -> Unit
+    userScrollEnabled: Boolean,
+    cameraActions: CameraActions,
+    onNavigateToCameraPage: () -> Unit
 ) {
     VerticalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
+        userScrollEnabled = userScrollEnabled,
         horizontalAlignment = Alignment.CenterHorizontally,
         beyondViewportPageCount = 1,
-        key = { page -> getPageKey(page, posts) }) { page ->
+        key = { page -> if (page == CAMERA_PAGE_INDEX) "camera" else posts.getOrNull(page - 1)?.id ?: "unknown_$page" }
+    ) { page ->
         when (page) {
-            CAMERA_PAGE_INDEX -> {
-                CameraPage(
-                    onImageCaptureReady = cameraCallbacks.onImageCaptureReady,
-                    onSnapshotHandlerReady = cameraCallbacks.onSnapshotHandlerReady,
-                    shouldBindCamera = shouldBindCamera,
-                )
-            }
+            CAMERA_PAGE_INDEX -> CameraPage(
+                cameraState = cameraState,
+                currentCaption = currentCaption,
+                isUploading = isUploading,
+                cameraActions = cameraActions
+            )
 
             else -> {
                 val postIndex = page - 1
-                if (postIndex < posts.size) {
-                    val post = posts[postIndex]
+                posts.getOrNull(postIndex)?.let { post ->
                     MediaPage(
                         post = post,
                         uploadStatus = uploadStatuses[post.id],
                         showBottomAction = showLocalBottomAction,
                         onGridClick = { /* TODO */ },
-                        onCaptureClick = onCaptureClick,
+                        onCaptureClick = onNavigateToCameraPage,
                         onMoreClick = { /* TODO */ }
                     )
                 }
@@ -251,29 +266,3 @@ private fun MediaPager(
         }
     }
 }
-
-@OptIn(ExperimentalFoundationApi::class)
-private fun isOnCameraPage(pagerState: PagerState): Boolean {
-    return pagerState.currentPage == CAMERA_PAGE_INDEX
-}
-
-private fun getPageKey(page: Int, posts: List<Post>): String {
-    return if (page == CAMERA_PAGE_INDEX) {
-        "camera_section"
-    } else {
-        posts.getOrNull(page - 1)?.id ?: "unknown_$page"
-    }
-}
-
-private fun captureAndSaveSnapshot(
-    captureSnapshotHandler: (() -> Bitmap?)?, onSnapshotCaptured: (Bitmap) -> Unit
-) {
-    captureSnapshotHandler?.invoke()?.let { bitmap ->
-        onSnapshotCaptured(bitmap)
-    } ?: Logger.e("❌ Failed to capture snapshot")
-}
-
-private data class CameraCallbacks(
-    val onImageCaptureReady: (ImageCapture) -> Unit,
-    val onSnapshotHandlerReady: (() -> Bitmap?) -> Unit
-)

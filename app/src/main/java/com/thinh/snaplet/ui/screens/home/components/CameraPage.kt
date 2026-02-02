@@ -22,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -40,31 +38,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.CameraPreview
 import com.thinh.snaplet.ui.components.ImageSize
+import com.thinh.snaplet.ui.screens.home.CameraActions
 import com.thinh.snaplet.ui.screens.home.CameraState
-import com.thinh.snaplet.ui.screens.home.HomeViewModel
 
 private const val TOP_SPACE_RATIO = 0.12f
 
 @Composable
 fun CameraPage(
-    onImageCaptureReady: (ImageCapture) -> Unit,
-    onSnapshotHandlerReady: (() -> Bitmap?) -> Unit,
-    shouldBindCamera: Boolean,
+    cameraState: CameraState,
+    currentCaption: String?,
+    isUploading: Boolean,
+    cameraActions: CameraActions,
     modifier: Modifier = Modifier
 ) {
-    val viewModel: HomeViewModel = hiltViewModel()
-    val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-
-    val cameraState = uiState.cameraState
-    val currentCaption = uiState.currentCaption
-    val isUploading = uiState.isUploading
     val focusManager = LocalFocusManager.current
 
     BoxWithConstraints(
@@ -107,11 +98,10 @@ fun CameraPage(
             MediaDisplaySection(
                 cameraState = cameraState,
                 currentCaption = currentCaption,
-                onImageCaptureReady = onImageCaptureReady,
-                onSnapshotHandlerReady = onSnapshotHandlerReady,
-                shouldBindCamera = shouldBindCamera,
-                onRequestPermission = viewModel::onScreenInitialized,
-                onCaptionChange = viewModel::updateCurrentCaption,
+                onImageCaptureReady = cameraActions.onImageCaptureReady,
+                onSnapshotHandlerReady = cameraActions.onSnapshotHandlerReady,
+                onRequestPermission = cameraActions.onRequestPermission,
+                onCaptionChange = cameraActions.onCaptionChange,
             )
         }
 
@@ -122,10 +112,10 @@ fun CameraPage(
             CameraAction(
                 modifier = Modifier.navigationBarsPadding(),
                 capturedImagePath = cameraState.capturedImagePath,
-                onCapturePhoto = { viewModel.onCapturePhoto(context) },
-                onSwitchCamera = viewModel::onSwitchCamera,
-                onCancelCapture = viewModel::onCancelCapture,
-                onUploadPost = viewModel::onUploadPost,
+                onCapturePhoto = cameraActions.onCapturePhoto,
+                onSwitchCamera = cameraActions.onSwitchCamera,
+                onCancelCapture = cameraActions.onCancelCapture,
+                onUploadPost = cameraActions.onUploadPost,
                 isUploading = isUploading,
             )
         }
@@ -138,49 +128,27 @@ private fun MediaDisplaySection(
     currentCaption: String?,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onSnapshotHandlerReady: (() -> Bitmap?) -> Unit,
-    shouldBindCamera: Boolean,
     onRequestPermission: () -> Unit,
     onCaptionChange: (String) -> Unit,
 ) {
-    val capturedImagePath = cameraState.capturedImagePath
-
     Box(modifier = Modifier.fillMaxSize()) {
-        capturedImagePath?.let { path ->
-            val imageUri = "file://$path".toUri()
-            val isFrontCamera = cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
-            Box(modifier = Modifier.zIndex(100f)) {
-                AsyncImage(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            if (isFrontCamera) {
-                                scaleX = -1f
-                            }
-                        },
-                    imageUrl = imageUri.toString(),
-                    contentDescription = "Captured image",
-                    contentScale = ContentScale.Fit,
-                    resizeSize = ImageSize.Small,
-                    showLoadingIndicator = false,
-                    showErrorIcon = false
-                )
-
-                CaptionInput(
-                    caption = currentCaption ?: "",
-                    onCaptionChange = onCaptionChange,
-                    modifier = Modifier
-                        .zIndex(100f)
-                        .align(Alignment.BottomCenter)
-                )
-            }
+        // Captured image overlay (edit mode)
+        cameraState.capturedImagePath?.let { path ->
+            CapturedImageOverlay(
+                imagePath = path,
+                isFrontCamera = cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT,
+                caption = currentCaption ?: "",
+                onCaptionChange = onCaptionChange
+            )
         }
 
+        // Camera preview or permission denied
         if (cameraState.hasCameraPermission) {
             CameraPreview(
                 modifier = Modifier.fillMaxSize(),
                 onImageCaptureReady = onImageCaptureReady,
                 onSnapshotHandlerReady = onSnapshotHandlerReady,
-                shouldBindCamera = shouldBindCamera,
+                shouldBindCamera = cameraState.shouldBindCamera,
                 lensFacing = cameraState.lensFacing,
                 placeholderBitmap = cameraState.lastPreviewSnapshot
             )
@@ -192,6 +160,38 @@ private fun MediaDisplaySection(
                 onRequestPermission = onRequestPermission
             )
         }
+    }
+}
+
+@Composable
+private fun CapturedImageOverlay(
+    imagePath: String,
+    isFrontCamera: Boolean,
+    caption: String,
+    onCaptionChange: (String) -> Unit
+) {
+    val imageUri = "file://$imagePath".toUri()
+
+    Box(modifier = Modifier.zIndex(100f)) {
+        AsyncImage(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { if (isFrontCamera) scaleX = -1f },
+            imageUrl = imageUri.toString(),
+            contentDescription = "Captured image",
+            contentScale = ContentScale.Fit,
+            resizeSize = ImageSize.Small,
+            showLoadingIndicator = false,
+            showErrorIcon = false
+        )
+
+        CaptionInput(
+            caption = caption,
+            onCaptionChange = onCaptionChange,
+            modifier = Modifier
+                .zIndex(100f)
+                .align(Alignment.BottomCenter)
+        )
     }
 }
 

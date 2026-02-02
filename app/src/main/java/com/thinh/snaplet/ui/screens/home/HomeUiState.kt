@@ -29,10 +29,12 @@ sealed class UploadStatus {
 data class CameraState(
     val isCameraActive: Boolean = false,
     val isCapturing: Boolean = false,
-    val showCameraPreview: Boolean = false,
+    val shouldBindCamera: Boolean = true,
     val lastPreviewSnapshot: Bitmap? = null,
     val hasCameraPermission: Boolean = false,
     val lensFacing: Int = CameraSelector.LENS_FACING_FRONT,
     val capturedImagePath: String? = null
-)
+) {
+    val isEditMode: Boolean get() = capturedImagePath != null
+}
 

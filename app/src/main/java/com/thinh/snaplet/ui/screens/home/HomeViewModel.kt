@@ -130,6 +130,14 @@ class HomeViewModel @Inject constructor(
         updateCameraState { it.copy(lastPreviewSnapshot = bitmap) }
     }
 
+    fun onCameraPageVisible() {
+        updateCameraState { it.copy(shouldBindCamera = true) }
+    }
+
+    fun onCameraPageHidden() {
+        updateCameraState { it.copy(shouldBindCamera = false) }
+    }
+
     fun onCapturePhoto(context: Context) {
         if (!_uiState.value.cameraState.hasCameraPermission) {
             emitEvent(HomeUiEvent.RequestPermission(Permission.Camera))
