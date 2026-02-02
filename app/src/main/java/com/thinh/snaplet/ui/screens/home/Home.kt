@@ -37,7 +37,6 @@ import kotlinx.coroutines.launch
 
 private const val CAMERA_PAGE_INDEX = 0
 
-
 @Immutable
 data class CameraActions(
     val onImageCaptureReady: (ImageCapture) -> Unit,
@@ -77,7 +76,6 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
         )
     }
 
-    // Camera binding control based on page position
     CameraBindingEffect(
         pagerState = pagerState,
         shouldBindCamera = uiState.cameraState.shouldBindCamera,
@@ -92,7 +90,6 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
         onPermissionResult = viewModel::onPermissionResult
     ) { requestPermission ->
 
-        // Handle UI events from ViewModel
         UiEventEffect(
             viewModel = viewModel,
             requestPermission = requestPermission,
@@ -240,7 +237,10 @@ private fun HomePager(
         userScrollEnabled = userScrollEnabled,
         horizontalAlignment = Alignment.CenterHorizontally,
         beyondViewportPageCount = 1,
-        key = { page -> if (page == CAMERA_PAGE_INDEX) "camera" else posts.getOrNull(page - 1)?.id ?: "unknown_$page" }
+        key = { page ->
+            if (page == CAMERA_PAGE_INDEX) "camera" else posts.getOrNull(page - 1)?.id
+                ?: "unknown_$page"
+        }
     ) { page ->
         when (page) {
             CAMERA_PAGE_INDEX -> CameraPage(
