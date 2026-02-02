@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.Pending
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -27,7 +27,7 @@ fun BottomAction(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CircleActionButton(
+        Box(
             modifier = Modifier.pressScaleClickable(onClick = onGridClick)
         ) {
             Icon(
@@ -43,27 +43,15 @@ fun BottomAction(
             onCapturePhoto = onCaptureClick
         )
 
-        CircleActionButton(
+        Box(
             modifier = Modifier.pressScaleClickable(onClick = onMoreClick)
         ) {
             Icon(
-                imageVector = Icons.Outlined.MoreHoriz,
+                imageVector = Icons.Outlined.Pending,
                 contentDescription = "More",
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(32.dp)
             )
         }
-    }
-}
-
-@Composable
-private fun CircleActionButton(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Box(
-        contentAlignment = Alignment.Center
-    ) {
-        content()
     }
 }

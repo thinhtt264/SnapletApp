@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -116,13 +117,14 @@ private fun PostMediaContent(post: Post) {
                     .padding(bottom = 12.dp)
                     .padding(horizontal = 12.dp)
                     .background(
-                        color = MaterialTheme.colorScheme.surface.copy(0.6f), shape = CircleShape
+                        color = Color.Black.copy(alpha = 0.4f), shape = CircleShape
                     )
                     .padding(vertical = 8.dp, horizontal = 12.dp)
             ) {
                 BaseText(
                     text = post.caption,
                     typography = MaterialTheme.typography.titleMedium,
+                    color = Color.White
                 )
             }
         }
@@ -146,7 +148,7 @@ private fun PostMetadata(
             )
             BaseText(
                 text = "Uploading....",
-                typography = MaterialTheme.typography.titleLarge,
+                typography = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
         } else {
@@ -166,7 +168,7 @@ private fun PostMetadata(
             }
             BaseText(
                 text = post.firstName,
-                typography = MaterialTheme.typography.titleLarge,
+                typography = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
         }

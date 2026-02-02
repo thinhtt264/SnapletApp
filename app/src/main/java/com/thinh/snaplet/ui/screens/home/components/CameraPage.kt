@@ -212,22 +212,28 @@ private fun CaptionInput(
             .padding(horizontal = 12.dp)
     ) {
         TextField(
-            value = caption, onValueChange = onCaptionChange, modifier = Modifier.background(
-                    color = MaterialTheme.colorScheme.surface.copy(0.6f), shape = CircleShape
-                ), placeholder = {
+            value = caption,
+            onValueChange = onCaptionChange,
+            placeholder = {
                 BaseText(
                     text = stringResource(R.string.add_caption_placeholder),
                     textAlign = TextAlign.Center,
                     typography = MaterialTheme.typography.titleMedium,
                     color = Color.White
                 )
-            }, colors = TextFieldDefaults.colors(
+            },
+            colors = TextFieldDefaults.colors(
                 focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedContainerColor = Color.Black.copy(alpha = 0.4f),
+                unfocusedContainerColor = Color.Black.copy(alpha = 0.4f),
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
                 cursorColor = MaterialTheme.colorScheme.onSurface
-            ), maxLines = 2, shape = CircleShape
+            ),
+            maxLines = 2,
+            shape = CircleShape
         )
     }
 }
