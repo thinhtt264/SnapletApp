@@ -34,7 +34,7 @@ fun BottomAction(
                 imageVector = Icons.Outlined.GridView,
                 contentDescription = "Grid",
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(36.dp)
             )
         }
 
@@ -50,7 +50,7 @@ fun BottomAction(
                 imageVector = Icons.Outlined.Pending,
                 contentDescription = "More",
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(36.dp)
             )
         }
     }

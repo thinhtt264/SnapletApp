@@ -132,17 +132,6 @@ private fun MediaDisplaySection(
     onCaptionChange: (String) -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // Captured image overlay (edit mode)
-        cameraState.capturedImagePath?.let { path ->
-            CapturedImageOverlay(
-                imagePath = path,
-                isFrontCamera = cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT,
-                caption = currentCaption ?: "",
-                onCaptionChange = onCaptionChange
-            )
-        }
-
-        // Camera preview or permission denied
         if (cameraState.hasCameraPermission) {
             CameraPreview(
                 modifier = Modifier.fillMaxSize(),
@@ -160,34 +149,36 @@ private fun MediaDisplaySection(
                 onRequestPermission = onRequestPermission
             )
         }
+
+        cameraState.capturedImagePath?.let { path ->
+            CapturedImageOverlay(
+                imagePath = path,
+                isFrontCamera = cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT,
+                caption = currentCaption ?: "",
+                onCaptionChange = onCaptionChange
+            )
+        }
     }
 }
 
 @Composable
 private fun CapturedImageOverlay(
-    imagePath: String,
-    isFrontCamera: Boolean,
-    caption: String,
-    onCaptionChange: (String) -> Unit
+    imagePath: String, isFrontCamera: Boolean, caption: String, onCaptionChange: (String) -> Unit
 ) {
     val imageUri = "file://$imagePath".toUri()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(100f)
-            .background(Color.Black)
-    ) {
+    Box {
         AsyncImage(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer { if (isFrontCamera) scaleX = -1f },
             imageUrl = imageUri.toString(),
             contentDescription = "Captured image",
-            contentScale = ContentScale.Fit,
-            resizeSize = ImageSize.Small,
+            contentScale = ContentScale.Crop,
+            resizeSize = ImageSize.Original,
             showLoadingIndicator = false,
-            showErrorIcon = false
+            showErrorIcon = false,
+            crossfadeDuration = 0
         )
 
         CaptionInput(
@@ -212,17 +203,14 @@ private fun CaptionInput(
             .padding(horizontal = 12.dp)
     ) {
         TextField(
-            value = caption,
-            onValueChange = onCaptionChange,
-            placeholder = {
+            value = caption, onValueChange = onCaptionChange, placeholder = {
                 BaseText(
                     text = stringResource(R.string.add_caption_placeholder),
                     textAlign = TextAlign.Center,
                     typography = MaterialTheme.typography.titleMedium,
                     color = Color.White
                 )
-            },
-            colors = TextFieldDefaults.colors(
+            }, colors = TextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
                 focusedContainerColor = Color.Black.copy(alpha = 0.4f),
@@ -231,9 +219,7 @@ private fun CaptionInput(
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
                 cursorColor = MaterialTheme.colorScheme.onSurface
-            ),
-            maxLines = 2,
-            shape = CircleShape
+            ), maxLines = 2, shape = CircleShape
         )
     }
 }
