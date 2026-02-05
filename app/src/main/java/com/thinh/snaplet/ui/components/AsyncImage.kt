@@ -35,14 +35,11 @@ fun AsyncImage(
     errorPlaceholder: Painter? = null
 ) {
     SubcomposeAsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(imageUrl)
+        model = ImageRequest.Builder(LocalContext.current).data(imageUrl)
             // Performance optimizations
-            .crossfade(crossfadeDuration)
-            .size(resizeSize.toCoilSize()) // Resize to save memory
+            .crossfade(crossfadeDuration).size(resizeSize.toCoilSize()) // Resize to save memory
             // Cache policies (already set in ImageLoadingModule, but explicit here)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
+            .memoryCachePolicy(CachePolicy.ENABLED).diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
             // Quality settings
             .allowHardware(true) // Use hardware bitmaps (more efficient)
@@ -63,8 +60,7 @@ fun AsyncImage(
                 backgroundColor = errorBackgroundColor,
                 placeholder = errorPlaceholder
             )
-        }
-    )
+        })
 }
 
 /**
@@ -72,8 +68,7 @@ fun AsyncImage(
  */
 @Composable
 private fun LoadingState(
-    backgroundColor: Color,
-    modifier: Modifier = Modifier
+    backgroundColor: Color, modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -94,10 +89,7 @@ private fun LoadingState(
  */
 @Composable
 private fun ErrorState(
-    showIcon: Boolean,
-    backgroundColor: Color,
-    placeholder: Painter?,
-    modifier: Modifier = Modifier
+    showIcon: Boolean, backgroundColor: Color, placeholder: Painter?, modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -118,7 +110,7 @@ private fun ErrorState(
 
 /**
  * Image size presets for memory optimization
- * 
+ *
  * Smaller sizes = Less memory usage = Better performance
  * Choose based on display size in UI
  */
@@ -128,31 +120,31 @@ enum class ImageSize(val pixels: Int) {
      * ~200KB in memory per image
      */
     Thumbnail(256),
-    
+
     /**
      * Small size (e.g., for grid items)
      * ~500KB in memory per image
      */
     Small(512),
-    
+
     /**
      * Medium size (e.g., for list items, default)
      * ~1MB in memory per image
      */
     Medium(1024),
-    
+
     /**
      * Large size (e.g., for detail screens)
      * ~2MB in memory per image
      */
     Large(2048),
-    
+
     /**
      * Original size (no resize)
      * Use sparingly - can be 5-10MB per image!
      */
     Original(Int.MAX_VALUE);
-    
+
     /**
      * Convert to Coil's Size
      */
@@ -163,30 +155,4 @@ enum class ImageSize(val pixels: Int) {
             Size(pixels, pixels)
         }
     }
-}
-
-/**
- * Extension function for easier usage with custom sizes
- */
-@Composable
-fun AsyncImage(
-    imageUrl: String,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Crop,
-    customSizePixels: Int? = null, // Custom size if presets don't fit
-    showLoadingIndicator: Boolean = true,
-    showErrorIcon: Boolean = true
-) {
-    val size = customSizePixels ?: ImageSize.Small.pixels
-
-    AsyncImage(
-        imageUrl = imageUrl,
-        contentDescription = contentDescription,
-        modifier = modifier,
-        contentScale = contentScale,
-        resizeSize = ImageSize.entries.find { it.pixels == size } ?: ImageSize.Medium,
-        showLoadingIndicator = showLoadingIndicator,
-        showErrorIcon = showErrorIcon
-    )
 }

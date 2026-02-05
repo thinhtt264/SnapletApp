@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.ui.theme.GoldenPollen
 import pressScaleClickable
 
-private val CAPTURE_BUTTON_SIZE = 96.dp
+private val CAPTURE_BUTTON_SIZE = 92.dp
 private val ICON_SIZE = 46.dp
 private val CAPTURE_BUTTON_BORDER_WIDTH = 4.dp
 private const val CAPTURE_ANIMATION_DURATION = 200

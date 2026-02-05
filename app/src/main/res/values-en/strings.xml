@@ -43,4 +43,5 @@
     <string name="error">Error</string>
     <string name="invalid_credentials">Email or password is incorrect</string>
     <string name="add_caption_placeholder">Add a message</string>
+    <string name="friends">Friends</string>
 </resources>
