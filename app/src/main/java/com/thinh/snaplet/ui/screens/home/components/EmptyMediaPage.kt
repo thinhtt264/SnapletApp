@@ -72,7 +72,7 @@ fun EmptyMediaPage(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 24.dp),
+                .padding(bottom = 28.dp),
             contentPadding = PaddingValues(all = 16.dp),
             titleColor = Color.Black,
             typography = MaterialTheme.typography.titleMedium,
