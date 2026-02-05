@@ -71,7 +71,8 @@ fun EmptyMediaPage(
             title = stringResource(R.string.empty_media_add_friend),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp),
             contentPadding = PaddingValues(all = 16.dp),
             titleColor = Color.Black,
             typography = MaterialTheme.typography.titleMedium,
