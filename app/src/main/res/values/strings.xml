@@ -52,4 +52,9 @@
     <string name="invalid_credentials">Email hoặc mật khẩu không đúng</string>
     <string name="add_caption_placeholder">Thêm một tin nhắn</string>
     <string name="friends">Bạn bè</string>
+
+    <!-- Empty media (Locket) screen -->
+    <string name="empty_media_title">Gửi Locket đầu tiên của bạn</string>
+    <string name="empty_media_subtitle">Ảnh của bạn sẽ xuất hiện trên màn hình chính của bạn bè</string>
+    <string name="empty_media_add_friend">+ Thêm bạn mới</string>
 </resources>

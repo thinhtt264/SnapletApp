@@ -44,4 +44,9 @@
     <string name="invalid_credentials">Email or password is incorrect</string>
     <string name="add_caption_placeholder">Add a message</string>
     <string name="friends">Friends</string>
+
+    <!-- Empty media (Locket) screen -->
+    <string name="empty_media_title">Send your first Locket</string>
+    <string name="empty_media_subtitle">Your photos will appear on your friends\' home screens</string>
+    <string name="empty_media_add_friend">+ Add new friend</string>
 </resources>

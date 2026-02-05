@@ -7,8 +7,8 @@ import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.data.repository.auth.AuthRepository
+import com.thinh.snaplet.ui.screens.common.UiText
 import com.thinh.snaplet.utils.Logger
-import com.thinh.snaplet.utils.UiText
 import com.thinh.snaplet.utils.ValidationConstants
 import com.thinh.snaplet.utils.network.ApiError
 import com.thinh.snaplet.utils.network.ApiErrorCode

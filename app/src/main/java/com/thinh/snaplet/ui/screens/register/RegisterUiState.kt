@@ -1,6 +1,6 @@
 package com.thinh.snaplet.ui.screens.register
 
-import com.thinh.snaplet.utils.UiText
+import com.thinh.snaplet.ui.screens.common.UiText
 
 enum class RegisterStep {
     EMAIL,
