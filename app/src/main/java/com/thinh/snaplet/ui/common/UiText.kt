@@ -1,4 +1,4 @@
-package com.thinh.snaplet.ui.screens.common
+package com.thinh.snaplet.ui.common
 
 import android.content.Context
 import androidx.annotation.StringRes

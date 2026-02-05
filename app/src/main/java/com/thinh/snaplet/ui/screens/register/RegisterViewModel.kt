@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.thinh.snaplet.R
 import com.thinh.snaplet.data.repository.auth.AuthRepository
-import com.thinh.snaplet.ui.screens.common.UiText
+import com.thinh.snaplet.ui.common.UiText
 import com.thinh.snaplet.utils.ValidationConstants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow

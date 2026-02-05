@@ -24,9 +24,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
+import com.thinh.snaplet.ui.common.CommonImages
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.PrimaryButton
-import com.thinh.snaplet.ui.screens.common.CommonImages
 
 @Composable
 fun EmptyMediaPage(

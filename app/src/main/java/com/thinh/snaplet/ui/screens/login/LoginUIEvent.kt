@@ -1,6 +1,6 @@
 package com.thinh.snaplet.ui.screens.login
 
-import com.thinh.snaplet.ui.screens.common.UiText
+import com.thinh.snaplet.ui.common.UiText
 
 sealed class LoginUIEvent {
 

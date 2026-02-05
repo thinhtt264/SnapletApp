@@ -28,10 +28,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.thinh.snaplet.data.model.Post
+import com.thinh.snaplet.ui.common.CommonImages
 import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
-import com.thinh.snaplet.ui.screens.common.CommonImages
 import com.thinh.snaplet.ui.screens.home.UploadStatus
 import com.thinh.snaplet.utils.formatTimeAgo
 
