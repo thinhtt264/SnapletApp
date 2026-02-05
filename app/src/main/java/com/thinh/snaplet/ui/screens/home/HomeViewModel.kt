@@ -62,25 +62,61 @@ class HomeViewModel @Inject constructor(
         loadNewsfeed()
     }
 
-    private fun loadNewsfeed() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingPosts = true) }
+    private fun loadNewsfeed(isLoadMore: Boolean = false) {
+        val state = _uiState.value
 
-            mediaRepository.getNewsfeed().fold(onSuccess = { feedData ->
-                _uiState.update {
-                    it.copy(
-                        posts = feedData.data, isLoadingPosts = false, error = null
-                    )
+        if (isLoadMore) {
+            if (state.isLoadingMore || state.nextCursor == null) return
+        } else {
+            if (state.isLoadingPosts) return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                if (isLoadMore) it.copy(isLoadingMore = true)
+                else it.copy(isLoadingPosts = true)
+            }
+
+            val cursor = if (isLoadMore) state.nextCursor else null
+
+            mediaRepository.getNewsfeed(cursor = cursor).fold(
+                onSuccess = { feedData ->
+                    _uiState.update {
+                        it.copy(
+                            posts = if (isLoadMore) it.posts + feedData.data else feedData.data,
+                            isLoadingPosts = false,
+                            isLoadingMore = false,
+                            nextCursor = feedData.pagination.nextCursor,
+                            error = null
+                        )
+                    }
+                    if (isLoadMore) {
+                        Logger.d("✅ Loaded ${feedData.data.size} more posts, nextCursor: ${feedData.pagination.nextCursor?.take(20) ?: "null"}")
+                    }
+                },
+                onFailure = { apiError ->
+                    Logger.e("❌ Failed to load newsfeed: ${apiError.message}")
+                    _uiState.update {
+                        it.copy(
+                            isLoadingPosts = false,
+                            isLoadingMore = false,
+                            error = apiError.message
+                        )
+                    }
+                    emitEvent(HomeUiEvent.ShowError(apiError.message))
                 }
-            }, onFailure = { apiError ->
-                Logger.e("❌ Failed to load newsfeed: ${apiError.message}")
-                _uiState.update {
-                    it.copy(
-                        isLoadingPosts = false, error = apiError.message
-                    )
-                }
-                emitEvent(HomeUiEvent.ShowError(apiError.message))
-            })
+            )
+        }
+    }
+
+    fun onItemVisible(currentIndex: Int) {
+        val totalItems = _uiState.value.posts.size
+        // Trigger load more when 2 items away from the end
+        // For 5 items: trigger at index 2 (when viewing 3rd item out of 5)
+        val loadMoreThreshold = totalItems - 3
+
+        if (currentIndex >= loadMoreThreshold && _uiState.value.canLoadMore) {
+            loadNewsfeed(isLoadMore = true)
         }
     }
 

@@ -102,7 +102,8 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
             cameraActions = cameraActions,
             onNavigateToCameraPage = {
                 scope.launch { pagerState.animateScrollToPage(CAMERA_PAGE_INDEX) }
-            }
+            },
+            onItemVisible = viewModel::onItemVisible
         )
     }
 }
@@ -168,7 +169,8 @@ private fun HomeScreen(
     pagerState: PagerState,
     uiState: HomeUiState,
     cameraActions: CameraActions,
-    onNavigateToCameraPage: () -> Unit
+    onNavigateToCameraPage: () -> Unit,
+    onItemVisible: (currentIndex: Int) -> Unit
 ) {
     val showGlobalBottomAction by remember {
         derivedStateOf {
@@ -178,6 +180,14 @@ private fun HomeScreen(
     }
 
     val userScrollEnabled = !uiState.cameraState.isEditMode
+
+    LaunchedEffect(pagerState.currentPage) {
+        val currentPage = pagerState.currentPage
+        if (currentPage > CAMERA_PAGE_INDEX) {
+            val postIndex = currentPage - 1
+            onItemVisible(postIndex)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         HomePager(

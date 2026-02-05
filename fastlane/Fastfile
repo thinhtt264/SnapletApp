@@ -33,4 +33,4 @@ platform :android do
 end
 
 
-##fastlane android build_test release_notes:"Notes"
+## fastlane android build_test release_notes:"Notes"

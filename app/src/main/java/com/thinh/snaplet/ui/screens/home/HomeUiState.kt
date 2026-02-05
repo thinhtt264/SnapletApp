@@ -12,13 +12,19 @@ data class HomeUiState(
 
     val posts: List<Post> = emptyList(),
     val isLoadingPosts: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val isUploading: Boolean = false,
+
+    val nextCursor: String? = null, // Cursor for pagination, null means no more data
 
     val error: String? = null,
 
     val uploadStatuses: Map<String, UploadStatus> = emptyMap(),
     val tempPosts: List<TempPost> = emptyList() // List of temp posts with all info for retry
-)
+) {
+    /** Returns true if more data can be loaded (nextCursor is not null and not currently loading) */
+    val canLoadMore: Boolean get() = nextCursor != null && !isLoadingMore && !isLoadingPosts
+}
 
 sealed class UploadStatus {
     object Uploading : UploadStatus()

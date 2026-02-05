@@ -42,14 +42,9 @@ class MediaRepositoryImpl @Inject constructor(
                 apiService.getPostsFeed(limit = limit, cursor = cursor)
             },
             onSuccess = { feedData ->
-                Logger.d("✅ Fetched ${feedData.data.size} posts, hasNext=${feedData.pagination.hasNext}")
+                Logger.d("✅ Fetched ${feedData.data.size} posts${cursor?.let { ", cursor: ${it.take(20)}..." } ?: ""}")
             }
         )
-    }
-
-    override suspend fun loadMoreMedia(cursor: String, limit: Int): ApiResult<PostsFeedData> {
-        Logger.d("📡 Loading more media with cursor: ${cursor.take(20)}...")
-        return getNewsfeed(limit = limit, cursor = cursor)
     }
 
     override suspend fun requestUpload(

@@ -33,9 +33,6 @@ data class Pagination(
     @SerializedName("limit")
     val limit: Int,
 
-    @SerializedName("hasNext")
-    val hasNext: Boolean,
-
     @SerializedName("nextCursor")
     val nextCursor: String? = null,
 )

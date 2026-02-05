@@ -8,9 +8,7 @@ import com.thinh.snaplet.utils.network.ApiResult
 
 interface MediaRepository {
 
-    suspend fun getNewsfeed(limit: Int = 10, cursor: String? = null): ApiResult<PostsFeedData>
-
-    suspend fun loadMoreMedia(cursor: String, limit: Int = 10): ApiResult<PostsFeedData>
+    suspend fun getNewsfeed(limit: Int = 5, cursor: String? = null): ApiResult<PostsFeedData>
 
     suspend fun requestUpload(
         items: List<String>,

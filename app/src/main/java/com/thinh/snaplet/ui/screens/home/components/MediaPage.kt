@@ -92,7 +92,7 @@ private fun PostMediaContent(post: Post) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         AsyncImage(
-            imageUrl = media.originalUrl.orEmpty(),
+            imageUrl = media.images.md.ifEmpty { media.originalUrl.orEmpty() },
             contentDescription = "Post ${post.id}",
             modifier = Modifier
                 .fillMaxSize()
