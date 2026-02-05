@@ -177,7 +177,6 @@ private fun CapturedImageOverlay(
             contentScale = ContentScale.Crop,
             resizeSize = ImageSize.Original,
             showLoadingIndicator = false,
-            showErrorIcon = false,
             crossfadeDuration = 0
         )
 

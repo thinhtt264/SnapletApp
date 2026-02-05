@@ -24,12 +24,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
+import com.thinh.snaplet.ui.screens.common.CommonImages
 import com.thinh.snaplet.ui.screens.home.UploadStatus
 import com.thinh.snaplet.utils.formatTimeAgo
 
@@ -106,7 +108,8 @@ private fun PostMediaContent(post: Post) {
             resizeSize = ImageSize.Small,
             contentScale = ContentScale.Crop,
             showLoadingIndicator = true,
-            showErrorIcon = true
+            errorBackgroundColor = MaterialTheme.colorScheme.surface,
+            errorPlaceholder = painterResource(CommonImages.PhotoPlaceholder)
         )
 
         if (!post.caption.isNullOrBlank()) {

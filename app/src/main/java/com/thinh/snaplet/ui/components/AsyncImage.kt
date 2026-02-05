@@ -1,5 +1,6 @@
 package com.thinh.snaplet.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
@@ -22,45 +24,57 @@ import coil.size.Size
 
 @Composable
 fun AsyncImage(
+    modifier: Modifier = Modifier,
     imageUrl: String,
     contentDescription: String?,
-    modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     resizeSize: ImageSize = ImageSize.Small,
     showLoadingIndicator: Boolean = true,
-    showErrorIcon: Boolean = true,
-    loadingBackgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    loadingBackgroundColor: Color = MaterialTheme.colorScheme.surface,
     errorBackgroundColor: Color = MaterialTheme.colorScheme.errorContainer,
     crossfadeDuration: Int = 300,
     errorPlaceholder: Painter? = null
 ) {
     SubcomposeAsyncImage(
-        model = ImageRequest.Builder(LocalContext.current).data(imageUrl)
-            // Performance optimizations
-            .crossfade(crossfadeDuration).size(resizeSize.toCoilSize()) // Resize to save memory
-            // Cache policies (already set in ImageLoadingModule, but explicit here)
-            .memoryCachePolicy(CachePolicy.ENABLED).diskCachePolicy(CachePolicy.ENABLED)
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(imageUrl)
+            .crossfade(crossfadeDuration)
+            .size(resizeSize.toCoilSize())
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
-            // Quality settings
-            .allowHardware(true) // Use hardware bitmaps (more efficient)
+            .allowHardware(true)
             .build(),
         contentDescription = contentDescription,
-        modifier = modifier,
-        contentScale = contentScale,
-        loading = {
-            if (showLoadingIndicator) {
-                LoadingState(
-                    backgroundColor = loadingBackgroundColor
+        contentScale = contentScale
+    ) {
+        when (painter.state) {
+
+            is AsyncImagePainter.State.Success -> {
+                Image(
+                    painter = painter,
+                    contentDescription = contentDescription,
+                    contentScale = contentScale,
+                    modifier = modifier
                 )
             }
-        },
-        error = {
-            ErrorState(
-                showIcon = showErrorIcon,
-                backgroundColor = errorBackgroundColor,
-                placeholder = errorPlaceholder
-            )
-        })
+
+            is AsyncImagePainter.State.Loading -> {
+                if (showLoadingIndicator) {
+                    LoadingState(
+                        backgroundColor = loadingBackgroundColor
+                    )
+                }
+            }
+
+            else -> {
+                ErrorState(
+                    backgroundColor = errorBackgroundColor,
+                    placeholder = errorPlaceholder
+                )
+            }
+        }
+    }
 }
 
 /**
@@ -89,7 +103,7 @@ private fun LoadingState(
  */
 @Composable
 private fun ErrorState(
-    showIcon: Boolean, backgroundColor: Color, placeholder: Painter?, modifier: Modifier = Modifier
+    backgroundColor: Color, placeholder: Painter?, modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -97,12 +111,11 @@ private fun ErrorState(
             .background(backgroundColor),
         contentAlignment = Alignment.Center
     ) {
-        if (showIcon && placeholder != null) {
+        if (placeholder != null) {
             Icon(
                 painter = placeholder,
                 contentDescription = "Error loading image",
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.6f)
+                modifier = Modifier.size(124.dp),
             )
         }
     }
