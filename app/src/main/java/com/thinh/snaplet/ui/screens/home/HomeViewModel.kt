@@ -16,7 +16,6 @@ import com.thinh.snaplet.data.model.media.Media
 import com.thinh.snaplet.data.repository.MediaRepository
 import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.utils.FileUtils
-import com.thinh.snaplet.utils.Logger
 import com.thinh.snaplet.utils.network.onFailure
 import com.thinh.snaplet.utils.permission.Permission
 import com.thinh.snaplet.utils.permission.PermissionManager
@@ -90,12 +89,8 @@ class HomeViewModel @Inject constructor(
                             error = null
                         )
                     }
-                    if (isLoadMore) {
-                        Logger.d("✅ Loaded ${feedData.data.size} more posts, nextCursor: ${feedData.pagination.nextCursor?.take(20) ?: "null"}")
-                    }
                 },
                 onFailure = { apiError ->
-                    Logger.e("❌ Failed to load newsfeed: ${apiError.message}")
                     _uiState.update {
                         it.copy(
                             isLoadingPosts = false,
@@ -181,7 +176,6 @@ class HomeViewModel @Inject constructor(
         }
 
         if (!_uiState.value.cameraState.isCameraActive) {
-            Logger.e("❌ Cannot capture: Camera not ready")
             emitEvent(HomeUiEvent.ShowError("Camera is not ready"))
             return
         }
@@ -191,7 +185,6 @@ class HomeViewModel @Inject constructor(
 
     private fun takePhoto(context: Context) {
         val capture = _imageCapture.value ?: run {
-            Logger.e("❌ ImageCapture is null")
             emitEvent(HomeUiEvent.ShowError("Camera is not ready"))
             return
         }
@@ -219,7 +212,6 @@ class HomeViewModel @Inject constructor(
 
                 override fun onError(exception: ImageCaptureException) {
                     updateCameraState { it.copy(isCapturing = false) }
-                    Logger.e(exception, "❌ Photo capture failed")
                     emitEvent(HomeUiEvent.ShowError("Failed to capture photo"))
                 }
             })
@@ -303,7 +295,6 @@ class HomeViewModel @Inject constructor(
                     items = listOf(imagePath),
                     transforms = listOf(transform)
                 ).fold(onSuccess = { data -> data }, onFailure = { error ->
-                    Logger.e("❌ Step 1 failed: ${error.message}")
                     setUploadStatus(
                         tempPostId,
                         UploadStatus.Failed("Upload request failed: ${error.message}")
@@ -321,15 +312,14 @@ class HomeViewModel @Inject constructor(
                 val uploadItem = uploadRequestData.data.first()
 
                 mediaRepository.uploadMedia(uploadItem.uploadUrl, imagePath)
-                    .onFailure({ error ->
-                        Logger.e("❌ Step 2 failed: ${error.message}")
+                    .onFailure { error ->
                         setUploadStatus(
                             tempPostId,
                             UploadStatus.Failed("Upload failed: ${error.message}")
                         )
                         emitEvent(HomeUiEvent.ShowError("Upload failed: ${error.message}"))
                         return@launch
-                    })
+                    }
 
                 mediaRepository.confirmUpload(listOf(uploadItem.mediaId))
                     .fold(onSuccess = { confirmData ->
@@ -354,19 +344,16 @@ class HomeViewModel @Inject constructor(
 
     fun retryUpload(tempPostId: String) {
         val tempPost = _uiState.value.tempPosts.find { it.id == tempPostId } ?: run {
-            Logger.e("❌ Cannot retry: TempPost not found: $tempPostId")
             emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Post data not found"))
             return
         }
 
         val media = tempPost.media.firstOrNull() ?: run {
-            Logger.e("❌ Cannot retry: Media not found in post: $tempPostId")
             emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Media not found"))
             return
         }
 
         val imagePath = media.originalUrl?.removePrefix("file://") ?: run {
-            Logger.e("❌ Cannot retry: Image path not found: $tempPostId")
             emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Image path not found"))
             return
         }
@@ -428,7 +415,6 @@ class HomeViewModel @Inject constructor(
                 tempPosts = state.tempPosts.filterNot { it.id == tempPostId }
             )
         }
-        Logger.d("🗑️ Removed temporary post: $tempPostId")
     }
 
     private fun emitEvent(event: HomeUiEvent) {
