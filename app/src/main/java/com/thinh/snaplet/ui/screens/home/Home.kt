@@ -29,6 +29,7 @@ import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.components.PermissionHandler
 import com.thinh.snaplet.ui.screens.home.components.BottomAction
 import com.thinh.snaplet.ui.screens.home.components.CameraPage
+import com.thinh.snaplet.ui.screens.home.components.EmptyMediaPage
 import com.thinh.snaplet.ui.screens.home.components.MediaPage
 import com.thinh.snaplet.ui.screens.home.components.TopAction
 import com.thinh.snaplet.utils.Logger
@@ -55,7 +56,7 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val pageCount = 1 + uiState.posts.size
+    val pageCount = 1 + if (uiState.posts.isEmpty()) 1 else uiState.posts.size
     val pagerState = rememberPagerState(
         initialPage = CAMERA_PAGE_INDEX,
         pageCount = { pageCount }
@@ -248,8 +249,11 @@ private fun HomePager(
         horizontalAlignment = Alignment.CenterHorizontally,
         beyondViewportPageCount = 1,
         key = { page ->
-            if (page == CAMERA_PAGE_INDEX) "camera" else posts.getOrNull(page - 1)?.id
-                ?: "unknown_$page"
+            when {
+                page == CAMERA_PAGE_INDEX -> "camera"
+                posts.isEmpty() -> "empty_media"
+                else -> posts.getOrNull(page - 1)?.id ?: "unknown_$page"
+            }
         }
     ) { page ->
         when (page) {
@@ -261,8 +265,10 @@ private fun HomePager(
             )
 
             else -> {
-                val postIndex = page - 1
-                posts.getOrNull(postIndex)?.let { post ->
+                if (posts.isEmpty()) {
+                    EmptyMediaPage(onAddFriendClick = { /* TODO: navigate to add friend */ })
+                } else {
+                    val post = posts[page - 1]
                     MediaPage(
                         post = post,
                         uploadStatus = uploadStatuses[post.id],
