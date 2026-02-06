@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,7 +57,11 @@ fun PrimaryButton(
         tonalElevation = tonalElevation,
         shadowElevation = 2.dp,
         border = border,
-        modifier = modifier.pressScaleClickable(enabled && !isLoading, interactionSource, onClick = onClick),
+        modifier = modifier.pressScaleClickable(
+            enabled && !isLoading,
+            interactionSource,
+            onClick = onClick
+        ),
     ) {
         Box(
             modifier = Modifier.padding(finalContentPadding),
@@ -68,21 +71,19 @@ fun PrimaryButton(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                BaseText(
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = if (titleColor != Color.Unspecified) titleColor else contentColor,
+                        strokeWidth = 2.dp
+                    )
+                } else BaseText(
                     text = title,
                     typography = typography,
                     color = titleColor,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center
                 )
-                if (isLoading) {
-                    Spacer(modifier = Modifier.padding(start = 12.dp))
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = if (titleColor != Color.Unspecified) titleColor else contentColor,
-                        strokeWidth = 2.dp
-                    )
-                }
             }
         }
     }
