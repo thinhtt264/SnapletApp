@@ -167,7 +167,7 @@ private fun CapturedImageOverlay(
 ) {
     val imageUri = "file://$imagePath".toUri()
 
-    Box {
+    Box(modifier = Modifier.fillMaxSize()) {
         AsyncImage(
             modifier = Modifier
                 .fillMaxSize()
