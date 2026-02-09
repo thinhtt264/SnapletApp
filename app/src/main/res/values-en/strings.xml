@@ -1,4 +1,12 @@
 <resources>
+    <!--    Common-->
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="delete">Delete</string>
+    <string name="share">Share</string>
+    <string name="download">Download</string>
+    <string name="report">Report</string>
+
     <string name="onboarding_subtitle">Live photos from your friends,\nright on your home screen</string>
     <string name="create_account">Create an account</string>
     <string name="login">Log in</string>
@@ -7,7 +15,6 @@
     <string name="approve">Allow</string>
     <string name="recent_photos">Recent Photos</string>
     <string name="send_request">Send request</string>
-    <string name="close">Close</string>
 
     <string name="login_email_title">What\'s your email?</string>
     <string name="login_password_title">Choose a password</string>

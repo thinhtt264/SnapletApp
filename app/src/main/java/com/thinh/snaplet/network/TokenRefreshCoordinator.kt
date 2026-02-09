@@ -37,12 +37,10 @@ class TokenRefreshCoordinator @Inject constructor(
 
                 val newToken = result.fold(
                     onSuccess = { tokenResponse ->
-                        Logger.d("✅ Token refreshed successfully")
                         tokenResponse.accessToken
                     },
                     onFailure = { error ->
                         Logger.e("❌ Token refresh failed: ${error.message}")
-                        Logger.e("🚪 Forcing logout due to refresh failure")
                         authRepository.get().forceLogout()
                         null
                     }

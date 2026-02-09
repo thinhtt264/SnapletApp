@@ -24,4 +24,6 @@ interface MediaRepository {
         caption: String? = null,
         visibility: String
     ): ApiResult<Post>
+
+    suspend fun deletePost(postId: String): ApiResult<Unit>
 }

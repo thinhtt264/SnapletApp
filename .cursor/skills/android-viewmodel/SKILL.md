@@ -1,6 +1,6 @@
 ---
 name: android-viewmodel
-description: Best practices for implementing Android ViewModels, specifically focused on StateFlow for UI state and SharedFlow for one-off events.
+description: Best practices for implementing Android ViewModels, StateFlow for UI state, SharedFlow for one-off events, and handling ApiResult from repository/API (fold vs onSuccess/onFailure).
 ---
 
 # Android ViewModel & State Management
@@ -41,3 +41,13 @@ Use `ViewModel` to hold state and business logic. It must outlive configuration 
 ### 4. Scope
 *   Use `viewModelScope` for all coroutines started by the ViewModel.
 *   Ideally, specific operations should be delegated to UseCases or Repositories.
+
+### 5. Handling ApiResult from repository (API calls)
+
+When the ViewModel calls a repository and gets `ApiResult<T>`, consume it as follows. See also **.cursor/rules/viewmodel-apiresult.mdc** (applies when editing `*ViewModel.kt`).
+
+**Imports:** `fold` via `com.thinh.snaplet.utils.network.ApiResult`; `onSuccess`/`onFailure` via `com.thinh.snaplet.utils.network.onSuccess` and `com.thinh.snaplet.utils.network.onFailure`.
+
+*   **Use `fold`** when building or returning state (both success and failure must be handled). Example: `_uiState.value = result.fold(onSuccess = { UiState.Success(it) }, onFailure = { UiState.Error(it.message) })`.
+*   **Use `onSuccess` / `onFailure`** only for side effects (logging, snackbar, analytics); do not use them to build or return state.
+*   **Never** derive UI state from `onSuccess`/`onFailure`; use **`fold`** for compiler-safe branching.

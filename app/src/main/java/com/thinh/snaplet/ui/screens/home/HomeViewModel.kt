@@ -9,14 +9,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.data.model.media.ImageTransform
 import com.thinh.snaplet.data.model.media.Media
 import com.thinh.snaplet.data.repository.MediaRepository
 import com.thinh.snaplet.data.repository.UserRepository
+import com.thinh.snaplet.ui.common.UiText
+import com.thinh.snaplet.ui.overlay.OverlayEventBus
+import com.thinh.snaplet.ui.overlay.SheetOption
+import com.thinh.snaplet.ui.theme.Red
 import com.thinh.snaplet.utils.FileUtils
 import com.thinh.snaplet.utils.network.onFailure
+import com.thinh.snaplet.utils.network.onSuccess
 import com.thinh.snaplet.utils.permission.Permission
 import com.thinh.snaplet.utils.permission.PermissionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -57,6 +63,8 @@ class HomeViewModel @Inject constructor(
 
     private val _imageCapture = mutableStateOf<ImageCapture?>(null)
 
+    private var currentPostId: String? = null
+
     init {
         loadNewsfeed()
     }
@@ -71,40 +79,36 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.update {
-                if (isLoadMore) it.copy(isLoadingMore = true)
-                else it.copy(isLoadingPosts = true)
+            if (isLoadMore) {
+                _uiState.update { it.copy(isLoadingMore = true) }
             }
 
             val cursor = if (isLoadMore) state.nextCursor else null
 
-            mediaRepository.getNewsfeed(cursor = cursor).fold(
-                onSuccess = { feedData ->
-                    _uiState.update {
-                        it.copy(
-                            posts = if (isLoadMore) it.posts + feedData.data else feedData.data,
-                            isLoadingPosts = false,
-                            isLoadingMore = false,
-                            nextCursor = feedData.pagination.nextCursor,
-                            error = null
-                        )
-                    }
-                },
-                onFailure = { apiError ->
-                    _uiState.update {
-                        it.copy(
-                            isLoadingPosts = false,
-                            isLoadingMore = false,
-                            error = apiError.message
-                        )
-                    }
-                    emitEvent(HomeUiEvent.ShowError(apiError.message))
+            mediaRepository.getNewsfeed(cursor = cursor).fold(onSuccess = { feedData ->
+                _uiState.update {
+                    it.copy(
+                        posts = if (isLoadMore) it.posts + feedData.data else feedData.data,
+                        isLoadingPosts = false,
+                        isLoadingMore = false,
+                        nextCursor = feedData.pagination.nextCursor,
+                        error = null
+                    )
                 }
-            )
+            }, onFailure = { apiError ->
+                _uiState.update {
+                    it.copy(
+                        isLoadingPosts = false, isLoadingMore = false, error = apiError.message
+                    )
+                }
+                emitEvent(HomeUiEvent.ShowError(apiError.message))
+            })
         }
     }
 
     fun onItemVisible(currentIndex: Int) {
+        currentPostId = _uiState.value.posts.getOrNull(currentIndex)?.id
+
         val totalItems = _uiState.value.posts.size
         // Trigger load more when 2 items away from the end
         // For 5 items: trigger at index 2 (when viewing 3rd item out of 5)
@@ -247,9 +251,7 @@ class HomeViewModel @Inject constructor(
             val isFrontCamera =
                 _uiState.value.cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
             val transform = ImageTransform(
-                rotation = 0,
-                scaleX = if (isFrontCamera) -1f else 1f,
-                scaleY = 1f
+                rotation = 0, scaleX = if (isFrontCamera) -1f else 1f, scaleY = 1f
             )
 
             val tempPost = createTempPost(
@@ -284,20 +286,15 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun performUpload(
-        tempPostId: String,
-        imagePath: String,
-        transform: ImageTransform,
-        caption: String?
+        tempPostId: String, imagePath: String, transform: ImageTransform, caption: String?
     ) {
         viewModelScope.launch {
             try {
                 val uploadRequestData = mediaRepository.requestUpload(
-                    items = listOf(imagePath),
-                    transforms = listOf(transform)
+                    items = listOf(imagePath), transforms = listOf(transform)
                 ).fold(onSuccess = { data -> data }, onFailure = { error ->
                     setUploadStatus(
-                        tempPostId,
-                        UploadStatus.Failed("Upload request failed: ${error.message}")
+                        tempPostId, UploadStatus.Failed("Upload request failed: ${error.message}")
                     )
                     emitEvent(HomeUiEvent.ShowError("Upload request failed: ${error.message}"))
                     return@launch
@@ -311,15 +308,13 @@ class HomeViewModel @Inject constructor(
 
                 val uploadItem = uploadRequestData.data.first()
 
-                mediaRepository.uploadMedia(uploadItem.uploadUrl, imagePath)
-                    .onFailure { error ->
-                        setUploadStatus(
-                            tempPostId,
-                            UploadStatus.Failed("Upload failed: ${error.message}")
-                        )
-                        emitEvent(HomeUiEvent.ShowError("Upload failed: ${error.message}"))
-                        return@launch
-                    }
+                mediaRepository.uploadMedia(uploadItem.uploadUrl, imagePath).onFailure { error ->
+                    setUploadStatus(
+                        tempPostId, UploadStatus.Failed("Upload failed: ${error.message}")
+                    )
+                    emitEvent(HomeUiEvent.ShowError("Upload failed: ${error.message}"))
+                    return@launch
+                }
 
                 mediaRepository.confirmUpload(listOf(uploadItem.mediaId))
                     .fold(onSuccess = { confirmData ->
@@ -340,6 +335,44 @@ class HomeViewModel @Inject constructor(
                 emitEvent(HomeUiEvent.ShowError("Upload failed: ${e.message ?: "Unknown error"}"))
             }
         }
+    }
+
+    fun onShowMoreOptions() {
+        currentPostId?.let { onShowMoreOptions(it) }
+    }
+
+    fun onShowMoreOptions(postId: String) {
+        OverlayEventBus.showOptionsSheet(
+            options = listOf(
+                SheetOption(
+                    id = "share",
+                    label = UiText.StringResource(R.string.share),
+                    onClick = { /* TODO: share */ }
+                ),
+                SheetOption(
+                    id = "download",
+                    label = UiText.StringResource(R.string.download),
+                    onClick = { /* TODO: download */ }
+                ),
+                SheetOption(
+                    id = "delete",
+                    label = UiText.StringResource(R.string.delete),
+                    color = Red,
+                    onClick = { deletePost(postId) }
+                ),
+                SheetOption(
+                    id = "report",
+                    label = UiText.StringResource(R.string.report),
+                    color = Red,
+                    onClick = { /* TODO: report */ }
+                ),
+                SheetOption(
+                    id = "cancel",
+                    label = UiText.StringResource(R.string.cancel),
+                    onClick = { /* dismiss only */ }
+                )
+            )
+        )
     }
 
     fun retryUpload(tempPostId: String) {
@@ -401,8 +434,10 @@ class HomeViewModel @Inject constructor(
             media = listOf(tempMedia),
             caption = caption,
             visibility = "friend-only", // Default visibility
-            createdAt = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
-                .format(System.currentTimeMillis()),
+            createdAt = SimpleDateFormat(
+                "yyyy-MM-dd-HH-mm-ss-SSS",
+                Locale.US
+            ).format(System.currentTimeMillis()),
             isOwnPost = true
         )
     }
@@ -412,8 +447,26 @@ class HomeViewModel @Inject constructor(
             state.copy(
                 posts = state.posts.filterNot { it.id == tempPostId },
                 uploadStatuses = state.uploadStatuses - tempPostId,
-                tempPosts = state.tempPosts.filterNot { it.id == tempPostId }
-            )
+                tempPosts = state.tempPosts.filterNot { it.id == tempPostId })
+        }
+    }
+
+    private fun deletePost(postId: String) {
+        viewModelScope.launch {
+            mediaRepository.deletePost(postId)
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            posts = state.posts.filterNot { it.id == postId },
+                            uploadStatuses = state.uploadStatuses - postId,
+                            tempPosts = state.tempPosts.filterNot { it.id == postId }
+                        )
+                    }
+                    emitEvent(HomeUiEvent.ShowSuccess("Post deleted"))
+                }
+                .onFailure { error ->
+                    emitEvent(HomeUiEvent.ShowError(error.message))
+                }
         }
     }
 

@@ -8,10 +8,10 @@ typealias TempPost = Post
 
 data class HomeUiState(
     val cameraState: CameraState,
-    val currentCaption: String? = null, // Caption for current capture
+    val currentCaption: String? = null,
 
     val posts: List<Post> = emptyList(),
-    val isLoadingPosts: Boolean = false,
+    val isLoadingPosts: Boolean = true,
     val isLoadingMore: Boolean = false,
     val isUploading: Boolean = false,
 

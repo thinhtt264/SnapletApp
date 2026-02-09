@@ -58,9 +58,7 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
 
     val pageCount = 1 + if (uiState.posts.isEmpty()) 1 else uiState.posts.size
     val pagerState = rememberPagerState(
-        initialPage = CAMERA_PAGE_INDEX,
-        pageCount = { pageCount }
-    )
+        initialPage = CAMERA_PAGE_INDEX, pageCount = { pageCount })
 
     var snapshotHandler by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
 
@@ -87,15 +85,13 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
     )
 
     PermissionHandler(
-        permission = Permission.Camera,
-        onPermissionResult = viewModel::onPermissionResult
+        permission = Permission.Camera, onPermissionResult = viewModel::onPermissionResult
     ) { requestPermission ->
 
         UiEventEffect(
             viewModel = viewModel,
             requestPermission = requestPermission,
-            onScrollToFirstPost = { pagerState.animateScrollToPage(1) }
-        )
+            onScrollToFirstPost = { pagerState.animateScrollToPage(1) })
 
         HomeScreen(
             pagerState = pagerState,
@@ -104,7 +100,8 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
             onNavigateToCameraPage = {
                 scope.launch { pagerState.animateScrollToPage(CAMERA_PAGE_INDEX) }
             },
-            onItemVisible = viewModel::onItemVisible
+            onItemVisible = viewModel::onItemVisible,
+            onMoreClick = viewModel::onShowMoreOptions
         )
     }
 }
@@ -137,9 +134,7 @@ private fun CameraBindingEffect(
 
 @Composable
 private fun UiEventEffect(
-    viewModel: HomeViewModel,
-    requestPermission: () -> Unit,
-    onScrollToFirstPost: suspend () -> Unit
+    viewModel: HomeViewModel, requestPermission: () -> Unit, onScrollToFirstPost: suspend () -> Unit
 ) {
     LaunchedEffect(Unit) {
         viewModel.onScreenInitialized()
@@ -171,7 +166,8 @@ private fun HomeScreen(
     uiState: HomeUiState,
     cameraActions: CameraActions,
     onNavigateToCameraPage: () -> Unit,
-    onItemVisible: (currentIndex: Int) -> Unit
+    onItemVisible: (currentIndex: Int) -> Unit,
+    onMoreClick: () -> Unit,
 ) {
     val showGlobalBottomAction by remember {
         derivedStateOf {
@@ -201,7 +197,8 @@ private fun HomeScreen(
             showLocalBottomAction = !showGlobalBottomAction,
             userScrollEnabled = userScrollEnabled,
             cameraActions = cameraActions,
-            onNavigateToCameraPage = onNavigateToCameraPage
+            onNavigateToCameraPage = onNavigateToCameraPage,
+            onMoreClick = onMoreClick
         )
 
         TopAction(
@@ -218,7 +215,7 @@ private fun HomeScreen(
             BottomAction(
                 onGridClick = { /* TODO */ },
                 onCaptureClick = onNavigateToCameraPage,
-                onMoreClick = { /* TODO */ },
+                onMoreClick = onMoreClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -240,7 +237,8 @@ private fun HomePager(
     showLocalBottomAction: Boolean,
     userScrollEnabled: Boolean,
     cameraActions: CameraActions,
-    onNavigateToCameraPage: () -> Unit
+    onNavigateToCameraPage: () -> Unit,
+    onMoreClick: () -> Unit
 ) {
     VerticalPager(
         state = pagerState,
@@ -254,8 +252,7 @@ private fun HomePager(
                 posts.isEmpty() -> "empty_media"
                 else -> posts.getOrNull(page - 1)?.id ?: "unknown_$page"
             }
-        }
-    ) { page ->
+        }) { page ->
         when (page) {
             CAMERA_PAGE_INDEX -> CameraPage(
                 cameraState = cameraState,
@@ -275,7 +272,7 @@ private fun HomePager(
                         showBottomAction = showLocalBottomAction,
                         onGridClick = { /* TODO */ },
                         onCaptureClick = onNavigateToCameraPage,
-                        onMoreClick = { /* TODO */ }
+                        onMoreClick = onMoreClick
                     )
                 }
             }

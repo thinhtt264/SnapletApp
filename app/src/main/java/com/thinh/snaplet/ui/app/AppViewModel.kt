@@ -10,12 +10,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,11 +25,8 @@ class AppViewModel @Inject constructor(
     private val deviceRepository: DeviceRepository
 ) : ViewModel() {
 
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _startDestination = MutableStateFlow<String?>(null)
-    val startDestination: StateFlow<String?> = _startDestination.asStateFlow()
+    private val _uiState: MutableStateFlow<AppUiState> = MutableStateFlow(AppUiState())
+    val uiState = _uiState.asStateFlow()
 
     private val _uiEvent = MutableSharedFlow<AppUiEvent>(
         replay = 0,
@@ -51,16 +48,20 @@ class AppViewModel @Inject constructor(
 
                 val isAuthenticated = authRepository.isAuthenticated()
 
-                _startDestination.value =
-                    if (isAuthenticated) {
-                        NavScreen.HomeGraph.route
-                    } else {
-                        NavScreen.AuthGraph.route
-                    }
+                _uiState.update {
+                    it.copy(
+                        startDestination = if (isAuthenticated) {
+                            NavScreen.HomeGraph.route
+                        } else {
+                            NavScreen.AuthGraph.route
+                        }
+                    )
+                }
+
             } catch (_: Exception) {
-                _startDestination.value = NavScreen.AuthGraph.route
+                _uiState.update { it.copy(startDestination = NavScreen.AuthGraph.route) }
             } finally {
-                _isLoading.value = false
+                _uiState.update { it.copy(isLoading = false) }
                 isInitialized = true
             }
         }

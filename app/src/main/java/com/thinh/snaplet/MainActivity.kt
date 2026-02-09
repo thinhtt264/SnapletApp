@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().apply {
-            setKeepOnScreenCondition { appViewModel.isLoading.value }
+            setKeepOnScreenCondition { appViewModel.uiState.value.isLoading }
         }
 
         super.onCreate(savedInstanceState)
@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
 
             if (data != null) {
                 Logger.d("🔗 DeepLink received: $data")
-                
+
                 // Extract userName parameter
                 val userName = data.getQueryParameter("userName")
 

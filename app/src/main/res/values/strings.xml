@@ -1,5 +1,12 @@
 <resources>
+    <!--    Common-->
+    <string name="cancel">Hủy</string>
     <string name="app_name" translatable="false">Snaplet</string>
+    <string name="close">Đóng</string>
+    <string name="delete">Xóa</string>
+    <string name="share">Chia sẻ</string>
+    <string name="download">Tải về</string>
+    <string name="report">Báo cáo</string>
 
     <string name="onboarding_subtitle">Ảnh trực tiếp từ bạn bè,\nngay trên màn hình chính</string>
     <string name="create_account">Tạo một tài khoản</string>
@@ -9,7 +16,6 @@
     <string name="approve">Cho phép</string>
     <string name="recent_photos">Ảnh gần đây</string>
     <string name="send_request">Gửi yêu cầu</string>
-    <string name="close">Đóng</string>
 
     <string name="login_email_title">Email của bạn là gì?</string>
     <string name="login_password_title">Chọn mật khẩu</string>
