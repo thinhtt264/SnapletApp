@@ -11,7 +11,7 @@ data class HomeUiState(
     val currentCaption: String? = null,
 
     val posts: List<Post> = emptyList(),
-    val isLoadingPosts: Boolean = true,
+    val isLoadingPosts: Boolean = false,
     val isLoadingMore: Boolean = false,
     val isUploading: Boolean = false,
 

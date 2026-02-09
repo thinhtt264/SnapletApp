@@ -74,13 +74,12 @@ class HomeViewModel @Inject constructor(
 
         if (isLoadMore) {
             if (state.isLoadingMore || state.nextCursor == null) return
-        } else {
-            if (state.isLoadingPosts) return
-        }
+        } else if (state.isLoadingPosts) return
 
         viewModelScope.launch {
-            if (isLoadMore) {
-                _uiState.update { it.copy(isLoadingMore = true) }
+            _uiState.update {
+                if (isLoadMore) it.copy(isLoadingMore = true)
+                else it.copy(isLoadingPosts = true)
             }
 
             val cursor = if (isLoadMore) state.nextCursor else null
