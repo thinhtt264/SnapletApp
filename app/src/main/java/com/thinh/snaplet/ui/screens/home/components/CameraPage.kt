@@ -112,6 +112,7 @@ fun CameraPage(
             CameraAction(
                 modifier = Modifier.navigationBarsPadding(),
                 capturedImagePath = cameraState.capturedImagePath,
+                isCapturing = cameraState.isCapturing,
                 onCapturePhoto = cameraActions.onCapturePhoto,
                 onSwitchCamera = cameraActions.onSwitchCamera,
                 onCancelCapture = cameraActions.onCancelCapture,
@@ -153,7 +154,6 @@ private fun MediaDisplaySection(
         cameraState.capturedImagePath?.let { path ->
             CapturedImageOverlay(
                 imagePath = path,
-                isFrontCamera = cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT,
                 caption = currentCaption ?: "",
                 onCaptionChange = onCaptionChange
             )
@@ -163,15 +163,15 @@ private fun MediaDisplaySection(
 
 @Composable
 private fun CapturedImageOverlay(
-    imagePath: String, isFrontCamera: Boolean, caption: String, onCaptionChange: (String) -> Unit
+    imagePath: String,
+    caption: String,
+    onCaptionChange: (String) -> Unit
 ) {
     val imageUri = "file://$imagePath".toUri()
 
     Box(modifier = Modifier.fillMaxSize()) {
         AsyncImage(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { if (isFrontCamera) scaleX = -1f },
+            modifier = Modifier.fillMaxSize(),
             imageUrl = imageUri.toString(),
             contentDescription = "Captured image",
             contentScale = ContentScale.Crop,

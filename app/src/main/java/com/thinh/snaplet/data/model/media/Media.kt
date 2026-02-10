@@ -32,7 +32,7 @@ data class Media(
     val type: String,
 
     @SerializedName("originalUrl")
-    val originalUrl: String? = "",
+    val originalUrl: String = "",
 
     @SerializedName("ownerId")
     val ownerId: String,

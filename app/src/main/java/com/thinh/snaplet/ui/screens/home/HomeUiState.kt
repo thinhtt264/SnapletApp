@@ -20,6 +20,7 @@ data class HomeUiState(
     val error: String? = null,
 
     val uploadStatuses: Map<String, UploadStatus> = emptyMap(),
+    val isDownloading: Boolean = false,
     val tempPosts: List<TempPost> = emptyList() // List of temp posts with all info for retry
 ) {
     /** Returns true if more data can be loaded (nextCursor is not null and not currently loading) */

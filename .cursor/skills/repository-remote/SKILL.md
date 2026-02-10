@@ -102,7 +102,7 @@ override suspend fun login(email: String, password: String): ApiResult<UserProfi
 
 ## ApiResult: fold vs onSuccess / onFailure (consuming results)
 
-Project has custom extensions for handling `ApiResult<T>` after a call. Use the right one depending on whether you need a **value/transformation** or **side effects only**.
+Project has custom extensions for handling `ApiResult<T>` (or `Result<T>`) after a call. Choose based on whether you need to **produce one value** from the result or only **side effects**.
 
 ### Imports (project)
 
@@ -117,28 +117,32 @@ Project has custom extensions for handling `ApiResult<T>` after a call. Use the 
 
 ### Rules
 
-- **Use `fold`** when the logic must **return or transform a value** and both success and failure must be handled explicitly (decision-making). Example: mapping to UI state, computing a single value from both branches.
-- **Use `onSuccess` / `onFailure`** when performing **side effects only** (UI updates, logging, analytics, caching) and **no value is returned or transformed**. They return the same `ApiResult<T>` for chaining.
-- **Never use `onSuccess` / `onFailure` to build or return state**; prefer **`fold`** for compiler-safe branching (exhaustive handling of both cases).
+- **Use `fold`** only when you need to **produce a single value** from the result and **both success and failure** contribute that same type with different transformations (e.g. success → `UiState.Success(data)`, failure → `UiState.Error(message)`; the outcome is one `UiState`). Use when you assign or return that value (e.g. `_uiState.value = result.fold(...)`).
+- **Use `onSuccess` / `onFailure`** when you only need **side effects** (update state differently per branch, show snackbar, set status, emit event). You do **not** use the API result to compute one returned/assigned value; each branch just does its own side effects. Prefer these for "on success do A, on failure do B" with no single derived value.
 
-**Example – fold (return/transform):**
+**Example – fold (produce one value; both branches return same type):**
 
 ```kotlin
-// ViewModel: build state from result
+// You need one UiState from the result; success and failure each transform into that type
 _uiState.value = result.fold(
     onSuccess = { data -> UiState.Success(data) },
     onFailure = { error -> UiState.Error(error.message) }
 )
 ```
 
-**Example – onSuccess / onFailure (side effects only):**
+**Example – onSuccess / onFailure (side effects only; no single derived value):**
 
 ```kotlin
-// Log or show snackbar, then pass result along
+// Only side effects: update status, show snackbar. No "result" is assigned from the call.
 result
-    .onSuccess { log("Loaded") }
-    .onFailure { showSnackbar(it.message) }
-// result unchanged; use fold elsewhere if you need to derive state
+    .onSuccess {
+        setDownloadStatus(postId, DownloadStatus.Success)
+        emitEvent(HomeUiEvent.ShowSuccess(...))
+    }
+    .onFailure { e ->
+        setDownloadStatus(postId, DownloadStatus.Failed(e.message))
+        emitEvent(HomeUiEvent.ShowError(...))
+    }
 ```
 
 ---

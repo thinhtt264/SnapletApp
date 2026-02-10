@@ -6,6 +6,8 @@
     <string name="delete">Xóa</string>
     <string name="share">Chia sẻ</string>
     <string name="download">Tải về</string>
+    <string name="download_failed">Tải thất bại</string>
+    <string name="download_success">Đã lưu ảnh</string>
     <string name="report">Báo cáo</string>
     <string name="delete_photo_title">Xóa ảnh?</string>
     <string name="delete_photo_message">Việc này sẽ xóa vĩnh viễn ảnh khỏi lịch sử của bạn và bạn bè sẽ không còn có thể thấy ảnh này nữa.</string>

@@ -5,6 +5,8 @@
     <string name="delete">Delete</string>
     <string name="share">Share</string>
     <string name="download">Download</string>
+    <string name="download_failed">Download failed</string>
+    <string name="download_success">Image saved</string>
     <string name="report">Report</string>
     <string name="delete_photo_title">Delete photo?</string>
     <string name="delete_photo_message">This will permanently delete the photo from your history, and your friends will no longer be able to see this photo.</string>

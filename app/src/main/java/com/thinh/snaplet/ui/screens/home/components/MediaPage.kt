@@ -42,6 +42,7 @@ fun MediaPage(
     post: Post,
     uploadStatus: UploadStatus?,
     showBottomAction: Boolean = false,
+    showMoreButtonLoading: Boolean = false,
     onGridClick: () -> Unit = {},
     onCaptureClick: () -> Unit = {},
     onMoreClick: () -> Unit = {},
@@ -77,6 +78,7 @@ fun MediaPage(
                 onGridClick = onGridClick,
                 onCaptureClick = onCaptureClick,
                 onMoreClick = onMoreClick,
+                showMoreButtonLoading = showMoreButtonLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -94,7 +96,7 @@ private fun PostMediaContent(post: Post) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         AsyncImage(
-            imageUrl = media.images.md.ifEmpty { media.originalUrl.orEmpty() },
+            imageUrl = media.images.md.ifEmpty { media.originalUrl },
             contentDescription = "Post ${post.id}",
             modifier = Modifier
                 .fillMaxSize()

@@ -10,6 +10,8 @@ interface MediaRepository {
 
     suspend fun getNewsfeed(limit: Int = 5, cursor: String? = null): ApiResult<PostsFeedData>
 
+    suspend fun downloadImage(imageSource: String): Result<String>
+
     suspend fun requestUpload(
         items: List<String>,
         transforms: List<com.thinh.snaplet.data.model.media.ImageTransform>? = null
