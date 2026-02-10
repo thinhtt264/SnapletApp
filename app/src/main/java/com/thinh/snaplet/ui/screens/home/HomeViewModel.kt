@@ -139,7 +139,7 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(currentCaption = caption) }
     }
 
-    fun onScreenInitialized() {
+    fun onRequestCameraPermission() {
         val hasPermission = permissionManager.hasPermission(Permission.Camera)
         updateCameraState { it.copy(hasCameraPermission = hasPermission) }
 

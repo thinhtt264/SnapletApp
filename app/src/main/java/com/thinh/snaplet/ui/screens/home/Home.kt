@@ -74,7 +74,7 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
             onCancelCapture = viewModel::onCancelCapture,
             onUploadPost = viewModel::onUploadPost,
             onCaptionChange = viewModel::updateCurrentCaption,
-            onRequestPermission = viewModel::onScreenInitialized
+            onRequestPermission = viewModel::onRequestCameraPermission
         )
     }
 
@@ -149,8 +149,6 @@ private fun UiEventEffect(
     onScrollToFirstPost: suspend () -> Unit
 ) {
     LaunchedEffect(Unit) {
-        viewModel.onScreenInitialized()
-
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is HomeUiEvent.RequestPermission -> {
