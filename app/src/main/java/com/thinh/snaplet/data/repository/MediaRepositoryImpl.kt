@@ -42,7 +42,16 @@ class MediaRepositoryImpl @Inject constructor(
                 apiService.getPostsFeed(limit = limit, cursor = cursor)
             },
             onSuccess = { feedData ->
-                Logger.d("✅ Fetched ${feedData.data.size} posts${cursor?.let { ", cursor: ${it.take(20)}..." } ?: ""}")
+                Logger.d(
+                    "✅ Fetched ${feedData.data.size} posts${
+                        cursor?.let {
+                            ", cursor: ${
+                                it.take(
+                                    20
+                                )
+                            }..."
+                        } ?: ""
+                    }")
             }
         )
     }
@@ -221,6 +230,12 @@ class MediaRepositoryImpl @Inject constructor(
                     )
                 )
             }
+        )
+    }
+
+    override suspend fun deletePost(postId: String): ApiResult<Unit> {
+        return safeApiCall(
+            apiCall = { apiService.deletePost(postId) },
         )
     }
 }

@@ -26,6 +26,7 @@ import com.thinh.snaplet.navigation.NavGraph
 import com.thinh.snaplet.navigation.NavScreen
 import com.thinh.snaplet.ui.app.AppUiEvent
 import com.thinh.snaplet.ui.app.AppViewModel
+import com.thinh.snaplet.ui.overlay.OverlayHost
 import com.thinh.snaplet.ui.screens.friend_request.FriendRequestOverlayScreen
 import com.thinh.snaplet.ui.theme.SnapletTheme
 import pressScaleClickable
@@ -35,7 +36,8 @@ fun MainScreen(
     appViewModel: AppViewModel
 ) {
     SnapletTheme {
-        val startDestination by appViewModel.startDestination.collectAsState()
+        val appUiState by appViewModel.uiState.collectAsState()
+
         val navController = rememberNavController()
 
         LaunchedEffect(Unit) {
@@ -60,12 +62,14 @@ fun MainScreen(
             }
         }
 
+        OverlayHost()
+
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize()) {
-                startDestination?.let {
+                appUiState.startDestination?.let {
                     NavGraph(
                         startDestination = it,
                         navController = navController,

@@ -44,7 +44,7 @@ fun MediaPage(
     showBottomAction: Boolean = false,
     onGridClick: () -> Unit = {},
     onCaptureClick: () -> Unit = {},
-    onMoreClick: () -> Unit = {}
+    onMoreClick: () -> Unit = {},
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeight = maxHeight

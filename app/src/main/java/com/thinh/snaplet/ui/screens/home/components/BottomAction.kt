@@ -20,7 +20,7 @@ fun BottomAction(
     onGridClick: () -> Unit,
     onCaptureClick: () -> Unit,
     onMoreClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
@@ -39,8 +39,7 @@ fun BottomAction(
         }
 
         CaptureButton(
-            modifier = Modifier.size(56.dp),
-            onCapturePhoto = onCaptureClick
+            modifier = Modifier.size(56.dp), onCapturePhoto = onCaptureClick
         )
 
         Box(

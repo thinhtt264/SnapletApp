@@ -1,6 +1,6 @@
 ---
 name: repository-remote
-description: Implements Repository with remote API only. Use when the user asks to write RepositoryImpl for API, create repository for network calls, Retrofit, HTTP, backend, safeApiCall, ApiResult, or add a new API-backed repository. Enforces interface + RepositoryImpl, safeApiCall for all remote calls only (not Room/DAO), Hilt binding.
+description: Implements Repository with remote API only. Use when the user asks to write RepositoryImpl for API, create repository for network calls, Retrofit, HTTP, backend, safeApiCall, ApiResult, fold, onSuccess, onFailure, or add a new API-backed repository. Enforces interface + RepositoryImpl, safeApiCall for all remote calls only (not Room/DAO), Hilt binding. Use fold for returning/transforming values; use onSuccess/onFailure for side effects only.
 ---
 
 # Repository with Remote API (safeApiCall)
@@ -100,6 +100,49 @@ override suspend fun login(email: String, password: String): ApiResult<UserProfi
 
 ---
 
+## ApiResult: fold vs onSuccess / onFailure (consuming results)
+
+Project has custom extensions for handling `ApiResult<T>` after a call. Use the right one depending on whether you need a **value/transformation** or **side effects only**.
+
+### Imports (project)
+
+| API | Where | Import |
+|-----|--------|--------|
+| **fold** | Member on `ApiResult` | `import com.thinh.snaplet.utils.network.ApiResult` — then call `result.fold(onSuccess = { ... }, onFailure = { ... })` |
+| **onSuccess** | Extension in `NetworkExtensions.kt` | `import com.thinh.snaplet.utils.network.onSuccess` |
+| **onFailure** | Extension in `NetworkExtensions.kt` | `import com.thinh.snaplet.utils.network.onFailure` |
+
+- **ApiResult** and **fold**: `app/src/main/java/com/thinh/snaplet/utils/network/ApiResult.kt`
+- **onSuccess** / **onFailure**: `app/src/main/java/com/thinh/snaplet/utils/network/NetworkExtensions.kt`
+
+### Rules
+
+- **Use `fold`** when the logic must **return or transform a value** and both success and failure must be handled explicitly (decision-making). Example: mapping to UI state, computing a single value from both branches.
+- **Use `onSuccess` / `onFailure`** when performing **side effects only** (UI updates, logging, analytics, caching) and **no value is returned or transformed**. They return the same `ApiResult<T>` for chaining.
+- **Never use `onSuccess` / `onFailure` to build or return state**; prefer **`fold`** for compiler-safe branching (exhaustive handling of both cases).
+
+**Example – fold (return/transform):**
+
+```kotlin
+// ViewModel: build state from result
+_uiState.value = result.fold(
+    onSuccess = { data -> UiState.Success(data) },
+    onFailure = { error -> UiState.Error(error.message) }
+)
+```
+
+**Example – onSuccess / onFailure (side effects only):**
+
+```kotlin
+// Log or show snackbar, then pass result along
+result
+    .onSuccess { log("Loaded") }
+    .onFailure { showSnackbar(it.message) }
+// result unchanged; use fold elsewhere if you need to derive state
+```
+
+---
+
 ## Suggested file structure
 
 ```
@@ -162,3 +205,4 @@ abstract fun bindXxxRepository(impl: XxxRepositoryImpl): XxxRepository
 - [ ] Repository functions return `ApiResult<T>` for API calls.
 - [ ] Impl → Interface bound in `RepositoryModule`.
 - [ ] Do not use safeApiCall for Room/DAO (use skill `repository-room` for local DB).
+- [ ] When consuming `ApiResult`: use **fold** to return/transform state; use **onSuccess**/**onFailure** only for side effects (no state built from them).

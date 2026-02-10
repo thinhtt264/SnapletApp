@@ -1,11 +1,11 @@
 package com.thinh.snaplet.ui.screens.register
 
-sealed class RegisterUIEvent {
+sealed interface RegisterUIEvent {
 
-    data object RegisterSuccess : RegisterUIEvent()
-    
-    data class ShowErrorPopup(val message: String) : RegisterUIEvent()
+    data object RegisterSuccess : RegisterUIEvent
 
-    data object NavigateToLogin : RegisterUIEvent()
+    data class ShowErrorPopup(val message: String) : RegisterUIEvent
+
+    data object NavigateToLogin : RegisterUIEvent
 }
 
