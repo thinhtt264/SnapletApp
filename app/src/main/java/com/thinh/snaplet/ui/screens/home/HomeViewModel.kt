@@ -125,7 +125,7 @@ class HomeViewModel @Inject constructor(
             } else {
                 CameraSelector.LENS_FACING_BACK
             }
-            state.copy(lensFacing = newLens)
+            state.copy(lensFacing = newLens, lastPreviewSnapshot = null)
         }
     }
 
