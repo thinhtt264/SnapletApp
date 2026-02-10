@@ -6,6 +6,8 @@
     <string name="share">Share</string>
     <string name="download">Download</string>
     <string name="report">Report</string>
+    <string name="delete_photo_title">Delete photo?</string>
+    <string name="delete_photo_message">This will permanently delete the photo from your history, and your friends will no longer be able to see this photo.</string>
 
     <string name="onboarding_subtitle">Live photos from your friends,\nright on your home screen</string>
     <string name="create_account">Create an account</string>
@@ -56,4 +58,6 @@
     <string name="empty_media_title">Send your first Locket</string>
     <string name="empty_media_subtitle">Your photos will appear on your friends\' home screens</string>
     <string name="empty_media_add_friend">+ Add new friend</string>
+
+    <string name="post_deleted">Post deleted</string>
 </resources>

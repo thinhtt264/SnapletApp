@@ -1,5 +1,6 @@
 package com.thinh.snaplet.ui.overlay
 
+import com.thinh.snaplet.ui.common.UiText
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,7 +18,7 @@ object OverlayEventBus {
     fun showOptionsSheet(options: List<SheetOption>) {
         _events.tryEmit(
             OverlayEvent.ShowBottomSheet(
-                BottomSheetContent.Options(options = options)
+                BottomSheetContent.Options(options)
             )
         )
     }
@@ -28,8 +29,24 @@ object OverlayEventBus {
         )
     }
 
-    fun showConfirmModal(title: String? = null) {
-        _events.tryEmit(OverlayEvent.ShowConfirmModal(title))
+    fun showConfirmDialog(
+        title: UiText,
+        message: UiText,
+        confirmText: UiText,
+        cancelText: UiText? = null,
+        onConfirm: () -> Unit
+    ) {
+        _events.tryEmit(
+            OverlayEvent.ShowModal(
+                ModalContent.ConfirmDialog(
+                    title = title,
+                    message = message,
+                    confirmText = confirmText,
+                    cancelText = cancelText,
+                    onConfirm = onConfirm
+                )
+            )
+        )
     }
 
     fun dismiss() {

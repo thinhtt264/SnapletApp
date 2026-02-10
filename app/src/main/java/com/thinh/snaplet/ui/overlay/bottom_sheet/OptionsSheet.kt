@@ -16,7 +16,7 @@ import com.thinh.snaplet.ui.overlay.BottomSheetContent
 import pressScaleClickable
 
 @Composable
-fun OptionsSheet(
+internal fun OptionsSheet(
     content: BottomSheetContent.Options,
     onDismiss: () -> Unit
 ) {
@@ -36,8 +36,8 @@ fun OptionsSheet(
                     .fillMaxWidth()
                     .pressScaleClickable(
                         onClick = {
-                            option.onClick()
                             onDismiss()
+                            option.onClick()
                         })
             )
         }

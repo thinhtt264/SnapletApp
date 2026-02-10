@@ -24,8 +24,8 @@ class OverlayViewModel @Inject constructor() : ViewModel() {
                     OverlayState.Visible.BottomSheet(event.content)
                 }
 
-                is OverlayEvent.ShowConfirmModal -> _overlayState.update {
-                    OverlayState.Visible.Modal(event.title)
+                is OverlayEvent.ShowModal -> _overlayState.update {
+                    OverlayState.Visible.Modal(event.content)
                 }
 
                 is OverlayEvent.Dismiss -> _overlayState.update { OverlayState.None }

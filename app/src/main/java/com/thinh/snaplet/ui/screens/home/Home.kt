@@ -1,5 +1,6 @@
 package com.thinh.snaplet.ui.screens.home
 
+import android.content.Context
 import android.graphics.Bitmap
 import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.components.PermissionHandler
@@ -84,12 +89,16 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
         onSnapshotCaptured = viewModel::setPreviewSnapshot
     )
 
+    val snackBarHostState = remember { SnackbarHostState() }
+
     PermissionHandler(
         permission = Permission.Camera, onPermissionResult = viewModel::onPermissionResult
     ) { requestPermission ->
 
         UiEventEffect(
             viewModel = viewModel,
+            context = context,
+            snackBarHostState = snackBarHostState,
             requestPermission = requestPermission,
             onScrollToFirstPost = { pagerState.animateScrollToPage(1) })
 
@@ -103,6 +112,8 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
             onItemVisible = viewModel::onItemVisible,
             onMoreClick = viewModel::onShowMoreOptions
         )
+
+        SnackbarHost(hostState = snackBarHostState,)
     }
 }
 
@@ -134,7 +145,11 @@ private fun CameraBindingEffect(
 
 @Composable
 private fun UiEventEffect(
-    viewModel: HomeViewModel, requestPermission: () -> Unit, onScrollToFirstPost: suspend () -> Unit
+    viewModel: HomeViewModel,
+    context: Context,
+    snackBarHostState: SnackbarHostState,
+    requestPermission: () -> Unit,
+    onScrollToFirstPost: suspend () -> Unit
 ) {
     LaunchedEffect(Unit) {
         viewModel.onScreenInitialized()
@@ -142,16 +157,21 @@ private fun UiEventEffect(
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is HomeUiEvent.RequestPermission -> {
-                    Logger.d("Executing permission request from ViewModel")
                     requestPermission()
                 }
 
                 is HomeUiEvent.ShowError -> {
-                    Logger.e("Error: ${event.message}")
+                    snackBarHostState.showSnackbar(
+                        message = event.message.asString(context),
+                        duration = SnackbarDuration.Short,
+                    )
                 }
 
                 is HomeUiEvent.ShowSuccess -> {
-                    Logger.d("Success: ${event.message}")
+                    snackBarHostState.showSnackbar(
+                        message = event.message.asString(context),
+                        duration = SnackbarDuration.Short,
+                    )
                 }
 
                 is HomeUiEvent.ScrollToFirstPost -> onScrollToFirstPost()

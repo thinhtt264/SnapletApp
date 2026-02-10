@@ -100,7 +100,7 @@ class HomeViewModel @Inject constructor(
                         isLoadingPosts = false, isLoadingMore = false, error = apiError.message
                     )
                 }
-                emitEvent(HomeUiEvent.ShowError(apiError.message))
+                emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(apiError.message)))
             })
         }
     }
@@ -151,7 +151,7 @@ class HomeViewModel @Inject constructor(
     fun onPermissionResult(granted: Boolean) {
         updateCameraState { it.copy(hasCameraPermission = granted) }
         if (!granted) {
-            emitEvent(HomeUiEvent.ShowError("Camera permission is required"))
+            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Camera permission is required")))
         }
     }
 
@@ -179,7 +179,7 @@ class HomeViewModel @Inject constructor(
         }
 
         if (!_uiState.value.cameraState.isCameraActive) {
-            emitEvent(HomeUiEvent.ShowError("Camera is not ready"))
+            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Camera is not ready")))
             return
         }
 
@@ -188,7 +188,7 @@ class HomeViewModel @Inject constructor(
 
     private fun takePhoto(context: Context) {
         val capture = _imageCapture.value ?: run {
-            emitEvent(HomeUiEvent.ShowError("Camera is not ready"))
+            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Camera is not ready")))
             return
         }
 
@@ -210,12 +210,12 @@ class HomeViewModel @Inject constructor(
                     updateCameraState {
                         it.copy(isCapturing = false, capturedImagePath = photoFile.absolutePath)
                     }
-                    emitEvent(HomeUiEvent.ShowSuccess("Photo saved successfully"))
+                    emitEvent(HomeUiEvent.ShowSuccess(UiText.DynamicString("Photo saved successfully")))
                 }
 
                 override fun onError(exception: ImageCaptureException) {
                     updateCameraState { it.copy(isCapturing = false) }
-                    emitEvent(HomeUiEvent.ShowError("Failed to capture photo"))
+                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Failed to capture photo")))
                 }
             })
     }
@@ -229,7 +229,7 @@ class HomeViewModel @Inject constructor(
 
     fun onUploadPost() {
         val imagePath = _uiState.value.cameraState.capturedImagePath ?: run {
-            emitEvent(HomeUiEvent.ShowError("No image to upload"))
+            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("No image to upload")))
             return
         }
 
@@ -240,7 +240,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val userProfile = userRepository.getCurrentUserProfile()
             if (userProfile == null) {
-                emitEvent(HomeUiEvent.ShowError("User profile not found"))
+                emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("User profile not found")))
                 return@launch
             }
 
@@ -280,7 +280,7 @@ class HomeViewModel @Inject constructor(
     private fun performCratePost(mediaIds: List<String>, caption: String?) {
         viewModelScope.launch {
             mediaRepository.createPost(mediaIds, caption, "friend-only")
-            emitEvent(HomeUiEvent.ShowSuccess("Post uploaded successfully"))
+            emitEvent(HomeUiEvent.ShowSuccess(UiText.DynamicString("Post uploaded successfully")))
         }
     }
 
@@ -295,13 +295,13 @@ class HomeViewModel @Inject constructor(
                     setUploadStatus(
                         tempPostId, UploadStatus.Failed("Upload request failed: ${error.message}")
                     )
-                    emitEvent(HomeUiEvent.ShowError("Upload request failed: ${error.message}"))
+                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Upload request failed: ${error.message}")))
                     return@launch
                 })
 
                 if (uploadRequestData.data.isEmpty()) {
                     setUploadStatus(tempPostId, UploadStatus.Failed("No upload URLs received"))
-                    emitEvent(HomeUiEvent.ShowError("No upload URLs received"))
+                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("No upload URLs received")))
                     return@launch
                 }
 
@@ -311,7 +311,7 @@ class HomeViewModel @Inject constructor(
                     setUploadStatus(
                         tempPostId, UploadStatus.Failed("Upload failed: ${error.message}")
                     )
-                    emitEvent(HomeUiEvent.ShowError("Upload failed: ${error.message}"))
+                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Upload failed: ${error.message}")))
                     return@launch
                 }
 
@@ -324,14 +324,14 @@ class HomeViewModel @Inject constructor(
                             tempPostId,
                             UploadStatus.Failed("Upload confirmation failed: ${error.message}")
                         )
-                        emitEvent(HomeUiEvent.ShowError("Upload failed: ${error.message}"))
+                        emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Upload failed: ${error.message}")))
                     })
             } catch (e: Exception) {
                 setUploadStatus(
                     tempPostId,
                     UploadStatus.Failed("Upload failed: ${e.message ?: "Unknown error"}")
                 )
-                emitEvent(HomeUiEvent.ShowError("Upload failed: ${e.message ?: "Unknown error"}"))
+                emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Upload failed: ${e.message ?: "Unknown error"}")))
             }
         }
     }
@@ -341,52 +341,72 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onShowMoreOptions(postId: String) {
-        OverlayEventBus.showOptionsSheet(
-            options = listOf(
+        val isUploading = _uiState.value.uploadStatuses[postId] == UploadStatus.Uploading
+
+        val isOwnPost: Boolean = _uiState.value.posts
+            .find { it.id == postId }
+            ?.isOwnPost ?: false
+
+        val options = buildList {
+            add(
                 SheetOption(
                     id = "share",
                     label = UiText.StringResource(R.string.share),
-                    onClick = { /* TODO: share */ }
-                ),
+                    onClick = { /* TODO: share */ })
+            )
+            add(
                 SheetOption(
                     id = "download",
                     label = UiText.StringResource(R.string.download),
-                    onClick = { /* TODO: download */ }
-                ),
-                SheetOption(
-                    id = "delete",
-                    label = UiText.StringResource(R.string.delete),
-                    color = Red,
-                    onClick = { deletePost(postId) }
-                ),
-                SheetOption(
-                    id = "report",
-                    label = UiText.StringResource(R.string.report),
-                    color = Red,
-                    onClick = { /* TODO: report */ }
-                ),
+                    onClick = { /* TODO: download */ })
+            )
+            if (isOwnPost && !isUploading) {
+                add(
+                    SheetOption(
+                        id = "delete",
+                        label = UiText.StringResource(R.string.delete),
+                        color = Red,
+                        onClick = {
+                            OverlayEventBus.showConfirmDialog(
+                                title = UiText.StringResource(R.string.delete_photo_title),
+                                message = UiText.StringResource(R.string.delete_photo_message),
+                                confirmText = UiText.StringResource(R.string.delete),
+                                onConfirm = { deletePost(postId) },
+                            )
+                        }
+                    )
+                )
+                add(
+                    SheetOption(
+                        id = "report",
+                        label = UiText.StringResource(R.string.report),
+                        color = Red,
+                        onClick = { /* TODO: report */ })
+                )
+            }
+            add(
                 SheetOption(
                     id = "cancel",
                     label = UiText.StringResource(R.string.cancel),
-                    onClick = { /* dismiss only */ }
-                )
+                    onClick = { /* dismiss only */ })
             )
-        )
+        }
+        OverlayEventBus.showOptionsSheet(options = options)
     }
 
     fun retryUpload(tempPostId: String) {
         val tempPost = _uiState.value.tempPosts.find { it.id == tempPostId } ?: run {
-            emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Post data not found"))
+            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Cannot retry upload: Post data not found")))
             return
         }
 
         val media = tempPost.media.firstOrNull() ?: run {
-            emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Media not found"))
+            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Cannot retry upload: Media not found")))
             return
         }
 
         val imagePath = media.originalUrl?.removePrefix("file://") ?: run {
-            emitEvent(HomeUiEvent.ShowError("Cannot retry upload: Image path not found"))
+            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Cannot retry upload: Image path not found")))
             return
         }
 
@@ -434,8 +454,7 @@ class HomeViewModel @Inject constructor(
             caption = caption,
             visibility = "friend-only", // Default visibility
             createdAt = SimpleDateFormat(
-                "yyyy-MM-dd-HH-mm-ss-SSS",
-                Locale.US
+                "yyyy-MM-dd-HH-mm-ss-SSS", Locale.US
             ).format(System.currentTimeMillis()),
             isOwnPost = true
         )
@@ -452,20 +471,17 @@ class HomeViewModel @Inject constructor(
 
     private fun deletePost(postId: String) {
         viewModelScope.launch {
-            mediaRepository.deletePost(postId)
-                .onSuccess {
-                    _uiState.update { state ->
-                        state.copy(
-                            posts = state.posts.filterNot { it.id == postId },
-                            uploadStatuses = state.uploadStatuses - postId,
-                            tempPosts = state.tempPosts.filterNot { it.id == postId }
-                        )
-                    }
-                    emitEvent(HomeUiEvent.ShowSuccess("Post deleted"))
+            mediaRepository.deletePost(postId).onSuccess {
+                _uiState.update { state ->
+                    state.copy(
+                        posts = state.posts.filterNot { it.id == postId },
+                        uploadStatuses = state.uploadStatuses - postId,
+                        tempPosts = state.tempPosts.filterNot { it.id == postId })
                 }
-                .onFailure { error ->
-                    emitEvent(HomeUiEvent.ShowError(error.message))
-                }
+                emitEvent(HomeUiEvent.ShowSuccess(UiText.StringResource(R.string.post_deleted)))
+            }.onFailure { error ->
+                emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
+            }
         }
     }
 

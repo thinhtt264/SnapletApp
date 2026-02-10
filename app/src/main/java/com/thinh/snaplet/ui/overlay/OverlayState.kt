@@ -9,10 +9,21 @@ sealed interface OverlayState {
     data object None : OverlayState
 
     sealed interface Visible : OverlayState {
-        data class Modal(val text: String?) : Visible
+        data class Modal(val content: ModalContent) : Visible
 
         data class BottomSheet(val content: BottomSheetContent) : Visible
     }
+}
+
+sealed interface ModalContent {
+
+    data class ConfirmDialog(
+        val title: UiText,
+        val message: UiText,
+        val confirmText: UiText,
+        val cancelText: UiText?,
+        val onConfirm: () -> Unit
+    ) : ModalContent
 }
 
 sealed interface BottomSheetContent {

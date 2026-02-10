@@ -5,6 +5,9 @@ sealed interface OverlayEvent {
         val content: BottomSheetContent
     ) : OverlayEvent
 
-    data class ShowConfirmModal(val title: String?) : OverlayEvent
+    data class ShowModal(
+        val content: ModalContent
+    ) : OverlayEvent
+
     object Dismiss : OverlayEvent
 }

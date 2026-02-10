@@ -5,8 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.thinh.snaplet.ui.components.SampleModalContent
 import com.thinh.snaplet.ui.overlay.bottom_sheet.GlobalBottomSheet
+import com.thinh.snaplet.ui.overlay.modal.GlobalModal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -16,8 +16,8 @@ fun OverlayHost() {
 
     when (val current = overlayState) {
         is OverlayState.None -> Unit
-        is OverlayState.Visible.Modal -> SampleModalContent(
-            text = current.text,
+        is OverlayState.Visible.Modal -> GlobalModal(
+            content = current.content,
             onDismiss = overlayViewModel::dismiss
         )
 

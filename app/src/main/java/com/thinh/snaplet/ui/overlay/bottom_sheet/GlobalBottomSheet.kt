@@ -11,10 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.ui.overlay.BottomSheetContent
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GlobalBottomSheet(
+internal fun GlobalBottomSheet(
     content: BottomSheetContent,
     onDismiss: () -> Unit,
 ) {
