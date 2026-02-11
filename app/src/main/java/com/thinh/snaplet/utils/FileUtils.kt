@@ -48,7 +48,7 @@ object FileUtils {
             bitmap.recycle()
 
             FileOutputStream(file).use { out ->
-                result.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                result.compress(Bitmap.CompressFormat.JPEG, 99, out)
             }
             result.recycle()
 
