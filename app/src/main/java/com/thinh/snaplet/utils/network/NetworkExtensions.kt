@@ -104,3 +104,21 @@ inline fun <T> ApiResult<T>.onFailure(
     }
     return this
 }
+
+inline fun <T> Result<T>.onSuccess(
+    action: (T) -> Unit
+): Result<T> {
+    if (this.isSuccess) {
+        action(getOrThrow())
+    }
+    return this
+}
+
+inline fun <T> Result<T>.onFailure(
+    action: (Throwable) -> Unit
+): Result<T> {
+    if (this.isFailure) {
+        action(exceptionOrNull()!!)
+    }
+    return this
+}

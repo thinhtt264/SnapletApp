@@ -192,6 +192,7 @@ private fun HomeScreen(
     }
 
     val userScrollEnabled = !uiState.cameraState.isEditMode
+    val isDownloading = uiState.isDownloading
 
     LaunchedEffect(pagerState.currentPage) {
         val currentPage = pagerState.currentPage
@@ -206,6 +207,7 @@ private fun HomeScreen(
             pagerState = pagerState,
             posts = uiState.posts,
             uploadStatuses = uiState.uploadStatuses,
+            showMoreButtonLoading = isDownloading,
             cameraState = uiState.cameraState,
             currentCaption = uiState.currentCaption,
             isUploading = uiState.isUploading,
@@ -231,6 +233,7 @@ private fun HomeScreen(
                 onGridClick = { /* TODO */ },
                 onCaptureClick = onNavigateToCameraPage,
                 onMoreClick = onMoreClick,
+                showMoreButtonLoading = isDownloading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -246,6 +249,7 @@ private fun HomePager(
     pagerState: PagerState,
     posts: List<Post>,
     uploadStatuses: Map<String, UploadStatus>,
+    showMoreButtonLoading: Boolean,
     cameraState: CameraState,
     currentCaption: String?,
     isUploading: Boolean,
@@ -285,6 +289,7 @@ private fun HomePager(
                         post = post,
                         uploadStatus = uploadStatuses[post.id],
                         showBottomAction = showLocalBottomAction,
+                        showMoreButtonLoading = showMoreButtonLoading,
                         onGridClick = { /* TODO */ },
                         onCaptureClick = onNavigateToCameraPage,
                         onMoreClick = onMoreClick

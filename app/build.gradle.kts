@@ -102,6 +102,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.timber)
     implementation(libs.hilt.android)
+    implementation(libs.androidx.exifinterface)
     ksp(libs.hilt.android.compiler)
     
     // CameraX

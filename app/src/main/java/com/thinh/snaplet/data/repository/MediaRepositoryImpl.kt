@@ -1,5 +1,8 @@
 package com.thinh.snaplet.data.repository
 
+import android.content.ContentValues
+import android.content.Context
+import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import com.thinh.snaplet.data.datasource.remote.ApiService
 import com.thinh.snaplet.data.model.CreatePostRequest
@@ -11,7 +14,9 @@ import com.thinh.snaplet.data.model.media.ImageTransform
 import com.thinh.snaplet.data.model.media.RequestUploadRequest
 import com.thinh.snaplet.data.model.media.UploadRequestData
 import com.thinh.snaplet.data.model.media.UploadRequestItem
+import com.thinh.snaplet.di.BaseOkHttpClient
 import com.thinh.snaplet.utils.Logger
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.thinh.snaplet.utils.network.ApiError
 import com.thinh.snaplet.utils.network.ApiResult
 import com.thinh.snaplet.utils.network.safeApiCall
@@ -21,37 +26,94 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.io.InputStream
 import javax.inject.Inject
 
 class MediaRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val apiService: ApiService,
+    @BaseOkHttpClient private val baseOkHttpClient: OkHttpClient,
 ) : MediaRepository {
 
-    private val uploadClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .retryOnConnectionFailure(true)
-        .build()
+    private companion object {
+        const val DOWNLOAD_BUFFER_SIZE = 64 * 1024
+    }
+
+    override suspend fun downloadImage(imageSource: String): Result<String> =
+        withContext(Dispatchers.IO) {
+            if (imageSource.isBlank()) {
+                return@withContext Result.failure(IllegalArgumentException("Image source is empty"))
+            }
+            try {
+                val inputStream: InputStream = when {
+                    imageSource.startsWith("http://", ignoreCase = true) ||
+                    imageSource.startsWith("https://", ignoreCase = true) -> {
+                        val response = baseOkHttpClient.newCall(
+                            Request.Builder().url(imageSource).build()
+                        ).execute()
+                        if (!response.isSuccessful || response.body == null) {
+                            return@withContext Result.failure(
+                                RuntimeException("Download failed: ${response.code}")
+                            )
+                        }
+                        response.body!!.byteStream()
+                    }
+                    else -> {
+                        val path = imageSource.removePrefix("file://")
+                        val file = File(path)
+                        if (!file.exists() || !file.canRead()) {
+                            return@withContext Result.failure(
+                                RuntimeException("File not found or not readable")
+                            )
+                        }
+                        file.inputStream()
+                    }
+                }
+                val displayName = "Snaplet_${System.currentTimeMillis()}.jpg"
+                val mimeType = "image/jpeg"
+                val values = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+                    put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Snaplet")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+                val uri = context.contentResolver.insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    values
+                ) ?: run {
+                    inputStream.close()
+                    return@withContext Result.failure(
+                        RuntimeException("Failed to create file in MediaStore")
+                    )
+                }
+                try {
+                    context.contentResolver.openOutputStream(uri)?.use { rawOut ->
+                        BufferedOutputStream(rawOut, DOWNLOAD_BUFFER_SIZE).use { out ->
+                            BufferedInputStream(inputStream, DOWNLOAD_BUFFER_SIZE).use { input ->
+                                input.copyTo(out, DOWNLOAD_BUFFER_SIZE)
+                            }
+                        }
+                    }
+                    values.clear()
+                    values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    context.contentResolver.update(uri, values, null, null)
+                    Result.success(displayName)
+                } finally {
+                    inputStream.close()
+                }
+            } catch (e: Exception) {
+                Logger.e(e, "downloadImage failed")
+                Result.failure(e)
+            }
+        }
 
     override suspend fun getNewsfeed(limit: Int, cursor: String?): ApiResult<PostsFeedData> {
         return safeApiCall(
             apiCall = {
                 apiService.getPostsFeed(limit = limit, cursor = cursor)
-            },
-            onSuccess = { feedData ->
-                Logger.d(
-                    "✅ Fetched ${feedData.data.size} posts${
-                        cursor?.let {
-                            ", cursor: ${
-                                it.take(
-                                    20
-                                )
-                            }..."
-                        } ?: ""
-                    }")
             }
         )
     }
@@ -157,7 +219,7 @@ class MediaRepositoryImpl @Inject constructor(
                     .addHeader("Content-Type", contentType)
                     .build()
 
-                val response = uploadClient.newCall(request).execute()
+                val response = baseOkHttpClient.newCall(request).execute()
 
                 if (response.isSuccessful) {
                     ApiResult.Success(Unit)

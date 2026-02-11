@@ -1,5 +1,6 @@
 package com.thinh.snaplet.ui.screens.home.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -9,6 +10,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -41,11 +45,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.ui.theme.GoldenPollen
 import pressScaleClickable
+import thenIf
 
 private val CAPTURE_BUTTON_SIZE = 92.dp
 private val ICON_SIZE = 46.dp
 private val CAPTURE_BUTTON_BORDER_WIDTH = 4.dp
 private const val CAPTURE_ANIMATION_DURATION = 200
+private const val CAMERA_ACTION_FADE_IN_DURATION = 250
+private const val CAMERA_ACTION_FADE_OUT_DURATION = 250
 private const val CAPTURE_BUTTON_MIN_SCALE = 0.85f
 private const val CAPTURE_BUTTON_MAX_SCALE = 1f
 
@@ -54,6 +61,7 @@ private const val CAPTURE_BUTTON_MAX_SCALE = 1f
 fun CameraAction(
     modifier: Modifier = Modifier,
     capturedImagePath: String?,
+    isCapturing: Boolean = false,
     onCapturePhoto: () -> Unit,
     onCancelCapture: () -> Unit,
     onSwitchCamera: () -> Unit,
@@ -69,49 +77,64 @@ fun CameraAction(
     ) {
         val hasCaptureImage = capturedImagePath != null
 
-        val onClickLeftImage = if (hasCaptureImage) {
-            onCancelCapture
-        } else {
-            {}
+        AnimatedContent(
+            targetState = hasCaptureImage,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(CAMERA_ACTION_FADE_IN_DURATION)) togetherWith fadeOut(
+                    animationSpec = tween(CAMERA_ACTION_FADE_OUT_DURATION)
+                )
+            },
+            label = "camera_action_left_icon"
+        ) { hasImage ->
+            Icon(
+                imageVector = if (hasImage) Icons.Outlined.Close else Icons.Outlined.AddPhotoAlternate,
+                contentDescription = if (hasImage) "Cancel capture" else "Upload from gallery",
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .size(ICON_SIZE)
+                    .thenIf(hasCaptureImage) { pressScaleClickable(onClick = onCancelCapture) }
+            )
         }
 
-        Icon(
-            imageVector = if (hasCaptureImage)
-                Icons.Outlined.Close
-            else
-                Icons.Outlined.AddPhotoAlternate,
-            contentDescription = if (hasCaptureImage) "Cancel capture" else "Upload from gallery",
-            tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .size(ICON_SIZE)
-                .pressScaleClickable(onClick = onClickLeftImage),
-        )
-
-        if (hasCaptureImage) {
-            Box(
-                modifier = Modifier
-                    .size(CAPTURE_BUTTON_SIZE)
-                    .clip(shape = CircleShape)
-                    .align(Alignment.CenterVertically)
-                    .background(MaterialTheme.colorScheme.secondary)
-                    .pressScaleClickable(
-                        onClick = {
-                            if (!isUploading) {
-                                onUploadPost()
-                            }
-                        },
-                        enabled = !isUploading
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Outlined.NearMe,
-                    contentDescription = "Upload posts",
-                    tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.size(ICON_SIZE)
+        AnimatedContent(
+            targetState = hasCaptureImage,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(CAMERA_ACTION_FADE_IN_DURATION)) togetherWith fadeOut(
+                    animationSpec = tween(CAMERA_ACTION_FADE_OUT_DURATION)
+                )
+            },
+            label = "camera_action_center",
+        ) { hasImage ->
+            if (hasImage) {
+                Box(
+                    modifier = Modifier
+                        .size(CAPTURE_BUTTON_SIZE)
+                        .clip(shape = CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        .pressScaleClickable(
+                            onClick = {
+                                if (!isUploading) {
+                                    onUploadPost()
+                                }
+                            },
+                            enabled = !isUploading
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.NearMe,
+                        contentDescription = "Upload posts",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(ICON_SIZE)
+                    )
+                }
+            } else {
+                CaptureButton(
+                    onCapturePhoto = onCapturePhoto,
+                    isCapturing = isCapturing
                 )
             }
-        } else CaptureButton(onCapturePhoto = onCapturePhoto)
+        }
 
         Icon(
             Icons.Outlined.Cached,
@@ -125,13 +148,17 @@ fun CameraAction(
 }
 
 @Composable
-fun CaptureButton(modifier: Modifier = Modifier, onCapturePhoto: () -> Unit) {
+fun CaptureButton(
+    modifier: Modifier = Modifier, onCapturePhoto: () -> Unit, isCapturing: Boolean = false
+) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
+    val effectivePressed = isPressed || isCapturing
+
     val backgroundColor by animateColorAsState(
-        targetValue = if (isPressed) {
-            MaterialTheme.colorScheme.secondary
+        targetValue = if (effectivePressed) {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         } else {
             Color.White
         },
@@ -140,39 +167,35 @@ fun CaptureButton(modifier: Modifier = Modifier, onCapturePhoto: () -> Unit) {
     )
 
     val buttonScale by animateFloatAsState(
-        targetValue = if (isPressed) {
+        targetValue = if (effectivePressed) {
             CAPTURE_BUTTON_MIN_SCALE
         } else {
             CAPTURE_BUTTON_MAX_SCALE
-        },
-        animationSpec = spring(),
-        label = "capture_button_scale"
+        }, animationSpec = spring(), label = "capture_button_scale"
     )
 
     val infiniteTransition = rememberInfiniteTransition(label = "infinite transition")
     val borderPulseWidth by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
+        initialValue = 1f, targetValue = 1.8f, animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 500, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
-        ),
-        label = "border pulse width animation"
+        ), label = "border pulse width animation"
     )
 
     Box(
         modifier = modifier
-            .size(CAPTURE_BUTTON_SIZE), contentAlignment = Alignment.Center
+            .size(CAPTURE_BUTTON_SIZE),
+        contentAlignment = Alignment.Center
     ) {
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
-            val strokeWidth = if (isPressed) {
+            val strokeWidth = if (effectivePressed) {
                 CAPTURE_BUTTON_BORDER_WIDTH.toPx() * borderPulseWidth
             } else {
                 CAPTURE_BUTTON_BORDER_WIDTH.toPx()
             }
-            val opacity = if (isPressed) {
+            val opacity = if (effectivePressed) {
                 (borderPulseWidth - 1f) * 0.7f + 0.4f
             } else {
                 1f
@@ -191,7 +214,8 @@ fun CaptureButton(modifier: Modifier = Modifier, onCapturePhoto: () -> Unit) {
                 .background(color = backgroundColor, shape = CircleShape)
                 .pressScaleClickable(
                     onClick = onCapturePhoto,
-                    interactionSource = interactionSource
+                    interactionSource = interactionSource,
+                    enabled = !isCapturing
                 )
         )
     }

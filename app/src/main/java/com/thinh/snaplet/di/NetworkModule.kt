@@ -135,12 +135,29 @@ object NetworkModule {
     }
 
     /**
-     * Provide OkHttpClient Configures HTTP client with interceptors and
-     * timeouts
+     * Base OkHttpClient: basic, default configuration (timeouts, retry).
+     * Used for upload/download – no auth or API interceptors.
      */
     @Provides
     @Singleton
-    fun provideOkHttpClient(
+    @BaseOkHttpClient
+    fun provideBaseOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
+
+    /**
+     * Internal OkHttpClient: custom internal config for backend
+     * Used for Retrofit – API calls to backend.
+     */
+    @Provides
+    @Singleton
+    @InternalOkHttpClient
+    fun provideInternalOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
         authInterceptor: Interceptor,
         fingerprintInterceptor: FingerprintInterceptor,
@@ -148,26 +165,15 @@ object NetworkModule {
         tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
-            // 1. Fingerprint header (first, so it's always included)
             .addInterceptor(fingerprintInterceptor)
-            // 2. Auth interceptor (adds Authorization headers)
             .addInterceptor(authInterceptor)
-            // 3. Chucker for network debugging (no-op in release builds)
             .addInterceptor(chuckerInterceptor)
-            // 4. Logging (last, so it logs all headers)
             .addInterceptor(loggingInterceptor)
-
-            // Authenticator (handles 401 responses and token refresh)
             .authenticator(tokenAuthenticator)
-
-            // Timeouts
-            .connectTimeout(30, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-
-            // Retry configuration
             .retryOnConnectionFailure(true)
-
-            // Connection pool
             .connectionPool(
                 okhttp3.ConnectionPool(
                     maxIdleConnections = 5, keepAliveDuration = 5, timeUnit = TimeUnit.MINUTES
@@ -184,11 +190,12 @@ object NetworkModule {
         return builder.build()
     }
 
-    /** Provide Retrofit instance Main HTTP client for API calls */
+    /** Retrofit dùng Internal OkHttpClient (BE). */
     @Provides
     @Singleton
     fun provideRetrofit(
-        okHttpClient: OkHttpClient, gson: Gson
+        @InternalOkHttpClient okHttpClient: OkHttpClient,
+        gson: Gson
     ): Retrofit {
         return Retrofit.Builder().baseUrl(BASE_URL).client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson)).build()

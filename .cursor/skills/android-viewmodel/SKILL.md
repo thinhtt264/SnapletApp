@@ -42,12 +42,11 @@ Use `ViewModel` to hold state and business logic. It must outlive configuration 
 *   Use `viewModelScope` for all coroutines started by the ViewModel.
 *   Ideally, specific operations should be delegated to UseCases or Repositories.
 
-### 5. Handling ApiResult from repository (API calls)
+### 5. Handling ApiResult / Result from repository
 
-When the ViewModel calls a repository and gets `ApiResult<T>`, consume it as follows. See also **.cursor/rules/viewmodel-apiresult.mdc** (applies when editing `*ViewModel.kt`).
+When the ViewModel calls a repository and gets `ApiResult<T>` or `Result<T>`, choose based on whether you need **one value** from the result or only **side effects**. See also **.cursor/rules/viewmodel-apiresult.mdc** (applies when editing `*ViewModel.kt`).
 
 **Imports:** `fold` via `com.thinh.snaplet.utils.network.ApiResult`; `onSuccess`/`onFailure` via `com.thinh.snaplet.utils.network.onSuccess` and `com.thinh.snaplet.utils.network.onFailure`.
 
-*   **Use `fold`** when building or returning state (both success and failure must be handled). Example: `_uiState.value = result.fold(onSuccess = { UiState.Success(it) }, onFailure = { UiState.Error(it.message) })`.
-*   **Use `onSuccess` / `onFailure`** only for side effects (logging, snackbar, analytics); do not use them to build or return state.
-*   **Never** derive UI state from `onSuccess`/`onFailure`; use **`fold`** for compiler-safe branching.
+*   **Use `fold`** when you need to **produce a single value** (e.g. assign to `_uiState.value`) and **both** success and failure branches **return that same type** with different transformations (e.g. `UiState.Success(data)` vs `UiState.Error(message)`). Only then use fold.
+*   **Use `onSuccess` / `onFailure`** when you only need **side effects** (update state per branch, show snackbar, set status, emit event) and do **not** need to derive one value from the result. Each branch does its own side effects; no single "result of the call" is assigned.

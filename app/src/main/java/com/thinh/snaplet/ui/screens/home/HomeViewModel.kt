@@ -26,6 +26,7 @@ import com.thinh.snaplet.utils.network.onSuccess
 import com.thinh.snaplet.utils.permission.Permission
 import com.thinh.snaplet.utils.permission.PermissionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -63,7 +65,7 @@ class HomeViewModel @Inject constructor(
 
     private val _imageCapture = mutableStateOf<ImageCapture?>(null)
 
-    private var currentPostId: String? = null
+    private var currentPostVisible: Post? = null
 
     init {
         loadNewsfeed()
@@ -106,7 +108,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onItemVisible(currentIndex: Int) {
-        currentPostId = _uiState.value.posts.getOrNull(currentIndex)?.id
+        currentPostVisible = _uiState.value.posts.getOrNull(currentIndex)
 
         val totalItems = _uiState.value.posts.size
         // Trigger load more when 2 items away from the end
@@ -204,13 +206,27 @@ class HomeViewModel @Inject constructor(
 
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
+        val isFrontCamera =
+            _uiState.value.cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
+
         capture.takePicture(
             outputOptions, executor, object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    updateCameraState {
-                        it.copy(isCapturing = false, capturedImagePath = photoFile.absolutePath)
+                    viewModelScope.launch {
+                        if (isFrontCamera) {
+                            withContext(Dispatchers.IO) {
+                                FileUtils.flipImageFileHorizontally(photoFile)
+                            }
+                        }
+                        withContext(Dispatchers.Main.immediate) {
+                            updateCameraState {
+                                it.copy(
+                                    isCapturing = false,
+                                    capturedImagePath = photoFile.absolutePath
+                                )
+                            }
+                        }
                     }
-                    emitEvent(HomeUiEvent.ShowSuccess(UiText.DynamicString("Photo saved successfully")))
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -247,11 +263,7 @@ class HomeViewModel @Inject constructor(
             val tempPostId = "temp_${System.currentTimeMillis()}"
             val caption = _uiState.value.currentCaption
 
-            val isFrontCamera =
-                _uiState.value.cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
-            val transform = ImageTransform(
-                rotation = 0, scaleX = if (isFrontCamera) -1f else 1f, scaleY = 1f
-            )
+            val transform = ImageTransform(rotation = 0, scaleX = 1f, scaleY = 1f)
 
             val tempPost = createTempPost(
                 id = tempPostId,
@@ -337,15 +349,11 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onShowMoreOptions() {
-        currentPostId?.let { onShowMoreOptions(it) }
+        currentPostVisible?.let { onShowMoreOptions(it) }
     }
 
-    fun onShowMoreOptions(postId: String) {
-        val isUploading = _uiState.value.uploadStatuses[postId] == UploadStatus.Uploading
-
-        val isOwnPost: Boolean = _uiState.value.posts
-            .find { it.id == postId }
-            ?.isOwnPost ?: false
+    fun onShowMoreOptions(post: Post) {
+        val isUploading = _uiState.value.uploadStatuses[post.id] == UploadStatus.Uploading
 
         val options = buildList {
             add(
@@ -358,9 +366,10 @@ class HomeViewModel @Inject constructor(
                 SheetOption(
                     id = "download",
                     label = UiText.StringResource(R.string.download),
-                    onClick = { /* TODO: download */ })
+                    onClick = { downloadPostImage(post) }
+                )
             )
-            if (isOwnPost && !isUploading) {
+            if (post.isOwnPost && !isUploading) {
                 add(
                     SheetOption(
                         id = "delete",
@@ -371,7 +380,7 @@ class HomeViewModel @Inject constructor(
                                 title = UiText.StringResource(R.string.delete_photo_title),
                                 message = UiText.StringResource(R.string.delete_photo_message),
                                 confirmText = UiText.StringResource(R.string.delete),
-                                onConfirm = { deletePost(postId) },
+                                onConfirm = { deletePost(post.id) },
                             )
                         }
                     )
@@ -482,6 +491,31 @@ class HomeViewModel @Inject constructor(
             }.onFailure { error ->
                 emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
             }
+        }
+    }
+
+    fun downloadPostImage(post: Post) {
+        if (_uiState.value.isDownloading) return
+        val media = post.media.firstOrNull() ?: run {
+            emitEvent(HomeUiEvent.ShowError(UiText.StringResource(R.string.download_failed)))
+            return
+        }
+        val imageSource = media.originalUrl
+
+        _uiState.update { it.copy(isDownloading = true) }
+        viewModelScope.launch {
+            mediaRepository.downloadImage(imageSource)
+                .onSuccess { _uiState.update { it.copy(isDownloading = false) } }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isDownloading = false) }
+                    emitEvent(
+                        HomeUiEvent.ShowError(
+                            UiText.DynamicString(
+                                e.message ?: "Download failed"
+                            )
+                        )
+                    )
+                }
         }
     }
 
