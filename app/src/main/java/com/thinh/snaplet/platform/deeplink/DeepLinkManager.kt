@@ -1,4 +1,4 @@
-package com.thinh.snaplet.utils.deeplink
+package com.thinh.snaplet.platform.deeplink
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -8,7 +8,7 @@ import javax.inject.Singleton
 
 @Singleton
 class DeepLinkManager @Inject constructor() {
-    
+
     private val _events = MutableSharedFlow<DeepLinkEvent>(
         replay = 1,              // Replay last event to new subscribers (fix cold start)
         extraBufferCapacity = 1  // Buffer 1 additional event if processing is slow

@@ -1,7 +1,7 @@
 package com.thinh.snaplet.ui.screens.home
 
+import com.thinh.snaplet.platform.permission.Permission
 import com.thinh.snaplet.ui.common.UiText
-import com.thinh.snaplet.utils.permission.Permission
 
 sealed interface HomeUiEvent {
 

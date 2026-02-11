@@ -4,8 +4,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import com.thinh.snaplet.platform.permission.Permission
 import com.thinh.snaplet.utils.Logger
-import com.thinh.snaplet.utils.permission.Permission
 
 @Composable
 fun PermissionHandler(

@@ -30,13 +30,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.thinh.snaplet.data.model.Post
+import com.thinh.snaplet.platform.permission.Permission
 import com.thinh.snaplet.ui.components.PermissionHandler
 import com.thinh.snaplet.ui.screens.home.components.BottomAction
 import com.thinh.snaplet.ui.screens.home.components.CameraPage
 import com.thinh.snaplet.ui.screens.home.components.EmptyMediaPage
 import com.thinh.snaplet.ui.screens.home.components.MediaPage
 import com.thinh.snaplet.ui.screens.home.components.TopAction
-import com.thinh.snaplet.utils.permission.Permission
 import kotlinx.coroutines.launch
 
 private const val CAMERA_PAGE_INDEX = 0
