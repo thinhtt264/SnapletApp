@@ -213,16 +213,15 @@ class HomeViewModel @Inject constructor(
             outputOptions, executor, object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     viewModelScope.launch {
-                        if (isFrontCamera) {
-                            withContext(Dispatchers.IO) {
-                                FileUtils.flipImageFileHorizontally(photoFile)
-                            }
+                        val imagePath = withContext(Dispatchers.IO) {
+                            FileUtils.processImageToWebp(photoFile, flipHorizontal = isFrontCamera)
+                                ?: photoFile.absolutePath
                         }
                         withContext(Dispatchers.Main.immediate) {
                             updateCameraState {
                                 it.copy(
                                     isCapturing = false,
-                                    capturedImagePath = photoFile.absolutePath
+                                    capturedImagePath = imagePath
                                 )
                             }
                         }
