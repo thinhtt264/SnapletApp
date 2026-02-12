@@ -1,5 +1,6 @@
-package com.thinh.snaplet.utils.permission
+package com.thinh.snaplet.platform.permission
 
+import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
@@ -11,7 +12,7 @@ import javax.inject.Singleton
 class PermissionManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    
+
     /**
      * Check if a permission is granted
      */
@@ -21,14 +22,14 @@ class PermissionManager @Inject constructor(
             permission.manifestPermission
         ) == PackageManager.PERMISSION_GRANTED
     }
-    
+
     /**
      * Check multiple permissions at once
      */
     fun hasPermissions(vararg permissions: Permission): Boolean {
         return permissions.all { hasPermission(it) }
     }
-    
+
     /**
      * Get permission state for UI decisions
      */
@@ -46,13 +47,13 @@ class PermissionManager @Inject constructor(
  * Easy to extend for new permissions
  */
 sealed class Permission(val manifestPermission: String) {
-    object Camera : Permission(android.Manifest.permission.CAMERA)
-    object ReadExternalStorage : Permission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
-    object WriteExternalStorage : Permission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    object RecordAudio : Permission(android.Manifest.permission.RECORD_AUDIO)
-    object AccessFineLocation : Permission(android.Manifest.permission.ACCESS_FINE_LOCATION)
-    object AccessCoarseLocation : Permission(android.Manifest.permission.ACCESS_COARSE_LOCATION)
-    
+    object Camera : Permission(Manifest.permission.CAMERA)
+    object ReadExternalStorage : Permission(Manifest.permission.READ_EXTERNAL_STORAGE)
+    object WriteExternalStorage : Permission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    object RecordAudio : Permission(Manifest.permission.RECORD_AUDIO)
+    object AccessFineLocation : Permission(Manifest.permission.ACCESS_FINE_LOCATION)
+    object AccessCoarseLocation : Permission(Manifest.permission.ACCESS_COARSE_LOCATION)
+
     // Easy to add more permissions here
     // object NewPermission : Permission(android.Manifest.permission.NEW_PERMISSION)
 }

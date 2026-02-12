@@ -12,30 +12,30 @@ import java.io.FileOutputStream
 
 object FileUtils {
 
+    private const val WEBP_QUALITY = 90
+
     /**
-     * Normalizes EXIF orientation and flips the image horizontally (mirror).
-     * Used for front-camera captures so the saved file is upright and matches
-     * what the user sees; upload/download are correct.
+     * Normalizes EXIF, optionally flips horizontally, saves as .webp. Caller should use returned path.
      *
-     * @param file Image file (e.g. JPEG) to transform in place
-     * @return true if transform and save succeeded, false otherwise
+     * @param file Source image (e.g. JPEG from camera)
+     * @param flipHorizontal true = mirror, false = normalize only
+     * @return Path to the .webp file, or null on failure (original file unchanged)
      */
-    fun flipImageFileHorizontally(file: File): Boolean {
-        if (!file.exists() || !file.canRead()) return false
+    fun processImageToWebp(file: File, flipHorizontal: Boolean = false): String? {
+        if (!file.exists() || !file.canRead()) return null
+        val webpFile = File(file.parent, "${file.nameWithoutExtension}.webp")
         return try {
-            val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return false
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return null
             val path = file.absolutePath
 
-            // 1) Matrix: apply EXIF rotation so image is upright, then flip horizontal
             val exif = ExifInterface(path)
             val orientation = exif.getAttributeInt(
                 ExifInterface.TAG_ORIENTATION,
                 ExifInterface.ORIENTATION_NORMAL
             )
             val matrix = matrixForExifOrientation(orientation)
-            matrix.postScale(-1f, 1f)
+            if (flipHorizontal) matrix.postScale(-1f, 1f)
 
-            // 2) For 90/270 the output size swaps; createBitmap needs correct bounds
             val rect = RectF(0f, 0f, bitmap.width.toFloat(), bitmap.height.toFloat())
             matrix.mapRect(rect)
             matrix.postTranslate(-rect.left, -rect.top)
@@ -47,23 +47,26 @@ object FileUtils {
             canvas.drawBitmap(bitmap, matrix, null)
             bitmap.recycle()
 
-            FileOutputStream(file).use { out ->
-                result.compress(Bitmap.CompressFormat.JPEG, 99, out)
+            val sizeBefore = file.length()
+            FileOutputStream(webpFile).use { out ->
+                result.compress(Bitmap.CompressFormat.WEBP, WEBP_QUALITY, out)
             }
             result.recycle()
 
-            // 3) Set EXIF to normal so viewers show correct orientation
-            ExifInterface(path).apply {
+            ExifInterface(webpFile.absolutePath).apply {
                 setAttribute(
                     ExifInterface.TAG_ORIENTATION,
                     ExifInterface.ORIENTATION_NORMAL.toString()
                 )
                 saveAttributes()
             }
-            true
+            file.delete()
+            val sizeAfter = webpFile.length()
+            webpFile.absolutePath
         } catch (e: Exception) {
-            Logger.e(e, "flipImageFileHorizontally failed: ${file.absolutePath}")
-            false
+            Logger.e(e, "processImageToWebp failed: ${file.absolutePath}")
+            if (webpFile.exists()) webpFile.delete()
+            null
         }
     }
 
@@ -81,12 +84,7 @@ object FileUtils {
         return matrix
     }
 
-    /**
-     * Deletes a file from the given file path.
-     *
-     * @param filePath The absolute path of the file to delete
-     * @return true if the file was successfully deleted, false otherwise
-     */
+    /** Deletes the file at [filePath]. Returns true if deleted. */
     fun deleteFileFromPath(filePath: String?): Boolean {
         if (filePath == null) {
             return false
@@ -109,12 +107,7 @@ object FileUtils {
         }
     }
 
-    /**
-     * Deletes multiple files from the given file paths.
-     *
-     * @param filePaths List of absolute paths of files to delete
-     * @return Number of files successfully deleted
-     */
+    /** Deletes each file at [filePaths]. Returns count of deleted files. */
     fun deleteFilesFromPaths(filePaths: List<String?>): Int {
         return filePaths.count { deleteFileFromPath(it) }
     }

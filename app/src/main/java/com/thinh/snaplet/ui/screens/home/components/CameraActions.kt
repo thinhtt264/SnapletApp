@@ -38,16 +38,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.ui.theme.GoldenPollen
 import pressScaleClickable
 import thenIf
 
-private val CAPTURE_BUTTON_SIZE = 92.dp
+private val CAPTURE_BUTTON_SIZE = 96.dp
 private val ICON_SIZE = 46.dp
 private val CAPTURE_BUTTON_BORDER_WIDTH = 4.dp
 private const val CAPTURE_ANIMATION_DURATION = 200
@@ -109,8 +109,10 @@ fun CameraAction(
                 Box(
                     modifier = Modifier
                         .size(CAPTURE_BUTTON_SIZE)
-                        .clip(shape = CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        .background(
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            shape = CircleShape
+                        )
                         .pressScaleClickable(
                             onClick = {
                                 if (!isUploading) {
@@ -182,6 +184,19 @@ fun CaptureButton(
         ), label = "border pulse width animation"
     )
 
+    val density = LocalDensity.current
+    val strokeWidthPx = if (effectivePressed) {
+        with(density) { CAPTURE_BUTTON_BORDER_WIDTH.toPx() } * borderPulseWidth
+    } else {
+        with(density) { CAPTURE_BUTTON_BORDER_WIDTH.toPx() }
+    }
+    val borderOpacity = if (effectivePressed) {
+        (borderPulseWidth - 1f) * 0.7f + 0.4f
+    } else {
+        1f
+    }
+    val borderColor = GoldenPollen.copy(alpha = borderOpacity)
+
     Box(
         modifier = modifier
             .size(CAPTURE_BUTTON_SIZE),
@@ -190,27 +205,19 @@ fun CaptureButton(
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
-            val strokeWidth = if (effectivePressed) {
-                CAPTURE_BUTTON_BORDER_WIDTH.toPx() * borderPulseWidth
-            } else {
-                CAPTURE_BUTTON_BORDER_WIDTH.toPx()
-            }
-            val opacity = if (effectivePressed) {
-                (borderPulseWidth - 1f) * 0.7f + 0.4f
-            } else {
-                1f
-            }
+            val radius = (size.minDimension - strokeWidthPx) / 2f
             drawCircle(
-                color = GoldenPollen.copy(alpha = opacity),
-                radius = size.minDimension / 2f,
-                style = Stroke(width = strokeWidth)
+                color = borderColor,
+                center = center,
+                radius = radius,
+                style = Stroke(width = strokeWidthPx)
             )
         }
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .scale(buttonScale)
-                .padding(6.dp)
+                .padding(8.dp)
                 .background(color = backgroundColor, shape = CircleShape)
                 .pressScaleClickable(
                     onClick = onCapturePhoto,

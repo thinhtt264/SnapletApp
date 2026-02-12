@@ -8,11 +8,11 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import com.thinh.snaplet.platform.deeplink.DeepLinkEvent
+import com.thinh.snaplet.platform.deeplink.DeepLinkManager
 import com.thinh.snaplet.ui.app.AppViewModel
 import com.thinh.snaplet.ui.screens.MainScreen
 import com.thinh.snaplet.utils.Logger
-import com.thinh.snaplet.utils.deeplink.DeepLinkEvent
-import com.thinh.snaplet.utils.deeplink.DeepLinkManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
