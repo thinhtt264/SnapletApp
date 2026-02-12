@@ -15,19 +15,18 @@ object FileUtils {
     private const val WEBP_QUALITY = 90
 
     /**
-     * Normalizes EXIF, optionally flips horizontally, saves as .webp. Caller should use returned path.
+     * Applies orientation (EXIF + optional horizontal flip) and compresses to WebP. Call on upload.
      *
      * @param file Source image (e.g. JPEG from camera)
-     * @param flipHorizontal true = mirror, false = normalize only
+     * @param flipHorizontal true = mirror (front camera), false = EXIF normalization only
      * @return Path to the .webp file, or null on failure (original file unchanged)
      */
-    fun processImageToWebp(file: File, flipHorizontal: Boolean = false): String? {
+    fun flipAndCompressImage(file: File, flipHorizontal: Boolean = false): String? {
         if (!file.exists() || !file.canRead()) return null
         val webpFile = File(file.parent, "${file.nameWithoutExtension}.webp")
         return try {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return null
             val path = file.absolutePath
-
             val exif = ExifInterface(path)
             val orientation = exif.getAttributeInt(
                 ExifInterface.TAG_ORIENTATION,
@@ -47,7 +46,6 @@ object FileUtils {
             canvas.drawBitmap(bitmap, matrix, null)
             bitmap.recycle()
 
-            val sizeBefore = file.length()
             FileOutputStream(webpFile).use { out ->
                 result.compress(Bitmap.CompressFormat.WEBP, WEBP_QUALITY, out)
             }
@@ -61,10 +59,9 @@ object FileUtils {
                 saveAttributes()
             }
             file.delete()
-            val sizeAfter = webpFile.length()
             webpFile.absolutePath
         } catch (e: Exception) {
-            Logger.e(e, "processImageToWebp failed: ${file.absolutePath}")
+            Logger.e(e, "flipAndCompressImage failed: ${file.absolutePath}")
             if (webpFile.exists()) webpFile.delete()
             null
         }

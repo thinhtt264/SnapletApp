@@ -155,7 +155,8 @@ private fun MediaDisplaySection(
             CapturedImageOverlay(
                 imagePath = path,
                 caption = currentCaption ?: "",
-                onCaptionChange = onCaptionChange
+                onCaptionChange = onCaptionChange,
+                isFrontCamera = cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
             )
         }
     }
@@ -165,13 +166,16 @@ private fun MediaDisplaySection(
 private fun CapturedImageOverlay(
     imagePath: String,
     caption: String,
-    onCaptionChange: (String) -> Unit
+    onCaptionChange: (String) -> Unit,
+    isFrontCamera: Boolean = false
 ) {
     val imageUri = "file://$imagePath".toUri()
 
     Box(modifier = Modifier.fillMaxSize()) {
         AsyncImage(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { scaleX = if (isFrontCamera) -1f else 1f },
             imageUrl = imageUri.toString(),
             contentDescription = "Captured image",
             contentScale = ContentScale.Crop,

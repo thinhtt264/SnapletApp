@@ -50,7 +50,7 @@ import thenIf
 private val CAPTURE_BUTTON_SIZE = 96.dp
 private val ICON_SIZE = 46.dp
 private val CAPTURE_BUTTON_BORDER_WIDTH = 4.dp
-private const val CAPTURE_ANIMATION_DURATION = 200
+private const val CAPTURE_ANIMATION_DURATION = 250
 private const val CAMERA_ACTION_FADE_IN_DURATION = 250
 private const val CAMERA_ACTION_FADE_OUT_DURATION = 250
 private const val CAPTURE_BUTTON_MIN_SCALE = 0.85f
@@ -114,11 +114,7 @@ fun CameraAction(
                             shape = CircleShape
                         )
                         .pressScaleClickable(
-                            onClick = {
-                                if (!isUploading) {
-                                    onUploadPost()
-                                }
-                            },
+                            onClick = onUploadPost,
                             enabled = !isUploading
                         ),
                     contentAlignment = Alignment.Center
@@ -179,7 +175,7 @@ fun CaptureButton(
     val infiniteTransition = rememberInfiniteTransition(label = "infinite transition")
     val borderPulseWidth by infiniteTransition.animateFloat(
         initialValue = 1f, targetValue = 1.8f, animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 500, easing = LinearEasing),
+            animation = tween(durationMillis = CAPTURE_ANIMATION_DURATION, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ), label = "border pulse width animation"
     )

@@ -231,20 +231,17 @@ class HomeViewModel @Inject constructor(
             ).format(System.currentTimeMillis()) + ".jpg"
         )
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-        val isFrontCamera =
-            _uiState.value.cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
 
         capture.takePicture(
             outputOptions, executor, object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     viewModelScope.launch {
-                        val imagePath = withContext(Dispatchers.IO) {
-                            FileUtils.processImageToWebp(photoFile, flipHorizontal = isFrontCamera)
-                                ?: photoFile.absolutePath
-                        }
                         withContext(Dispatchers.Main.immediate) {
                             updateCameraState {
-                                it.copy(isCapturing = false, capturedImagePath = imagePath)
+                                it.copy(
+                                    isCapturing = false,
+                                    capturedImagePath = photoFile.absolutePath
+                                )
                             }
                         }
                     }
@@ -277,10 +274,27 @@ class HomeViewModel @Inject constructor(
                 is ValidateUploadPostUseCase.ValidateUploadResult.Success -> {
                     val input = result.input
                     val tempPostId = "temp_${System.currentTimeMillis()}"
+
+                    _uiState.update { s ->
+                        s.copy(
+                            uploadStatuses = s.uploadStatuses + (tempPostId to UploadStatus.Uploading),
+                            cameraState = s.cameraState.copy(capturedImagePath = null),
+                            currentCaption = null
+                        )
+                    }
+
+                    val isFrontCamera =
+                        state.cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
+                    val processedPath = withContext(Dispatchers.IO) {
+                        FileUtils.flipAndCompressImage(
+                            File(input.imagePath),
+                            flipHorizontal = isFrontCamera
+                        ) ?: input.imagePath
+                    }
                     val transform = ImageTransform(rotation = 0, scaleX = 1f, scaleY = 1f)
                     val tempPost = createTempPostUseCase(
                         id = tempPostId,
-                        imagePath = input.imagePath,
+                        imagePath = processedPath,
                         userProfile = input.userProfile,
                         transform = transform,
                         caption = input.caption
@@ -289,15 +303,12 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { s ->
                         s.copy(
                             posts = listOf(tempPost) + s.posts,
-                            cameraState = s.cameraState.copy(capturedImagePath = null),
-                            currentCaption = null,
-                            uploadStatuses = s.uploadStatuses + (tempPostId to UploadStatus.Uploading),
                             tempPosts = s.tempPosts + tempPost
                         )
                     }
 
                     emitEvent(HomeUiEvent.ScrollToFirstPost)
-                    runUploadAndUpdateStatus(tempPostId, input.imagePath, transform, input.caption)
+                    runUploadAndUpdateStatus(tempPostId, processedPath, transform, input.caption)
                 }
 
                 is ValidateUploadPostUseCase.ValidateUploadResult.AlreadyUploading -> { /* no-op, already uploading */
