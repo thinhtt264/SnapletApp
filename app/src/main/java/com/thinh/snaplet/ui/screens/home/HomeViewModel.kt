@@ -2,6 +2,7 @@ package com.thinh.snaplet.ui.screens.home
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -14,6 +15,7 @@ import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.data.model.RelationshipStatus
 import com.thinh.snaplet.data.model.RelationshipWithUser
 import com.thinh.snaplet.data.model.media.ImageTransform
+import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.domain.feed.GetNewsfeedUseCase
 import com.thinh.snaplet.domain.feed.ShouldTriggerLoadMoreUseCase
 import com.thinh.snaplet.domain.media.DownloadPostImageUseCase
@@ -78,8 +80,13 @@ class HomeViewModel @Inject constructor(
     private val acceptFriendRequestUseCase: AcceptFriendRequestUseCase,
     private val removeFriendUseCase: RemoveFriendUseCase,
     private val removeRelationshipUseCase: RemoveRelationshipUseCase,
+    private val userRepository: UserRepository,
     private val shareManager: ShareManager
 ) : ViewModel() {
+
+    companion object {
+        private const val INVITE_BASE_URL = "https://snaplet-cam.netlify.app/"
+    }
 
     private val _uiState = MutableStateFlow(
         HomeUiState(
@@ -197,11 +204,29 @@ class HomeViewModel @Inject constructor(
     }
 
     fun shareToApp(app: ShareApp) {
-        shareManager.shareToApp(app.packageName, ShareContent(str = "Join me on Snaplet!"))
+        viewModelScope.launch {
+            val content = buildInviteShareContent()
+            shareManager.shareToApp(app.packageName, content)
+        }
     }
 
     fun shareOther() {
-        shareManager.openSystemChooser(ShareContent(str = "Join me on Snaplet!"))
+        viewModelScope.launch {
+            val content = buildInviteShareContent()
+            shareManager.openSystemChooser(content)
+        }
+    }
+
+    private suspend fun buildInviteShareContent(): ShareContent {
+        val profile = userRepository.getCurrentUserProfile()
+        val userName = profile?.userName?.takeIf { it.isNotBlank() }
+        val inviteUrl = if (userName != null) {
+            "${INVITE_BASE_URL}?userName=${Uri.encode(userName)}"
+        } else {
+            INVITE_BASE_URL
+        }
+        val message = "Join me on Snaplet! $inviteUrl"
+        return ShareContent(str = message)
     }
 
     private fun loadNewsfeed(isLoadMore: Boolean = false) {
