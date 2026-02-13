@@ -36,17 +36,19 @@ object OverlayEventBus {
         cancelText: UiText? = null,
         onConfirm: () -> Unit
     ) {
-        _events.tryEmit(
-            OverlayEvent.ShowModal(
-                ModalContent.ConfirmDialog(
-                    title = title,
-                    message = message,
-                    confirmText = confirmText,
-                    cancelText = cancelText,
-                    onConfirm = onConfirm
-                )
+        showModal(
+            ModalContent.ConfirmDialog(
+                title = title,
+                message = message,
+                confirmText = confirmText,
+                cancelText = cancelText,
+                onConfirm = onConfirm
             )
         )
+    }
+
+    fun showModal(content: ModalContent) {
+        _events.tryEmit(OverlayEvent.ShowModal(content))
     }
 
     fun dismiss() {

@@ -3,6 +3,7 @@ package com.thinh.snaplet.ui.overlay
 import androidx.compose.ui.graphics.Color
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.common.UiText
+import com.thinh.snaplet.ui.screens.friend_request.FriendRequestUiState
 
 sealed interface OverlayState {
 
@@ -23,6 +24,10 @@ sealed interface ModalContent {
         val confirmText: UiText,
         val cancelText: UiText?,
         val onConfirm: () -> Unit
+    ) : ModalContent
+
+    data class FriendRequest(
+        val state: FriendRequestUiState
     ) : ModalContent
 }
 

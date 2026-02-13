@@ -12,7 +12,7 @@ import java.io.FileOutputStream
 
 object FileUtils {
 
-    private const val WEBP_QUALITY = 90
+    private const val WEBP_QUALITY = 95
 
     /**
      * Applies orientation (EXIF + optional horizontal flip) and compresses to WebP. Call on upload.

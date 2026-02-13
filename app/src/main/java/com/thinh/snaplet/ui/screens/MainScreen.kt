@@ -27,7 +27,6 @@ import com.thinh.snaplet.navigation.NavScreen
 import com.thinh.snaplet.ui.app.AppUiEvent
 import com.thinh.snaplet.ui.app.AppViewModel
 import com.thinh.snaplet.ui.overlay.OverlayHost
-import com.thinh.snaplet.ui.screens.friend_request.FriendRequestOverlayScreen
 import com.thinh.snaplet.ui.theme.SnapletTheme
 import pressScaleClickable
 
@@ -77,9 +76,6 @@ fun MainScreen(
                             .padding(innerPadding)
                     )
                 }
-
-                // Friend request overlay (shown on top when deeplink triggered)
-                FriendRequestOverlayScreen()
 
                 if (BuildConfig.IS_DEVELOPMENT) {
                     val context = LocalContext.current

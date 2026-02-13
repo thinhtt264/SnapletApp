@@ -5,6 +5,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -30,23 +31,26 @@ fun BaseTextField(
     leadingIcon: @Composable (() -> Unit)? = null,
     singleLine: Boolean = true,
     maxLines: Int = 1,
-    minLines: Int = 1
+    minLines: Int = 1,
+    colors: TextFieldColors? = null
 ) {
+    val colorsResolved = colors ?: TextFieldDefaults.colors(
+        focusedContainerColor = colorScheme.surface,
+        unfocusedContainerColor = colorScheme.surface,
+        disabledContainerColor = colorScheme.onSurface,
+        focusedIndicatorColor = if (isError) Color.Red else Color.Transparent,
+        unfocusedIndicatorColor = if (isError) Color.Red else Color.Transparent,
+        errorIndicatorColor = colorScheme.error,
+        cursorColor = colorScheme.primary,
+        errorCursorColor = colorScheme.error,
+        focusedTextColor = colorScheme.onBackground,
+    )
     TextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier,
         placeholder = placeholder,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = colorScheme.surface,
-            unfocusedContainerColor = colorScheme.surface,
-            disabledContainerColor = colorScheme.surface.copy(alpha = 0.5f),
-            focusedIndicatorColor = if (isError) Color.Red else colorScheme.primary,
-            unfocusedIndicatorColor = if (isError) Color.Red else Color.Transparent,
-            errorIndicatorColor = Color.Red,
-            cursorColor = colorScheme.primary,
-            errorCursorColor = Color.Red
-        ),
+        colors = colorsResolved,
         shape = RoundedCornerShape(16.dp),
         singleLine = singleLine,
         maxLines = maxLines,

@@ -34,6 +34,7 @@ import com.thinh.snaplet.platform.permission.Permission
 import com.thinh.snaplet.ui.components.PermissionHandler
 import com.thinh.snaplet.ui.screens.home.components.BottomAction
 import com.thinh.snaplet.ui.screens.home.components.CameraPage
+import com.thinh.snaplet.ui.screens.home.components.FriendBottomSheet
 import com.thinh.snaplet.ui.screens.home.components.EmptyMediaPage
 import com.thinh.snaplet.ui.screens.home.components.MediaPage
 import com.thinh.snaplet.ui.screens.home.components.TopAction
@@ -98,11 +99,16 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
             context = context,
             snackBarHostState = snackBarHostState,
             requestPermission = requestPermission,
-            onScrollToFirstPost = { pagerState.animateScrollToPage(1) })
+            onScrollToFirstPost = {
+                if (pagerState.currentPage == CAMERA_PAGE_INDEX) pagerState.animateScrollToPage(
+                    1
+                )
+            })
 
         HomeScreen(
             pagerState = pagerState,
             uiState = uiState,
+            viewModel = viewModel,
             cameraActions = cameraActions,
             onNavigateToCameraPage = {
                 scope.launch { pagerState.animateScrollToPage(CAMERA_PAGE_INDEX) }
@@ -163,13 +169,13 @@ private fun UiEventEffect(
                 }
 
                 is HomeUiEvent.ShowSuccess -> {
-                    snackBarHostState.showSnackbar(
-                        message = event.message.asString(context),
-                        duration = SnackbarDuration.Short,
-                    )
+//                    snackBarHostState.showSnackbar(
+//                        message = event.message.asString(context),
+//                        duration = SnackbarDuration.Short,
+//                    )
                 }
 
-                is HomeUiEvent.ScrollToFirstPost -> onScrollToFirstPost()
+                is HomeUiEvent.ScrollToUploadingPost -> onScrollToFirstPost()
             }
         }
     }
@@ -179,11 +185,15 @@ private fun UiEventEffect(
 private fun HomeScreen(
     pagerState: PagerState,
     uiState: HomeUiState,
+    viewModel: HomeViewModel,
     cameraActions: CameraActions,
     onNavigateToCameraPage: () -> Unit,
     onItemVisible: (currentIndex: Int) -> Unit,
     onMoreClick: () -> Unit,
 ) {
+    var showFriendSheet by remember { mutableStateOf(false) }
+    var friendSearchQuery by remember { mutableStateOf("") }
+
     val showGlobalBottomAction by remember {
         derivedStateOf {
             val absolutePosition = pagerState.currentPage + pagerState.currentPageOffsetFraction
@@ -210,7 +220,7 @@ private fun HomeScreen(
             showMoreButtonLoading = isDownloading,
             cameraState = uiState.cameraState,
             currentCaption = uiState.currentCaption,
-            isUploading = uiState.isUploading,
+            isUploading = uiState.uploadStatuses.values.any { it is UploadStatus.Uploading },
             showLocalBottomAction = !showGlobalBottomAction,
             userScrollEnabled = userScrollEnabled,
             cameraActions = cameraActions,
@@ -220,13 +230,31 @@ private fun HomeScreen(
 
         TopAction(
             onProfileClick = { /* TODO */ },
-            onFriendsClick = { /* TODO */ },
+            onFriendsClick = { showFriendSheet = true },
             onChatClick = { /* TODO */ },
+            friendsCount = uiState.friendSheetState.friendsCount,
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
                 .padding(all = 16.dp)
         )
+
+        if (showFriendSheet) {
+            FriendBottomSheet(
+                onDismiss = { showFriendSheet = false },
+                friendSheetState = uiState.friendSheetState,
+                onShareToApp = viewModel::shareToApp,
+                onShareOther = viewModel::shareOther,
+                onSheetVisible = {
+                    viewModel.loadShareApps()
+                    viewModel.loadMyFriendList()
+                },
+                searchQuery = friendSearchQuery,
+                onSearchQueryChange = { friendSearchQuery = it },
+                onFriendRemove = viewModel::removeFriend,
+                onPendingAccept = viewModel::acceptFriendRequest
+            )
+        }
 
         if (showGlobalBottomAction) {
             BottomAction(

@@ -1,5 +1,7 @@
 package com.thinh.snaplet.platform.deeplink
 
+import android.content.Intent
+import com.thinh.snaplet.utils.Logger
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -16,8 +18,17 @@ class DeepLinkManager @Inject constructor() {
 
     val events: SharedFlow<DeepLinkEvent> = _events.asSharedFlow()
 
-    suspend fun emitEvent(event: DeepLinkEvent) {
-        _events.emit(event)
+    suspend fun handleDeepLink(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_VIEW) return
+
+        val data = intent.data ?: return
+
+        Logger.d("🔗 DeepLink received: $data")
+
+        val userName = data.getQueryParameter("userName")
+
+        if (!userName.isNullOrBlank()) {
+            _events.emit(DeepLinkEvent.FriendRequest(userName))
+        }
     }
 }
-

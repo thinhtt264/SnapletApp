@@ -19,7 +19,8 @@
     <string name="approve_camera">Cho phép Snaplet truy cập camera của bạn để chụp ảnh</string>
     <string name="approve">Cho phép</string>
     <string name="recent_photos">Ảnh gần đây</string>
-    <string name="send_request">Gửi yêu cầu</string>
+    <string name="add_friend">Thêm</string>
+    <string name="you">Bạn</string>
 
     <string name="login_email_title">Email của bạn là gì?</string>
     <string name="login_password_title">Chọn mật khẩu</string>
@@ -62,6 +63,13 @@
     <string name="invalid_credentials">Email hoặc mật khẩu không đúng</string>
     <string name="add_caption_placeholder">Thêm một tin nhắn</string>
     <string name="friends">Bạn bè</string>
+    <string name="friend_sheet_title">Bạn bè của tôi</string>
+    <string name="friend_sheet_count">%1$d / %2$d người bạn đã được bổ sung</string>
+    <string name="friend_sheet_add_placeholder">Thêm một người bạn mới</string>
+    <string name="friend_sheet_find_from_apps">Tìm bạn bè từ các ứng dụng khác</string>
+    <string name="friend_sheet_other">Khác</string>
+    <string name="friend_request_section_title">Yêu cầu kết bạn</string>
+    <string name="accept">Chấp nhận</string>
 
     <!-- Empty media (Locket) screen -->
     <string name="empty_media_title">Gửi Locket đầu tiên của bạn</string>

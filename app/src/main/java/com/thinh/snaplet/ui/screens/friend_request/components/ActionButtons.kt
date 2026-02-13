@@ -17,45 +17,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.BaseText
-import com.thinh.snaplet.ui.theme.GoldenPollen
 
-/**
- * ActionButtons - Internal component for bottom action button
- *
- * Features:
- * - Single centered close/dismiss button
- * - Clean, minimal design matching UI mockup
- *
- * @param onDismiss Callback when close button is tapped
- * @param modifier Optional modifier
- */
 @Composable
 internal fun ActionButtons(
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    onDismiss: () -> Unit, modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
+        modifier = modifier, contentAlignment = Alignment.Center
     ) {
-        // Center close button (primary action)
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(64.dp)
                 .border(
-                    width = 3.dp,
-                    color = GoldenPollen,
-                    shape = CircleShape
+                    width = 3.dp, color = MaterialTheme.colorScheme.primary, shape = CircleShape
                 )
                 .background(
-                    color = Color(0xFF3D3D3D),
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
+                    color = Color(0xFF3D3D3D), shape = CircleShape
+                ), contentAlignment = Alignment.Center
         ) {
             IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxSize()
+                onClick = onDismiss, modifier = Modifier.fillMaxSize()
             ) {
                 BaseText(
                     text = stringResource(R.string.close),

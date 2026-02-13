@@ -18,7 +18,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,30 +28,35 @@ import pressScaleClickable
 
 @Composable
 fun TopAction(
+    modifier: Modifier = Modifier,
     onProfileClick: () -> Unit,
     onFriendsClick: () -> Unit,
     onChatClick: () -> Unit,
-    modifier: Modifier = Modifier
+    friendsCount: Int? = null
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CircleButton(Modifier.pressScaleClickable(onClick = onProfileClick)) {
-            Icon(
-                imageVector = Icons.Outlined.AccountCircle,
-                contentDescription = "Profile",
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
-        }
+        AppIconButton(
+            modifier = Modifier.padding(10.dp),
+            containerColor = MaterialTheme.colorScheme.secondary,
+            onClick = onProfileClick,
+            iconSize = 28.dp,
+            icon = IconSpec.Vector(Icons.Outlined.AccountCircle, tint = Color.White)
+        )
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        CircleButton(Modifier.pressScaleClickable(onClick = onFriendsClick)) {
+        Box(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.secondary, shape = CircleShape)
+                .pressScaleClickable(onClick = onFriendsClick),
+            contentAlignment = Alignment.Center
+        ) {
             Row(
-                modifier = Modifier.padding(horizontal = 4.dp),
+                modifier = Modifier.padding(all = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -61,7 +65,15 @@ fun TopAction(
                     tint = Color.White,
                     modifier = Modifier.size(28.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                if (friendsCount != null) {
+                    BaseText(
+                        text = friendsCount.toString(),
+                        color = Color.White,
+                        typography = Typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
                 BaseText(
                     text = stringResource(R.string.friends),
                     color = Color.White,
@@ -72,27 +84,12 @@ fun TopAction(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        CircleButton(Modifier.pressScaleClickable(onClick = onChatClick)) {
-            Icon(
-                imageVector = Icons.Outlined.ChatBubbleOutline,
-                contentDescription = "Profile",
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun CircleButton(
-    modifier: Modifier = Modifier, content: @Composable () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.secondary)
-            .padding(all = 10.dp), contentAlignment = Alignment.Center
-    ) {
-        content()
+        AppIconButton(
+            modifier = Modifier.padding(10.dp),
+            containerColor = MaterialTheme.colorScheme.secondary,
+            onClick = onChatClick,
+            iconSize = 28.dp,
+            icon = IconSpec.Vector(Icons.Outlined.ChatBubbleOutline, tint = Color.White)
+        )
     }
 }

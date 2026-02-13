@@ -8,32 +8,32 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton
-class PermissionManager @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+interface PermissionManager {
 
-    /**
-     * Check if a permission is granted
-     */
-    fun hasPermission(permission: Permission): Boolean {
+    fun hasPermission(permission: Permission): Boolean
+
+    fun hasPermissions(vararg permissions: Permission): Boolean
+
+    fun getPermissionState(permission: Permission): PermissionState
+}
+
+@Singleton
+class PermissionManagerImpl @Inject constructor(
+    @ApplicationContext private val context: Context
+) : PermissionManager {
+
+    override fun hasPermission(permission: Permission): Boolean {
         return ContextCompat.checkSelfPermission(
             context,
             permission.manifestPermission
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    /**
-     * Check multiple permissions at once
-     */
-    fun hasPermissions(vararg permissions: Permission): Boolean {
+    override fun hasPermissions(vararg permissions: Permission): Boolean {
         return permissions.all { hasPermission(it) }
     }
 
-    /**
-     * Get permission state for UI decisions
-     */
-    fun getPermissionState(permission: Permission): PermissionState {
+    override fun getPermissionState(permission: Permission): PermissionState {
         return if (hasPermission(permission)) {
             PermissionState.Granted
         } else {
@@ -42,10 +42,6 @@ class PermissionManager @Inject constructor(
     }
 }
 
-/**
- * Sealed class defining all app permissions
- * Easy to extend for new permissions
- */
 sealed class Permission(val manifestPermission: String) {
     object Camera : Permission(Manifest.permission.CAMERA)
     object ReadExternalStorage : Permission(Manifest.permission.READ_EXTERNAL_STORAGE)
@@ -53,8 +49,5 @@ sealed class Permission(val manifestPermission: String) {
     object RecordAudio : Permission(Manifest.permission.RECORD_AUDIO)
     object AccessFineLocation : Permission(Manifest.permission.ACCESS_FINE_LOCATION)
     object AccessCoarseLocation : Permission(Manifest.permission.ACCESS_COARSE_LOCATION)
-
-    // Easy to add more permissions here
-    // object NewPermission : Permission(android.Manifest.permission.NEW_PERMISSION)
 }
 

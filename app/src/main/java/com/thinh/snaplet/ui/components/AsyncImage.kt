@@ -36,15 +36,10 @@ fun AsyncImage(
     errorPlaceholder: Painter? = null
 ) {
     SubcomposeAsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(imageUrl)
-            .crossfade(crossfadeDuration)
-            .size(resizeSize.toCoilSize())
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .networkCachePolicy(CachePolicy.ENABLED)
-            .allowHardware(true)
-            .build(),
+        model = ImageRequest.Builder(LocalContext.current).data(imageUrl)
+            .crossfade(crossfadeDuration).size(resizeSize.toCoilSize())
+            .memoryCachePolicy(CachePolicy.ENABLED).diskCachePolicy(CachePolicy.ENABLED)
+            .networkCachePolicy(CachePolicy.ENABLED).allowHardware(true).build(),
         contentDescription = contentDescription,
         contentScale = contentScale
     ) {
@@ -64,13 +59,14 @@ fun AsyncImage(
                     LoadingState(
                         backgroundColor = loadingBackgroundColor
                     )
-                }
+                } else ErrorState(
+                    backgroundColor = Color.Transparent, placeholder = errorPlaceholder
+                )
             }
 
             else -> {
                 ErrorState(
-                    backgroundColor = errorBackgroundColor,
-                    placeholder = errorPlaceholder
+                    backgroundColor = errorBackgroundColor, placeholder = errorPlaceholder
                 )
             }
         }
