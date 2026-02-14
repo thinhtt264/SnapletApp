@@ -138,7 +138,12 @@ class HomeViewModel @Inject constructor(
     fun loadMyFriendList() {
         viewModelScope.launch {
             updateFriendSheetState { it.copy(isLoadingFriendList = true) }
-            getRelationshipsByStatusesUseCase(listOf(RelationshipStatus.ACCEPTED, RelationshipStatus.PENDING))
+            getRelationshipsByStatusesUseCase(
+                listOf(
+                    RelationshipStatus.ACCEPTED,
+                    RelationshipStatus.PENDING
+                )
+            )
                 .onSuccess { list ->
                     val accepted = list.filter { it.status == RelationshipStatus.ACCEPTED }
                     val pending = list.filter { it.status == RelationshipStatus.PENDING }
@@ -225,8 +230,7 @@ class HomeViewModel @Inject constructor(
         } else {
             INVITE_BASE_URL
         }
-        val message = "Join me on Snaplet! $inviteUrl"
-        return ShareContent(str = message)
+        return ShareContent(str = inviteUrl)
     }
 
     private fun loadNewsfeed(isLoadMore: Boolean = false) {

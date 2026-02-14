@@ -215,7 +215,10 @@ private fun FriendListItem(
     friend: RelationshipWithUser, onRemove: () -> Unit, onAccept: (() -> Unit)? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Avatar(
             avatarUrl = friend.avatarUrl,

@@ -37,8 +37,8 @@ fun BaseTextField(
     val colorsResolved = colors ?: TextFieldDefaults.colors(
         focusedContainerColor = colorScheme.surface,
         unfocusedContainerColor = colorScheme.surface,
-        disabledContainerColor = colorScheme.onSurface,
-        focusedIndicatorColor = if (isError) Color.Red else Color.Transparent,
+        disabledContainerColor = colorScheme.surface.copy(alpha = 0.5f),
+        focusedIndicatorColor = if (isError) Color.Red else colorScheme.primary,
         unfocusedIndicatorColor = if (isError) Color.Red else Color.Transparent,
         errorIndicatorColor = colorScheme.error,
         cursorColor = colorScheme.primary,
@@ -56,13 +56,9 @@ fun BaseTextField(
         maxLines = maxLines,
         minLines = minLines,
         keyboardOptions = KeyboardOptions(
-            keyboardType = keyboardType,
-            imeAction = imeAction
+            keyboardType = keyboardType, imeAction = imeAction
         ),
-        keyboardActions = KeyboardActions(
-            onNext = { onImeAction() },
-            onDone = { onImeAction() }
-        ),
+        keyboardActions = KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }),
         visualTransformation = visualTransformation,
         trailingIcon = trailingIcon,
         leadingIcon = leadingIcon,

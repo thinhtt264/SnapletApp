@@ -45,7 +45,6 @@
 
     <string name="register_password_title">Choose a password</string>
     <string name="username">Username</string>
-    <string name="username_placeholder">username</string>
     <string name="already_have_account">Already have an account?</string>
     <string name="email_already_taken">This email is already in use</string>
     <string name="email_check_failed">Unable to check email</string>

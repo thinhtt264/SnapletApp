@@ -46,7 +46,6 @@
 
     <string name="register_password_title">Chọn mật khẩu</string>
     <string name="username">Tên người dùng</string>
-    <string name="username_placeholder">username</string>
     <string name="already_have_account">Đã có tài khoản?</string>
     <string name="email_already_taken">Email này đã được sử dụng</string>
     <string name="email_check_failed">Không thể kiểm tra email</string>

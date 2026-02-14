@@ -75,8 +75,6 @@ fun PrimaryButton(
                     strokeWidth = 2.dp
                 )
             } else {
-                val contentColorFinal =
-                    if (titleColor != Color.Unspecified) titleColor else contentColor
                 if (leadingIcon != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -86,7 +84,7 @@ fun PrimaryButton(
                         BaseText(
                             text = title,
                             typography = typography,
-                            color = contentColorFinal,
+                            color = titleColor,
                             fontWeight = FontWeight.SemiBold,
                             textAlign = TextAlign.Center
                         )
@@ -95,7 +93,7 @@ fun PrimaryButton(
                     BaseText(
                         text = title,
                         typography = typography,
-                        color = contentColorFinal,
+                        color = titleColor,
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center
                     )
