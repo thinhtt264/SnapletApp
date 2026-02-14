@@ -102,48 +102,10 @@ override suspend fun login(email: String, password: String): ApiResult<UserProfi
 
 ## ApiResult: fold vs onSuccess / onFailure (consuming results)
 
-Project has custom extensions for handling `ApiResult<T>` (or `Result<T>`) after a call. Choose based on whether you need to **produce one value** from the result or only **side effects**.
+- **fold**: use when you need to **use the returned data** — get one value from the result (both success and failure return/transform to the same type). Use to assign or return that value.
+- **onSuccess / onFailure**: use to **transform or handle the result** per branch (side effects, update state, log, emit event). When you don't need a single value from the result, use onSuccess/onFailure.
 
-### Imports (project)
-
-| API | Where | Import |
-|-----|--------|--------|
-| **fold** | Member on `ApiResult` | `import com.thinh.snaplet.utils.network.ApiResult` — then call `result.fold(onSuccess = { ... }, onFailure = { ... })` |
-| **onSuccess** | Extension in `NetworkExtensions.kt` | `import com.thinh.snaplet.utils.network.onSuccess` |
-| **onFailure** | Extension in `NetworkExtensions.kt` | `import com.thinh.snaplet.utils.network.onFailure` |
-
-- **ApiResult** and **fold**: `app/src/main/java/com/thinh/snaplet/utils/network/ApiResult.kt`
-- **onSuccess** / **onFailure**: `app/src/main/java/com/thinh/snaplet/utils/network/NetworkExtensions.kt`
-
-### Rules
-
-- **Use `fold`** only when you need to **produce a single value** from the result and **both success and failure** contribute that same type with different transformations (e.g. success → `UiState.Success(data)`, failure → `UiState.Error(message)`; the outcome is one `UiState`). Use when you assign or return that value (e.g. `_uiState.value = result.fold(...)`).
-- **Use `onSuccess` / `onFailure`** when you only need **side effects** (update state differently per branch, show snackbar, set status, emit event). You do **not** use the API result to compute one returned/assigned value; each branch just does its own side effects. Prefer these for "on success do A, on failure do B" with no single derived value.
-
-**Example – fold (produce one value; both branches return same type):**
-
-```kotlin
-// You need one UiState from the result; success and failure each transform into that type
-_uiState.value = result.fold(
-    onSuccess = { data -> UiState.Success(data) },
-    onFailure = { error -> UiState.Error(error.message) }
-)
-```
-
-**Example – onSuccess / onFailure (side effects only; no single derived value):**
-
-```kotlin
-// Only side effects: update status, show snackbar. No "result" is assigned from the call.
-result
-    .onSuccess {
-        setDownloadStatus(postId, DownloadStatus.Success)
-        emitEvent(HomeUiEvent.ShowSuccess(...))
-    }
-    .onFailure { e ->
-        setDownloadStatus(postId, DownloadStatus.Failed(e.message))
-        emitEvent(HomeUiEvent.ShowError(...))
-    }
-```
+Example: need one value → `val x = result.fold(onSuccess = { it }, onFailure = { null })`. Only side effects (e.g. refresh + update loading) → `result.onSuccess { ... }.onFailure { ... }`.
 
 ---
 
@@ -209,4 +171,4 @@ abstract fun bindXxxRepository(impl: XxxRepositoryImpl): XxxRepository
 - [ ] Repository functions return `ApiResult<T>` for API calls.
 - [ ] Impl → Interface bound in `RepositoryModule`.
 - [ ] Do not use safeApiCall for Room/DAO (use skill `repository-room` for local DB).
-- [ ] When consuming `ApiResult`: use **fold** to return/transform state; use **onSuccess**/**onFailure** only for side effects (no state built from them).
+- [ ] When consuming `ApiResult`: use **fold** when you need the returned data (one value from both branches); otherwise use **onSuccess**/**onFailure** to handle/transform the result.

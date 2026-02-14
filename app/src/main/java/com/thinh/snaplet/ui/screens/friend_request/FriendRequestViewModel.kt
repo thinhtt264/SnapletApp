@@ -8,6 +8,8 @@ import com.thinh.snaplet.domain.model.RelationshipAction
 import com.thinh.snaplet.domain.user.GetRelationshipActionUseCase
 import com.thinh.snaplet.ui.overlay.OverlayEventBus
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.utils.network.onFailure
+import com.thinh.snaplet.utils.network.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,16 +51,15 @@ class FriendRequestViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isRequesting = true) }
-            userRepository.sendFriendRequest(targetUserId).fold(
-                onSuccess = {
+            userRepository.sendFriendRequest(targetUserId)
+                .onSuccess {
                     loadUser(_uiState.value.userProfile)
                     _uiState.update { it.copy(isRequesting = false) }
-                },
-                onFailure = { error ->
+                }
+                .onFailure { error ->
                     Logger.e("❌ Failed to send friend request: ${error.message}")
                     _uiState.update { it.copy(isRequesting = false) }
                 }
-            )
         }
     }
 
@@ -79,16 +80,15 @@ class FriendRequestViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isRequesting = true) }
-            userRepository.acceptFriendRequest(relationshipId).fold(
-                onSuccess = {
+            userRepository.acceptFriendRequest(relationshipId)
+                .onSuccess {
                     loadUser(_uiState.value.userProfile)
                     _uiState.update { it.copy(isRequesting = false) }
-                },
-                onFailure = { error ->
+                }
+                .onFailure { error ->
                     Logger.e("❌ Failed to accept friend request: ${error.message}")
                     _uiState.update { it.copy(isRequesting = false) }
                 }
-            )
         }
     }
 
