@@ -21,14 +21,25 @@ class OverlayViewModel @Inject constructor() : ViewModel() {
         OverlayEventBus.events.onEach { event ->
             when (event) {
                 is OverlayEvent.ShowBottomSheet -> _overlayState.update {
-                    OverlayState.Visible.BottomSheet(event.content)
+                    OverlayState.Visible.BottomSheet(
+                        content = event.content,
+                        onDismiss = event.onDismiss,
+                    )
                 }
 
                 is OverlayEvent.ShowModal -> _overlayState.update {
-                    OverlayState.Visible.Modal(event.content)
+                    OverlayState.Visible.Modal(
+                        content = event.content,
+                        onDismiss = event.onDismiss,
+                    )
                 }
 
-                is OverlayEvent.Dismiss -> _overlayState.update { OverlayState.None }
+                is OverlayEvent.Dismiss -> {
+                    val current = _overlayState.value
+                    (current as? OverlayState.Visible.Modal)?.onDismiss?.invoke()
+                        ?: (current as? OverlayState.Visible.BottomSheet)?.onDismiss?.invoke()
+                    _overlayState.value = OverlayState.None
+                }
             }
         }.launchIn(viewModelScope)
     }

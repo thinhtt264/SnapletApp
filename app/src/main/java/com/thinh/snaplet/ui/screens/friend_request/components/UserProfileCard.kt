@@ -3,18 +3,19 @@ package com.thinh.snaplet.ui.screens.friend_request.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -25,10 +26,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
+import com.thinh.snaplet.domain.model.RelationshipAction
 import com.thinh.snaplet.ui.components.Avatar
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.PrimaryButton
 import com.thinh.snaplet.ui.screens.friend_request.FriendRequestUiState
+import com.thinh.snaplet.ui.screens.home.components.AppIconButton
+import com.thinh.snaplet.ui.screens.home.components.IconSpec
+
+private val ICON_SIZE = 56.dp
 
 @Composable
 internal fun UserProfileCard(
@@ -36,10 +42,10 @@ internal fun UserProfileCard(
     state: FriendRequestUiState,
     onSendRequest: () -> Unit,
     onRefreshPending: () -> Unit = {},
+    onAcceptRequest: () -> Unit = {},
 ) {
     Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Avatar(
             avatarUrl = state.userProfile?.avatarUrl.orEmpty(),
@@ -57,19 +63,22 @@ internal fun UserProfileCard(
             fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(36.dp))
 
         Box(
             modifier = Modifier.height(50.dp), contentAlignment = Alignment.Center
         ) {
             when {
+                state.isLoading -> {
+                    CircularProgressIndicator(modifier.fillMaxHeight(), strokeWidth = 3.dp)
+                }
+
                 state.isCurrentUser -> {
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .background(MaterialTheme.colorScheme.secondary, shape = CircleShape)
-                            .width(56.dp),
-                        contentAlignment = Alignment.Center
+                            .width(ICON_SIZE), contentAlignment = Alignment.Center
                     ) {
                         BaseText(
                             text = stringResource(R.string.you),
@@ -80,31 +89,82 @@ internal fun UserProfileCard(
                     }
                 }
 
-                state.isPending -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.secondary, shape = CircleShape)
-                            .width(56.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                state.relationshipAction == RelationshipAction.Accepted -> {
+                    PrimaryButton(
+                        modifier = Modifier.fillMaxHeight(),
+                        onClick = {},
+                        title = stringResource(R.string.friends),
+                        typography = MaterialTheme.typography.bodyLarge,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        titleColor = Color.Black,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = Color.Black
+                            )
+                        })
+                }
+
+                state.relationshipAction == RelationshipAction.Blocked -> {
+                    PrimaryButton(
+                        modifier = Modifier.fillMaxHeight(),
+                        onClick = {},
+                        title = stringResource(R.string.blocked),
+                        typography = MaterialTheme.typography.bodyLarge,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                        titleColor = Color.White,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Block,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = Color.White
+                            )
+                        })
+                }
+
+                state.relationshipAction is RelationshipAction.PendingByMe -> {
+                    AppIconButton(
+                        modifier = Modifier.size(ICON_SIZE),
+                        icon = IconSpec.Vector(
+                            Icons.Outlined.Refresh, tint = MaterialTheme.colorScheme.primary
+                        ),
+                        loading = state.isRequesting,
+                        onClick = onRefreshPending,
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        iconSize = 28.dp
+                    )
+                }
+
+                state.relationshipAction is RelationshipAction.PendingByOther -> {
+                    PrimaryButton(
+                        modifier = Modifier.fillMaxHeight(),
+                        onClick = onAcceptRequest,
+                        title = stringResource(R.string.accept),
+                        typography = MaterialTheme.typography.bodyLarge,
+                        isLoading = state.isRequesting,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        titleColor = Color.Black,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                                tint = Color.Black
+                            )
+                        })
                 }
 
                 else -> {
                     PrimaryButton(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxHeight(),
                         onClick = onSendRequest,
                         title = stringResource(R.string.add_friend),
                         typography = MaterialTheme.typography.bodyLarge,
-                        isLoading = state.isLoading,
-                        contentPadding = PaddingValues(start = 8.dp, end = 16.dp),
+                        isLoading = state.isRequesting,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         titleColor = Color.Black,
                         leadingIcon = {

@@ -31,6 +31,7 @@ import com.thinh.snaplet.domain.post.ValidateRetryUploadUseCase
 import com.thinh.snaplet.domain.post.ValidateUploadPostUseCase
 import com.thinh.snaplet.domain.user.AcceptFriendRequestUseCase
 import com.thinh.snaplet.domain.user.GetDisplayableFriendsCountUseCase
+import com.thinh.snaplet.domain.user.GetRelationshipActionUseCase
 import com.thinh.snaplet.domain.user.GetRelationshipsByStatusesUseCase
 import com.thinh.snaplet.domain.user.RemoveFriendUseCase
 import com.thinh.snaplet.domain.user.RemoveRelationshipUseCase
@@ -48,7 +49,10 @@ import com.thinh.snaplet.utils.network.onFailure
 import com.thinh.snaplet.utils.network.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -77,6 +81,7 @@ class HomeViewModel @Inject constructor(
     private val downloadPostImageUseCase: DownloadPostImageUseCase,
     private val getDisplayableFriendsCountUseCase: GetDisplayableFriendsCountUseCase,
     private val getRelationshipsByStatusesUseCase: GetRelationshipsByStatusesUseCase,
+    private val getRelationshipActionUseCase: GetRelationshipActionUseCase,
     private val acceptFriendRequestUseCase: AcceptFriendRequestUseCase,
     private val removeFriendUseCase: RemoveFriendUseCase,
     private val removeRelationshipUseCase: RemoveRelationshipUseCase,
@@ -147,10 +152,15 @@ class HomeViewModel @Inject constructor(
                 .onSuccess { list ->
                     val accepted = list.filter { it.status == RelationshipStatus.ACCEPTED }
                     val pending = list.filter { it.status == RelationshipStatus.PENDING }
+                    val pendingWithActions = coroutineScope {
+                        pending.map { item ->
+                            async { PendingListItemState(item, getRelationshipActionUseCase(item.userId)) }
+                        }.awaitAll()
+                    }
                     updateFriendSheetState {
                         it.copy(
                             friendList = accepted,
-                            pendingList = pending,
+                            pendingList = pendingWithActions,
                             isLoadingFriendList = false
                         )
                     }
@@ -165,10 +175,11 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             acceptFriendRequestUseCase(pending.id)
                 .onSuccess {
+                    val acceptedRelationship = pending.copy(status = RelationshipStatus.ACCEPTED)
                     updateFriendSheetState { state ->
                         state.copy(
-                            pendingList = state.pendingList.filterNot { it.id == pending.id },
-                            friendList = state.friendList + pending.copy(status = RelationshipStatus.ACCEPTED)
+                            pendingList = state.pendingList.filterNot { it.relationship.id == pending.id },
+                            friendList = state.friendList + acceptedRelationship
                         )
                     }
                     loadFriendsCount()
@@ -186,7 +197,7 @@ class HomeViewModel @Inject constructor(
                 removeRelationshipUseCase(friend.id)
                     .onSuccess {
                         updateFriendSheetState { s ->
-                            s.copy(pendingList = s.pendingList.filterNot { it.id == friend.id })
+                            s.copy(pendingList = s.pendingList.filterNot { it.relationship.id == friend.id })
                         }
                     }
                     .onFailure { error ->

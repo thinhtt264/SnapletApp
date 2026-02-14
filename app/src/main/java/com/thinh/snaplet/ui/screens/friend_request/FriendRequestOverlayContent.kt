@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,16 +54,18 @@ fun FriendRequestOverlayContent(
                     UserProfileCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(340.dp)
                             .background(
                                 MaterialTheme.colorScheme.surface,
                                 shape = RoundedCornerShape(24.dp)
-                            ),
+                            )
+                            .padding(vertical = 40.dp),
                         state = uiState,
                         onSendRequest = { viewModel.sendFriendRequest() },
-                        onRefreshPending = { viewModel.refreshPending() })
+                        onRefreshPending = { viewModel.refreshPending() },
+                        onAcceptRequest = { viewModel.acceptFriendRequest() }
+                    )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     ActionButtons(onDismiss = { viewModel.dismiss() })
                 }

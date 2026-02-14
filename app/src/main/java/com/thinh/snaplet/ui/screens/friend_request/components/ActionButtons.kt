@@ -1,12 +1,9 @@
 package com.thinh.snaplet.ui.screens.friend_request.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.BaseText
+import pressScaleClickable
 
 @Composable
 internal fun ActionButtons(
@@ -27,24 +25,19 @@ internal fun ActionButtons(
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
-                .border(
-                    width = 3.dp, color = MaterialTheme.colorScheme.primary, shape = CircleShape
-                )
                 .background(
-                    color = Color(0xFF3D3D3D), shape = CircleShape
-                ), contentAlignment = Alignment.Center
-        ) {
-            IconButton(
-                onClick = onDismiss, modifier = Modifier.fillMaxSize()
-            ) {
-                BaseText(
-                    text = stringResource(R.string.close),
-                    typography = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
+                    color = Color(0xFF3D3D3D), shape = RoundedCornerShape(24.dp)
                 )
-            }
+                .padding(16.dp)
+                .pressScaleClickable(onClick = onDismiss),
+            contentAlignment = Alignment.Center
+        ) {
+            BaseText(
+                text = stringResource(R.string.close),
+                typography = MaterialTheme.typography.titleSmall,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

@@ -2,9 +2,10 @@ package com.thinh.snaplet.ui.screens.friend_request
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.thinh.snaplet.data.model.RelationshipStatus
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.data.repository.UserRepository
+import com.thinh.snaplet.domain.model.RelationshipAction
+import com.thinh.snaplet.domain.user.GetRelationshipActionUseCase
 import com.thinh.snaplet.ui.overlay.OverlayEventBus
 import com.thinh.snaplet.utils.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,31 +19,24 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FriendRequestViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val getRelationshipActionUseCase: GetRelationshipActionUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FriendRequestUiState(userProfile = null))
     val uiState: StateFlow<FriendRequestUiState> = _uiState.asStateFlow()
 
     fun loadUser(userProfile: UserProfile?) {
+        if (userProfile == null) return
+
         viewModelScope.launch {
-            _uiState.update { it.copy(userProfile = userProfile, isLoading = true) }
+            _uiState.value = FriendRequestUiState(userProfile = userProfile, isLoading = true)
 
-            val currentUser = userRepository.getCurrentUserProfile()
-            val isCurrentUser = currentUser?.id == userProfile?.id
-
-            val relationship = userRepository.getRelationshipWithUser(userProfile?.id ?: "")
-                .fold(onSuccess = { it }, onFailure = { null })
-
-            val isPending = relationship?.status?.equals(
-                RelationshipStatus.PENDING.value,
-                ignoreCase = true
-            ) == true
+            val relationshipAction = getRelationshipActionUseCase(userProfile.id)
 
             _uiState.update {
                 it.copy(
-                    isCurrentUser = isCurrentUser,
-                    isPending = isPending,
+                    relationshipAction = relationshipAction,
                     isLoading = false
                 )
             }
@@ -50,13 +44,14 @@ class FriendRequestViewModel @Inject constructor(
     }
 
     fun sendFriendRequest() {
-        val userId = _uiState.value.userProfile?.id ?: return
+        val targetUserId = _uiState.value.userProfile?.id ?: return
         if (_uiState.value.isRequesting) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isRequesting = true) }
-            userRepository.sendFriendRequest(userId).fold(
+            userRepository.sendFriendRequest(targetUserId).fold(
                 onSuccess = {
+                    loadUser(_uiState.value.userProfile)
                     _uiState.update { it.copy(isRequesting = false) }
                 },
                 onFailure = { error ->
@@ -76,7 +71,33 @@ class FriendRequestViewModel @Inject constructor(
         }
     }
 
+    fun acceptFriendRequest() {
+        val relationshipId =
+            (_uiState.value.relationshipAction as? RelationshipAction.PendingByOther)?.relationshipId
+                ?: return
+        if (_uiState.value.isRequesting) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRequesting = true) }
+            userRepository.acceptFriendRequest(relationshipId).fold(
+                onSuccess = {
+                    loadUser(_uiState.value.userProfile)
+                    _uiState.update { it.copy(isRequesting = false) }
+                },
+                onFailure = { error ->
+                    Logger.e("❌ Failed to accept friend request: ${error.message}")
+                    _uiState.update { it.copy(isRequesting = false) }
+                }
+            )
+        }
+    }
+
     fun dismiss() {
+        resetState()
         OverlayEventBus.dismiss()
+    }
+
+    fun resetState() {
+        _uiState.value = FriendRequestUiState(userProfile = null)
     }
 }

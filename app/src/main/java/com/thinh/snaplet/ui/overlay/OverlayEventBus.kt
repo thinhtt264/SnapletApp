@@ -15,17 +15,27 @@ object OverlayEventBus {
 
     internal val events: Flow<OverlayEvent> = _events.asSharedFlow()
 
-    fun showOptionsSheet(options: List<SheetOption>) {
+    fun showOptionsSheet(
+        options: List<SheetOption>,
+        onDismiss: (() -> Unit)? = null,
+    ) {
         _events.tryEmit(
             OverlayEvent.ShowBottomSheet(
-                BottomSheetContent.Options(options)
+                content = BottomSheetContent.Options(options),
+                onDismiss = onDismiss,
             )
         )
     }
 
-    fun showConfirmSheet(content: BottomSheetContent.Confirm) {
+    fun showConfirmSheet(
+        content: BottomSheetContent.Confirm,
+        onDismiss: (() -> Unit)? = null,
+    ) {
         _events.tryEmit(
-            OverlayEvent.ShowBottomSheet(content)
+            OverlayEvent.ShowBottomSheet(
+                content = content,
+                onDismiss = onDismiss,
+            )
         )
     }
 
@@ -34,21 +44,26 @@ object OverlayEventBus {
         message: UiText,
         confirmText: UiText,
         cancelText: UiText? = null,
-        onConfirm: () -> Unit
+        onConfirm: () -> Unit,
+        onDismiss: (() -> Unit)? = null,
     ) {
         showModal(
-            ModalContent.ConfirmDialog(
+            content = ModalContent.ConfirmDialog(
                 title = title,
                 message = message,
                 confirmText = confirmText,
                 cancelText = cancelText,
                 onConfirm = onConfirm
-            )
+            ),
+            onDismiss = onDismiss,
         )
     }
 
-    fun showModal(content: ModalContent) {
-        _events.tryEmit(OverlayEvent.ShowModal(content))
+    fun showModal(
+        content: ModalContent,
+        onDismiss: (() -> Unit)? = null,
+    ) {
+        _events.tryEmit(OverlayEvent.ShowModal(content = content, onDismiss = onDismiss))
     }
 
     fun dismiss() {

@@ -4,7 +4,14 @@ import android.graphics.Bitmap
 import androidx.camera.core.CameraSelector
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.data.model.RelationshipWithUser
+import com.thinh.snaplet.domain.model.RelationshipAction
 import com.thinh.snaplet.platform.share.ShareApp
+
+/** Pending row with [RelationshipAction] from use case (PendingByMe vs PendingByOther). */
+data class PendingListItemState(
+    val relationship: RelationshipWithUser,
+    val action: RelationshipAction,
+)
 
 data class HomeUiState(
     val cameraState: CameraState,
@@ -48,7 +55,7 @@ data class CameraState(
 data class FriendBottomSheetState(
     val friendsCount: Int? = null,
     val friendList: List<RelationshipWithUser> = emptyList(),
-    val pendingList: List<RelationshipWithUser> = emptyList(),
+    val pendingList: List<PendingListItemState> = emptyList(),
     val isLoadingFriendList: Boolean = false,
     val shareApps: List<ShareApp> = emptyList(),
 )

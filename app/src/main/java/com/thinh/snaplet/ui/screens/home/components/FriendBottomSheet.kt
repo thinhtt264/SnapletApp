@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +29,11 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,12 +45,15 @@ import androidx.compose.ui.unit.dp
 import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.RelationshipStatus
 import com.thinh.snaplet.data.model.RelationshipWithUser
+import com.thinh.snaplet.domain.model.RelationshipAction
 import com.thinh.snaplet.platform.share.ShareApp
 import com.thinh.snaplet.ui.components.Avatar
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.BaseTextField
 import com.thinh.snaplet.ui.components.PrimaryButton
 import com.thinh.snaplet.ui.screens.home.FriendBottomSheetState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val MAX_FRIENDS_DISPLAY = 30
 private val ICON_BUTTON_SIZE = 60.dp
@@ -59,7 +69,7 @@ fun FriendBottomSheet(
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
     onFriendRemove: (RelationshipWithUser) -> Unit,
-    onPendingAccept: (RelationshipWithUser) -> Unit = {},
+    onPendingAccept: (RelationshipWithUser) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -181,11 +191,13 @@ fun FriendBottomSheet(
                     )
                 }
                 items(
-                    items = friendSheetState.pendingList, key = { it.id }) { pending ->
+                    items = friendSheetState.pendingList, key = { it.relationship.id }) { item ->
                     FriendListItem(
-                        friend = pending,
-                        onRemove = { onFriendRemove(pending) },
-                        onAccept = { onPendingAccept(pending) })
+                        friend = item.relationship,
+                        relationshipAction = item.action,
+                        onAcceptRequest = { onPendingAccept(item.relationship) },
+                        onRemove = { onFriendRemove(item.relationship) },
+                    )
                 }
             }
             if (friendSheetState.friendList.isNotEmpty()) {
@@ -200,7 +212,11 @@ fun FriendBottomSheet(
                 items(
                     items = friendSheetState.friendList, key = { it.id }) { friend ->
                     FriendListItem(
-                        friend = friend, onRemove = { onFriendRemove(friend) })
+                        friend = friend,
+                        relationshipAction = RelationshipAction.Accepted,
+                        onAcceptRequest = {},
+                        onRemove = { onFriendRemove(friend) },
+                    )
                 }
             }
             item(key = "bottom_padding") {
@@ -212,7 +228,10 @@ fun FriendBottomSheet(
 
 @Composable
 private fun FriendListItem(
-    friend: RelationshipWithUser, onRemove: () -> Unit, onAccept: (() -> Unit)? = null
+    friend: RelationshipWithUser,
+    relationshipAction: RelationshipAction,
+    onAcceptRequest: () -> Unit,
+    onRemove: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -235,10 +254,47 @@ private fun FriendListItem(
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
-        if (onAccept != null) {
+        FriendListItemActionSlot(
+            relationshipAction = relationshipAction,
+            onAcceptRequest = onAcceptRequest,
+        )
+        Spacer(Modifier.size(8.dp))
+        AppIconButton(
+            modifier = Modifier.size(ICON_BUTTON_SIZE / 1.5f),
+            icon = IconSpec.Vector(
+                Icons.Outlined.Close, tint = MaterialTheme.colorScheme.onBackground
+            ),
+            onClick = onRemove,
+            containerColor = MaterialTheme.colorScheme.secondary,
+            iconSize = ICON_BUTTON_SIZE / 2
+        )
+    }
+}
+
+/**
+ * Trailing action for a friend list row, driven by [RelationshipAction].
+ * Replace this implementation with your own UI (e.g. different buttons per action).
+ */
+@Composable
+private fun FriendListItemActionSlot(
+    relationshipAction: RelationshipAction,
+    onAcceptRequest: () -> Unit,
+) {
+    var isResending by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    fun fakeResendRequest() {
+        scope.launch {
+            isResending = true
+            delay(1500L)
+            isResending = false
+        }
+    }
+
+    when (relationshipAction) {
+        is RelationshipAction.PendingByOther -> {
             PrimaryButton(
-                modifier = Modifier.padding(end = 8.dp),
-                onClick = onAccept,
+                onClick = onAcceptRequest,
                 title = stringResource(R.string.accept),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 typography = MaterialTheme.typography.titleSmall,
@@ -249,15 +305,22 @@ private fun FriendListItem(
                 )
             )
         }
-        AppIconButton(
-            modifier = Modifier.size(ICON_BUTTON_SIZE / 1.5f),
-            icon = IconSpec.Vector(
-                Icons.Outlined.Close, tint = MaterialTheme.colorScheme.onBackground
-            ),
-            onClick = onRemove,
-            containerColor = MaterialTheme.colorScheme.secondary,
-            iconSize = ICON_BUTTON_SIZE / 2
-        )
+
+        is RelationshipAction.PendingByMe -> {
+            AppIconButton(
+                modifier = Modifier.size(ICON_BUTTON_SIZE / 1.5f),
+                icon = IconSpec.Vector(
+                    Icons.Outlined.Refresh, tint = MaterialTheme.colorScheme.onBackground
+                ),
+                loading = isResending,
+                onClick = ::fakeResendRequest,
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onBackground,
+                iconSize = ICON_BUTTON_SIZE / 2
+            )
+        }
+
+        RelationshipAction.Accepted, RelationshipAction.Blocked, RelationshipAction.AddFriend, RelationshipAction.CurrentUser -> Unit
     }
 }
 

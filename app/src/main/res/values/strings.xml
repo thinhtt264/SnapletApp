@@ -69,6 +69,7 @@
     <string name="friend_sheet_other">Khác</string>
     <string name="friend_request_section_title">Yêu cầu kết bạn</string>
     <string name="accept">Chấp nhận</string>
+    <string name="blocked">Bị chặn</string>
 
     <!-- Empty media (Locket) screen -->
     <string name="empty_media_title">Gửi Locket đầu tiên của bạn</string>

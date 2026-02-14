@@ -16,7 +16,8 @@ enum class RelationshipStatus(val value: String) {
     BLOCKED("blocked");
 
     companion object {
-        fun from(value: String): RelationshipStatus? = entries.find { it.value.equals(value, ignoreCase = true) }
+        fun from(value: String): RelationshipStatus? =
+            entries.find { it.value.equals(value, ignoreCase = true) }
     }
 }
 
@@ -28,22 +29,22 @@ data class UpdateRelationshipRequest(
 data class Relationship(
     @SerializedName("id")
     val id: String,
-    
+
     @SerializedName("user1Id")
     val user1Id: String,
-    
+
     @SerializedName("user2Id")
     val user2Id: String,
-    
+
     @SerializedName("status")
     val status: String,
-    
+
     @SerializedName("initiator")
     val initiator: String,
-    
+
     @SerializedName("createdAt")
     val createdAt: String,
-    
+
     @SerializedName("updatedAt")
     val updatedAt: String
 )
@@ -108,5 +109,6 @@ data class RelationshipWithUser(
     val createdAt: String
 ) {
     val displayName: String
-        get() = listOf(firstName, lastName).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
+        get() = listOf(firstName, lastName).filter { it.isNotBlank() }.joinToString(" ")
+            .ifBlank { username }
 }

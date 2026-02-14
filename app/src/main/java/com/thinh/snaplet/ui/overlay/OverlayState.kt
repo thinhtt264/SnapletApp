@@ -10,9 +10,15 @@ sealed interface OverlayState {
     data object None : OverlayState
 
     sealed interface Visible : OverlayState {
-        data class Modal(val content: ModalContent) : Visible
+        data class Modal(
+            val content: ModalContent,
+            val onDismiss: (() -> Unit)? = null,
+        ) : Visible
 
-        data class BottomSheet(val content: BottomSheetContent) : Visible
+        data class BottomSheet(
+            val content: BottomSheetContent,
+            val onDismiss: (() -> Unit)? = null,
+        ) : Visible
     }
 }
 

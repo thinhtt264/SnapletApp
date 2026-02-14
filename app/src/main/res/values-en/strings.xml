@@ -62,6 +62,7 @@
     <string name="friend_sheet_other">Other</string>
     <string name="friend_request_section_title">Friend requests</string>
     <string name="accept">Accept</string>
+    <string name="blocked">Blocked</string>
 
     <!-- Empty media (Locket) screen -->
     <string name="empty_media_title">Send your first Locket</string>
