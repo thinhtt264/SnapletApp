@@ -56,7 +56,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val MAX_FRIENDS_DISPLAY = 30
-private val ICON_BUTTON_SIZE = 60.dp
+private val ICON_BUTTON_SIZE = 52.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +80,7 @@ fun FriendBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.statusBarsPadding(),
     ) {
         val focusManager = LocalFocusManager.current
@@ -123,8 +123,8 @@ fun FriendBottomSheet(
                     onValueChange = onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.secondary,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         unfocusedIndicatorColor = Color.Transparent
                     ),
                     placeholder = {
@@ -168,7 +168,7 @@ fun FriendBottomSheet(
                                     tint = MaterialTheme.colorScheme.onBackground
                                 ),
                                 onClick = onShareOther,
-                                containerColor = MaterialTheme.colorScheme.secondary,
+                                containerColor = MaterialTheme.colorScheme.surface,
                                 iconSize = ICON_BUTTON_SIZE / 2
                             )
                             BaseText(
@@ -260,12 +260,12 @@ private fun FriendListItem(
         )
         Spacer(Modifier.size(8.dp))
         AppIconButton(
-            modifier = Modifier.size(ICON_BUTTON_SIZE / 1.5f),
+            modifier = Modifier.size(ICON_BUTTON_SIZE / 1.3f),
             icon = IconSpec.Vector(
                 Icons.Outlined.Close, tint = MaterialTheme.colorScheme.onBackground
             ),
             onClick = onRemove,
-            containerColor = MaterialTheme.colorScheme.secondary,
+            containerColor = MaterialTheme.colorScheme.surface,
             iconSize = ICON_BUTTON_SIZE / 2
         )
     }
@@ -314,7 +314,7 @@ private fun FriendListItemActionSlot(
                 ),
                 loading = isResending,
                 onClick = ::fakeResendRequest,
-                containerColor = MaterialTheme.colorScheme.secondary,
+                containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onBackground,
                 iconSize = ICON_BUTTON_SIZE / 2
             )

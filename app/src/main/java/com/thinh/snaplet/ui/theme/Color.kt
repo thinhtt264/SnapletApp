@@ -8,3 +8,5 @@ val Black90 = Color(0xFF171717)
 val DarkGray = Color(0xFF2A2A2A)
 val Gray = Color(0xFFb3b3b3)
 val Red = Color(0xFFff5252)
+
+val Neutral900 = Color(0xFF242424)

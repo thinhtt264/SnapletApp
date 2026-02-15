@@ -30,7 +30,7 @@ fun Avatar(
     firstName: String,
     isConnectedUser: Boolean,
     modifier: Modifier = Modifier,
-    size: Dp = 52.dp,
+    size: Dp = 48.dp,
     borderWidth: Dp = DEFAULT_AVATAR_BORDER_WIDTH
 ) {
     val borderColor = if (isConnectedUser) {

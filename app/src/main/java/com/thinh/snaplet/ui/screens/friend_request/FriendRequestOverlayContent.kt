@@ -55,7 +55,7 @@ fun FriendRequestOverlayContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.surfaceVariant,
                                 shape = RoundedCornerShape(24.dp)
                             )
                             .padding(vertical = 40.dp),

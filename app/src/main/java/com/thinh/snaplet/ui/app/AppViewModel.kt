@@ -46,6 +46,9 @@ class AppViewModel @Inject constructor(
 
     private var isInitialized = false
 
+    /** Pending friend request deeplink (userName) to show after login in this session. */
+    private var pendingFriendRequestUserName: String? = null
+
     init {
         initializeApp()
         observeDeepLinkEvents()
@@ -87,6 +90,10 @@ class AppViewModel @Inject constructor(
                 when (authState) {
                     is AuthState.Authenticated -> {
                         _uiEvent.emit(AppUiEvent.NavigateToHomeGraph)
+                        pendingFriendRequestUserName?.let { userName ->
+                            pendingFriendRequestUserName = null
+                            handleFriendRequestDeepLink(userName)
+                        }
                     }
 
                     is AuthState.Unauthenticated -> {
@@ -113,6 +120,10 @@ class AppViewModel @Inject constructor(
     }
 
     private suspend fun handleFriendRequestDeepLink(userName: String) {
+        if (!authRepository.isAuthenticated()) {
+            pendingFriendRequestUserName = userName
+            return
+        }
         deviceRepository.getOrCreateFingerprint()
         val profileResult = userRepository.getUserProfile(userName)
         profileResult.fold(
