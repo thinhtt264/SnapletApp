@@ -225,7 +225,8 @@ private fun HomeScreen(
             userScrollEnabled = userScrollEnabled,
             cameraActions = cameraActions,
             onNavigateToCameraPage = onNavigateToCameraPage,
-            onMoreClick = onMoreClick
+            onMoreClick = onMoreClick,
+            onShowFriendSheet = { showFriendSheet = true }
         )
 
         TopAction(
@@ -285,7 +286,8 @@ private fun HomePager(
     userScrollEnabled: Boolean,
     cameraActions: CameraActions,
     onNavigateToCameraPage: () -> Unit,
-    onMoreClick: () -> Unit
+    onMoreClick: () -> Unit,
+    onShowFriendSheet: () -> Unit = {}
 ) {
     VerticalPager(
         state = pagerState,
@@ -310,7 +312,7 @@ private fun HomePager(
 
             else -> {
                 if (posts.isEmpty()) {
-                    EmptyMediaPage(onAddFriendClick = { showFriendSheet = true })
+                    EmptyMediaPage(onAddFriendClick = onShowFriendSheet)
                 } else {
                     val post = posts[page - 1]
                     MediaPage(
