@@ -154,7 +154,12 @@ class HomeViewModel @Inject constructor(
                     val pending = list.filter { it.status == RelationshipStatus.PENDING }
                     val pendingWithActions = coroutineScope {
                         pending.map { item ->
-                            async { PendingListItemState(item, getRelationshipActionUseCase(item.userId)) }
+                            async {
+                                PendingListItemState(
+                                    item,
+                                    getRelationshipActionUseCase(item.userId)
+                                )
+                            }
                         }.awaitAll()
                     }
                     updateFriendSheetState {
