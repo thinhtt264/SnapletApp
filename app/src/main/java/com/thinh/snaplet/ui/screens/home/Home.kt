@@ -310,7 +310,7 @@ private fun HomePager(
 
             else -> {
                 if (posts.isEmpty()) {
-                    EmptyMediaPage(onAddFriendClick = { /* TODO: navigate to add friend */ })
+                    EmptyMediaPage(onAddFriendClick = { showFriendSheet = true })
                 } else {
                     val post = posts[page - 1]
                     MediaPage(
