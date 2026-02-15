@@ -51,7 +51,7 @@ class AppViewModel @Inject constructor(
 
     init {
         initializeApp()
-        observeDeepLinkEvents()
+        observeAuthState()
     }
 
     private fun initializeApp() {
@@ -70,16 +70,14 @@ class AppViewModel @Inject constructor(
                         }
                     )
                 }
-
             } catch (_: Exception) {
                 _uiState.update { it.copy(startDestination = NavScreen.AuthGraph.route) }
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
                 isInitialized = true
+                observeDeepLinkEvents()
             }
         }
-
-        observeAuthState()
     }
 
     private fun observeAuthState() {
@@ -124,7 +122,6 @@ class AppViewModel @Inject constructor(
             pendingFriendRequestUserName = userName
             return
         }
-        deviceRepository.getOrCreateFingerprint()
         val profileResult = userRepository.getUserProfile(userName)
         profileResult.fold(
             onSuccess = { userProfile ->
