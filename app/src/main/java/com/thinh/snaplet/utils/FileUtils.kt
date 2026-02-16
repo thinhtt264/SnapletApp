@@ -28,8 +28,9 @@ object FileUtils {
      */
     fun flipAndCompressImage(file: File, flipHorizontal: Boolean = false): String? {
         if (!file.exists() || !file.canRead()) return null
-        val outputFile = File(file.parent, "${file.nameWithoutExtension}.jpg")
         val path = file.absolutePath
+        val parentDir = file.parentFile ?: return null
+        val outputFile = File.createTempFile("snaplet_", ".jpg", parentDir)
         return try {
             val (boundsW, boundsH) = decodeBounds(path) ?: return null
             val exif = ExifInterface(path)
@@ -52,6 +53,7 @@ object FileUtils {
 
             FileOutputStream(outputFile).use { out ->
                 result.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+                out.fd.sync()
             }
             result.recycle()
 

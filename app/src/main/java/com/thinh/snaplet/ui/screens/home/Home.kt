@@ -34,8 +34,8 @@ import com.thinh.snaplet.platform.permission.Permission
 import com.thinh.snaplet.ui.components.PermissionHandler
 import com.thinh.snaplet.ui.screens.home.components.BottomAction
 import com.thinh.snaplet.ui.screens.home.components.CameraPage
-import com.thinh.snaplet.ui.screens.home.components.FriendBottomSheet
 import com.thinh.snaplet.ui.screens.home.components.EmptyMediaPage
+import com.thinh.snaplet.ui.screens.home.components.FriendBottomSheet
 import com.thinh.snaplet.ui.screens.home.components.MediaPage
 import com.thinh.snaplet.ui.screens.home.components.TopAction
 import kotlinx.coroutines.launch
@@ -299,7 +299,7 @@ private fun HomePager(
             when {
                 page == CAMERA_PAGE_INDEX -> "camera"
                 posts.isEmpty() -> "empty_media"
-                else -> posts.getOrNull(page - 1)?.id ?: "unknown_$page"
+                else -> posts[page - 1].id
             }
         }) { page ->
         when (page) {
