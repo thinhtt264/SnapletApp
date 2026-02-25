@@ -1,13 +1,13 @@
 ---
 name: compose-navigation
-description: Implement navigation in Jetpack Compose using Navigation Compose. Use when asked to set up navigation, pass arguments between screens, handle deep links, or structure multi-screen apps.
+description: Implement navigation in Jetpack Compose using Navigation Compose. Aligns with Android Architecture Recommendations (single-activity, Navigation Compose). Use when asked to set up navigation, pass arguments between screens, handle deep links, or structure multi-screen apps.
 ---
 
 # Compose Navigation
 
 ## Overview
 
-Implement type-safe navigation in Jetpack Compose applications using the Navigation Compose library. This skill covers NavHost setup, argument passing, deep links, nested graphs, adaptive navigation, and testing.
+Implement type-safe navigation in Jetpack Compose applications using the Navigation Compose library. Per [Android Architecture Recommendations](https://developer.android.com/topic/architecture/recommendations), use a **single-activity** app with **Navigation Compose** for apps with more than one screen. This skill covers NavHost setup, argument passing, deep links, nested graphs, adaptive navigation, and testing.
 
 ## Setup
 

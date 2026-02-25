@@ -54,20 +54,22 @@ class UserRepository {
 
 ### 3. Lifecycle-Aware Collection
 *   **NEVER** collect a flow directly in `lifecycleScope.launch` or `launchWhenStarted` (deprecated/unsafe).
-*   **ALWAYS** use `repeatOnLifecycle(Lifecycle.State.STARTED)` for collecting flows in Activities or Fragments.
-
-```kotlin
-// CORRECT
-viewLifecycleOwner.lifecycleScope.launch {
-    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-        viewModel.uiState.collect { ... }
+*   **Jetpack Compose**: ALWAYS use `collectAsStateWithLifecycle()` for `StateFlow` from ViewModel.
+    ```kotlin
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    ```
+*   **Views (Activities/Fragments)**: Use `repeatOnLifecycle(Lifecycle.State.STARTED)` within a coroutine.
+    ```kotlin
+    viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.uiState.collect { ... }
+        }
     }
-}
-```
+    ```
 
 ### 4. ViewModel Scope Usage
 *   Use `viewModelScope` for initiating coroutines in ViewModels.
-*   Do not expose suspend functions from the ViewModel to the View. The ViewModel should expose `StateFlow` or `SharedFlow` that the View observes.
+*   Do not expose suspend functions from the ViewModel to the View. The ViewModel should expose `StateFlow` that the View observes. Prefer state updates over event emission (see `android-viewmodel` skill).
 
 ### 5. Mutable State Encapsulation
 *   **NEVER** expose `MutableStateFlow` or `MutableSharedFlow` publicly.
