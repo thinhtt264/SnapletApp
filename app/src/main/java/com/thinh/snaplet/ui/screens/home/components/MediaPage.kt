@@ -63,7 +63,7 @@ fun MediaPage(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeight = maxHeight
         val topPadding = screenHeight * TOP_SPACE_RATIO
-        val isFailed = uploadStatus is UploadStatus.Failed
+        val isUploadFailed = uploadStatus is UploadStatus.Failed
 
         Column(
             modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
@@ -78,7 +78,7 @@ fun MediaPage(
             ) {
                 PostMediaContent(post = post)
 
-                if (isFailed) {
+                if (isUploadFailed) {
                     UploadFailedOverlay(onRetryClick = onRetryClick)
                 }
             }
