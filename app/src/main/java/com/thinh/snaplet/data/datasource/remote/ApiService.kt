@@ -9,7 +9,10 @@ import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.data.model.PostsFeedData
 import com.thinh.snaplet.data.model.RefreshTokenRequest
 import com.thinh.snaplet.data.model.RegisterRequest
+import com.thinh.snaplet.data.model.FriendsCountData
 import com.thinh.snaplet.data.model.Relationship
+import com.thinh.snaplet.data.model.RelationshipWithUserDto
+import com.thinh.snaplet.data.model.UpdateRelationshipRequest
 import com.thinh.snaplet.data.model.TokenResponse
 import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.data.model.UsernameAvailabilityData
@@ -21,6 +24,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -52,6 +56,30 @@ interface ApiService {
     suspend fun sendFriendRequest(
         @Body body: Map<String, String>
     ): Response<BaseResponse<Relationship>>
+
+    @POST("relationships/with-user")
+    suspend fun getRelationshipWithUser(
+        @Body body: Map<String, String>
+    ): Response<BaseResponse<Relationship?>>
+
+    @GET("relationships/friends/count")
+    suspend fun getFriendsCount(): Response<BaseResponse<FriendsCountData>>
+
+    @GET("relationships")
+    suspend fun getRelationshipsByStatus(
+        @Query("statuses") statuses: String
+    ): Response<BaseResponse<List<RelationshipWithUserDto>>>
+
+    @PATCH("relationships/{relationshipId}")
+    suspend fun updateRelationship(
+        @Path("relationshipId") relationshipId: String,
+        @Body body: UpdateRelationshipRequest
+    ): Response<BaseResponse<Relationship>>
+
+    @DELETE("relationships/{relationshipId}")
+    suspend fun removeRelationship(
+        @Path("relationshipId") relationshipId: String
+    ): Response<BaseResponse<Unit>>
 
     @GET("users/email-availability")
     suspend fun checkEmailAvailability(

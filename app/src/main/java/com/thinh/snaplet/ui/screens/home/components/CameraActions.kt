@@ -106,26 +106,18 @@ fun CameraAction(
             label = "camera_action_center",
         ) { hasImage ->
             if (hasImage) {
-                Box(
-                    modifier = Modifier
-                        .size(CAPTURE_BUTTON_SIZE)
-                        .background(
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            shape = CircleShape
-                        )
-                        .pressScaleClickable(
-                            onClick = onUploadPost,
-                            enabled = !isUploading
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
+                AppIconButton(
+                    modifier = Modifier.size(CAPTURE_BUTTON_SIZE),
+                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    contentColor = MaterialTheme.colorScheme.onBackground,
+                    iconSize = ICON_SIZE,
+                    onClick = onUploadPost,
+                    loading = isUploading,
+                    icon = IconSpec.Vector(
                         Icons.Outlined.NearMe,
-                        contentDescription = "Upload posts",
                         tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(ICON_SIZE)
                     )
-                }
+                )
             } else {
                 CaptureButton(
                     onCapturePhoto = onCapturePhoto,

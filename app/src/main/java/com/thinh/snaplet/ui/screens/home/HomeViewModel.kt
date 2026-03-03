@@ -2,6 +2,7 @@ package com.thinh.snaplet.ui.screens.home
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -11,7 +12,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.Post
+import com.thinh.snaplet.data.model.RelationshipStatus
+import com.thinh.snaplet.data.model.RelationshipWithUser
 import com.thinh.snaplet.data.model.media.ImageTransform
+import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.domain.feed.GetNewsfeedUseCase
 import com.thinh.snaplet.domain.feed.ShouldTriggerLoadMoreUseCase
 import com.thinh.snaplet.domain.media.DownloadPostImageUseCase
@@ -25,8 +29,17 @@ import com.thinh.snaplet.domain.post.GetAvailablePostActionsUseCase
 import com.thinh.snaplet.domain.post.UploadPostUseCase
 import com.thinh.snaplet.domain.post.ValidateRetryUploadUseCase
 import com.thinh.snaplet.domain.post.ValidateUploadPostUseCase
+import com.thinh.snaplet.domain.user.AcceptFriendRequestUseCase
+import com.thinh.snaplet.domain.user.GetDisplayableFriendsCountUseCase
+import com.thinh.snaplet.domain.user.GetRelationshipActionUseCase
+import com.thinh.snaplet.domain.user.GetRelationshipsByStatusesUseCase
+import com.thinh.snaplet.domain.user.RemoveFriendUseCase
+import com.thinh.snaplet.domain.user.RemoveRelationshipUseCase
 import com.thinh.snaplet.platform.permission.Permission
 import com.thinh.snaplet.platform.permission.PermissionManager
+import com.thinh.snaplet.platform.share.ShareApp
+import com.thinh.snaplet.platform.share.ShareContent
+import com.thinh.snaplet.platform.share.ShareManager
 import com.thinh.snaplet.ui.common.UiText
 import com.thinh.snaplet.ui.overlay.OverlayEventBus
 import com.thinh.snaplet.ui.overlay.SheetOption
@@ -36,7 +49,10 @@ import com.thinh.snaplet.utils.network.onFailure
 import com.thinh.snaplet.utils.network.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,8 +78,20 @@ class HomeViewModel @Inject constructor(
     private val validateRetryUploadUseCase: ValidateRetryUploadUseCase,
     private val getAvailablePostActionsUseCase: GetAvailablePostActionsUseCase,
     private val deletePostUseCase: DeletePostUseCase,
-    private val downloadPostImageUseCase: DownloadPostImageUseCase
+    private val downloadPostImageUseCase: DownloadPostImageUseCase,
+    private val getDisplayableFriendsCountUseCase: GetDisplayableFriendsCountUseCase,
+    private val getRelationshipsByStatusesUseCase: GetRelationshipsByStatusesUseCase,
+    private val getRelationshipActionUseCase: GetRelationshipActionUseCase,
+    private val acceptFriendRequestUseCase: AcceptFriendRequestUseCase,
+    private val removeFriendUseCase: RemoveFriendUseCase,
+    private val removeRelationshipUseCase: RemoveRelationshipUseCase,
+    private val userRepository: UserRepository,
+    private val shareManager: ShareManager
 ) : ViewModel() {
+
+    companion object {
+        private const val INVITE_BASE_URL = "https://snaplet-cam.netlify.app/"
+    }
 
     private val _uiState = MutableStateFlow(
         HomeUiState(
@@ -84,8 +112,141 @@ class HomeViewModel @Inject constructor(
 
     private var currentPostVisible: Post? = null
 
+    /** Temp posts for retry only: lookup by id to get imagePath/transform/caption. Not in UI state. */
+    private var tempPosts: List<Post> = emptyList()
+
     init {
         loadNewsfeed()
+        loadFriendsCount()
+    }
+
+    private fun updateFriendSheetState(transform: (FriendBottomSheetState) -> FriendBottomSheetState) {
+        _uiState.update { it.copy(friendSheetState = transform(it.friendSheetState)) }
+    }
+
+    private fun loadFriendsCount() {
+        viewModelScope.launch {
+            getDisplayableFriendsCountUseCase()
+                .onSuccess { count ->
+                    updateFriendSheetState { it.copy(friendsCount = count) }
+                }
+        }
+    }
+
+    fun loadShareApps() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            val apps = shareManager.getTopShareApps()
+            updateFriendSheetState { it.copy(shareApps = apps) }
+        }
+    }
+
+    fun loadMyFriendList() {
+        viewModelScope.launch {
+            updateFriendSheetState { it.copy(isLoadingFriendList = true) }
+            getRelationshipsByStatusesUseCase(
+                listOf(
+                    RelationshipStatus.ACCEPTED,
+                    RelationshipStatus.PENDING
+                )
+            )
+                .onSuccess { list ->
+                    val accepted = list.filter { it.status == RelationshipStatus.ACCEPTED }
+                    val pending = list.filter { it.status == RelationshipStatus.PENDING }
+                    val pendingWithActions = coroutineScope {
+                        pending.map { item ->
+                            async {
+                                PendingListItemState(
+                                    item,
+                                    getRelationshipActionUseCase(item.userId)
+                                )
+                            }
+                        }.awaitAll()
+                    }
+                    updateFriendSheetState {
+                        it.copy(
+                            friendList = accepted,
+                            pendingList = pendingWithActions,
+                            isLoadingFriendList = false
+                        )
+                    }
+                }
+                .onFailure {
+                    updateFriendSheetState { it.copy(isLoadingFriendList = false) }
+                }
+        }
+    }
+
+    fun acceptFriendRequest(pending: RelationshipWithUser) {
+        viewModelScope.launch {
+            acceptFriendRequestUseCase(pending.id)
+                .onSuccess {
+                    val acceptedRelationship = pending.copy(status = RelationshipStatus.ACCEPTED)
+                    updateFriendSheetState { state ->
+                        state.copy(
+                            pendingList = state.pendingList.filterNot { it.relationship.id == pending.id },
+                            friendList = state.friendList + acceptedRelationship
+                        )
+                    }
+                    loadFriendsCount()
+                }
+                .onFailure { error ->
+                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
+                }
+        }
+    }
+
+    fun removeFriend(friend: RelationshipWithUser) {
+        viewModelScope.launch {
+            val state = _uiState.value.friendSheetState
+            if (friend.status == RelationshipStatus.PENDING) {
+                removeRelationshipUseCase(friend.id)
+                    .onSuccess {
+                        updateFriendSheetState { s ->
+                            s.copy(pendingList = s.pendingList.filterNot { it.relationship.id == friend.id })
+                        }
+                    }
+                    .onFailure { error ->
+                        emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
+                    }
+            } else {
+                val currentCount = state.friendsCount
+                removeFriendUseCase(friend.id, currentCount)
+                    .onSuccess {
+                        updateFriendSheetState { s ->
+                            s.copy(friendList = s.friendList.filterNot { it.id == friend.id })
+                        }
+                        loadFriendsCount()
+                    }
+                    .onFailure { error ->
+                        emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
+                    }
+            }
+        }
+    }
+
+    fun shareToApp(app: ShareApp) {
+        viewModelScope.launch {
+            val content = buildInviteShareContent()
+            shareManager.shareToApp(app.packageName, content)
+        }
+    }
+
+    fun shareOther() {
+        viewModelScope.launch {
+            val content = buildInviteShareContent()
+            shareManager.openSystemChooser(content)
+        }
+    }
+
+    private suspend fun buildInviteShareContent(): ShareContent {
+        val profile = userRepository.getCurrentUserProfile()
+        val userName = profile?.userName?.takeIf { it.isNotBlank() }
+        val inviteUrl = if (userName != null) {
+            "${INVITE_BASE_URL}?userName=${Uri.encode(userName)}"
+        } else {
+            INVITE_BASE_URL
+        }
+        return ShareContent(str = inviteUrl)
     }
 
     private fun loadNewsfeed(isLoadMore: Boolean = false) {
@@ -278,8 +439,6 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { s ->
                         s.copy(
                             uploadStatuses = s.uploadStatuses + (tempPostId to UploadStatus.Uploading),
-                            cameraState = s.cameraState.copy(capturedImagePath = null),
-                            currentCaption = null
                         )
                     }
 
@@ -300,14 +459,16 @@ class HomeViewModel @Inject constructor(
                         caption = input.caption
                     )
 
+                    tempPosts = tempPosts + tempPost
                     _uiState.update { s ->
                         s.copy(
                             posts = listOf(tempPost) + s.posts,
-                            tempPosts = s.tempPosts + tempPost
+                            cameraState = s.cameraState.copy(capturedImagePath = null),
+                            currentCaption = null
                         )
                     }
 
-                    emitEvent(HomeUiEvent.ScrollToFirstPost)
+                    emitEvent(HomeUiEvent.ScrollToUploadingPost)
                     runUploadAndUpdateStatus(tempPostId, processedPath, transform, input.caption)
                 }
 
@@ -334,6 +495,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = uploadPostUseCase(imagePath, transform, caption)) {
                 is UploadPostResult.Success -> {
+                    tempPosts = tempPosts.filterNot { it.id == tempPostId }
                     setUploadStatus(tempPostId, UploadStatus.Success)
                     emitEvent(HomeUiEvent.ShowSuccess(UiText.DynamicString("Post uploaded successfully")))
                 }
@@ -400,7 +562,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun retryUpload(tempPostId: String) {
-        val tempPost = _uiState.value.tempPosts.find { it.id == tempPostId }
+        val tempPost = tempPosts.find { it.id == tempPostId }
         when (val result = validateRetryUploadUseCase(tempPost)) {
             is ValidateRetryUploadUseCase.ValidateRetryResult.Success -> {
                 val input = result.input
@@ -437,8 +599,7 @@ class HomeViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(
                 posts = state.posts.filterNot { it.id == tempPostId },
-                uploadStatuses = state.uploadStatuses - tempPostId,
-                tempPosts = state.tempPosts.filterNot { it.id == tempPostId }
+                uploadStatuses = state.uploadStatuses - tempPostId
             )
         }
     }
@@ -447,11 +608,11 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             deletePostUseCase(postId)
                 .onSuccess {
+                    tempPosts = tempPosts.filterNot { it.id == postId }
                     _uiState.update { state ->
                         state.copy(
                             posts = state.posts.filterNot { it.id == postId },
-                            uploadStatuses = state.uploadStatuses - postId,
-                            tempPosts = state.tempPosts.filterNot { it.id == postId }
+                            uploadStatuses = state.uploadStatuses - postId
                         )
                     }
                     emitEvent(HomeUiEvent.ShowSuccess(UiText.StringResource(R.string.post_deleted)))

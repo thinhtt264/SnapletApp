@@ -2,79 +2,102 @@ package com.thinh.snaplet.ui.screens.friend_request
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.thinh.snaplet.data.model.UserProfile
 import com.thinh.snaplet.data.repository.UserRepository
-import com.thinh.snaplet.platform.deeplink.DeepLinkEvent
-import com.thinh.snaplet.platform.deeplink.DeepLinkManager
+import com.thinh.snaplet.domain.model.RelationshipAction
+import com.thinh.snaplet.domain.user.GetRelationshipActionUseCase
+import com.thinh.snaplet.ui.overlay.OverlayEventBus
 import com.thinh.snaplet.utils.Logger
+import com.thinh.snaplet.utils.network.onFailure
+import com.thinh.snaplet.utils.network.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class FriendRequestViewModel @Inject constructor(
-    private val deepLinkManager: DeepLinkManager, private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val getRelationshipActionUseCase: GetRelationshipActionUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<FriendRequestUiState>(
-        FriendRequestUiState.Hidden
-    )
+    private val _uiState = MutableStateFlow(FriendRequestUiState(userProfile = null))
     val uiState: StateFlow<FriendRequestUiState> = _uiState.asStateFlow()
 
-    init {
-        observeDeepLinkEvents()
+    fun loadUser(userProfile: UserProfile?) {
+        if (userProfile == null) return
+
+        viewModelScope.launch {
+            _uiState.value = FriendRequestUiState(userProfile = userProfile, isLoading = true)
+
+            val relationshipAction = getRelationshipActionUseCase(userProfile.id)
+
+            _uiState.update {
+                it.copy(
+                    relationshipAction = relationshipAction,
+                    isLoading = false
+                )
+            }
+        }
     }
 
-    private fun observeDeepLinkEvents() {
+    fun sendFriendRequest() {
+        val targetUserId = _uiState.value.userProfile?.id ?: return
+        if (_uiState.value.isRequesting) return
+
         viewModelScope.launch {
-            deepLinkManager.events.collect { event ->
-                Logger.d("📨 FriendRequestViewModel: Received event: $event")
-                if (event is DeepLinkEvent.FriendRequest && _uiState.value is FriendRequestUiState.Hidden) {
-                    handleFriendRequestEvent(event.userName)
+            _uiState.update { it.copy(isRequesting = true) }
+            userRepository.sendFriendRequest(targetUserId)
+                .onSuccess {
+                    loadUser(_uiState.value.userProfile)
+                    _uiState.update { it.copy(isRequesting = false) }
                 }
-            }
-        }
-    }
-
-    private suspend fun handleFriendRequestEvent(userName: String) {
-        _uiState.value = FriendRequestUiState.Loading(userName)
-
-        val result = userRepository.getUserProfile(userName)
-
-        _uiState.value = result.fold(onSuccess = { userProfile ->
-            Logger.d("✅ User profile loaded, showing overlay")
-            FriendRequestUiState.Visible(userProfile = userProfile)
-        }, onFailure = { error ->
-            FriendRequestUiState.Error(errorMessage = error.message)
-        })
-    }
-
-    fun onSendFriendRequest() {
-        viewModelScope.launch {
-            val currentState = _uiState.value
-            if (currentState is FriendRequestUiState.Visible) {
-                _uiState.value = currentState.copy(isLoading = true)
-
-                val userId = currentState.userProfile.id
-
-                val result = userRepository.sendFriendRequest(userId)
-
-                result.fold(onSuccess = { relationship ->
-                    Logger.d("✅ Friend request sent successfully - Relationship: ${relationship.id}, Status: ${relationship.status}")
-                    _uiState.value = FriendRequestUiState.Hidden
-                }, onFailure = { error ->
+                .onFailure { error ->
                     Logger.e("❌ Failed to send friend request: ${error.message}")
-                    _uiState.value = currentState.copy(isLoading = false)
-                })
-            }
+                    _uiState.update { it.copy(isRequesting = false) }
+                }
         }
     }
 
-    fun onDismiss() {
-        Logger.d("❌ Dismissing friend request overlay")
-        _uiState.value = FriendRequestUiState.Hidden
+    fun refreshPending() {
+        if (_uiState.value.isRequesting) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRequesting = true) }
+            delay(1500L)
+            _uiState.update { it.copy(isRequesting = false) }
+        }
+    }
+
+    fun acceptFriendRequest() {
+        val relationshipId =
+            (_uiState.value.relationshipAction as? RelationshipAction.PendingByOther)?.relationshipId
+                ?: return
+        if (_uiState.value.isRequesting) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRequesting = true) }
+            userRepository.acceptFriendRequest(relationshipId)
+                .onSuccess {
+                    loadUser(_uiState.value.userProfile)
+                    _uiState.update { it.copy(isRequesting = false) }
+                }
+                .onFailure { error ->
+                    Logger.e("❌ Failed to accept friend request: ${error.message}")
+                    _uiState.update { it.copy(isRequesting = false) }
+                }
+        }
+    }
+
+    fun dismiss() {
+        resetState()
+        OverlayEventBus.dismiss()
+    }
+
+    fun resetState() {
+        _uiState.value = FriendRequestUiState(userProfile = null)
     }
 }
-

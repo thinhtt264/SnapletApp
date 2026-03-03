@@ -11,6 +11,6 @@ sealed interface HomeUiEvent {
 
     data class ShowSuccess(val message: UiText) : HomeUiEvent
 
-    object ScrollToFirstPost : HomeUiEvent
+    object ScrollToUploadingPost : HomeUiEvent
 }
 

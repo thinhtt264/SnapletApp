@@ -3,15 +3,22 @@ package com.thinh.snaplet.ui.overlay
 import androidx.compose.ui.graphics.Color
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.common.UiText
+import com.thinh.snaplet.ui.screens.friend_request.FriendRequestUiState
 
 sealed interface OverlayState {
 
     data object None : OverlayState
 
     sealed interface Visible : OverlayState {
-        data class Modal(val content: ModalContent) : Visible
+        data class Modal(
+            val content: ModalContent,
+            val onDismiss: (() -> Unit)? = null,
+        ) : Visible
 
-        data class BottomSheet(val content: BottomSheetContent) : Visible
+        data class BottomSheet(
+            val content: BottomSheetContent,
+            val onDismiss: (() -> Unit)? = null,
+        ) : Visible
     }
 }
 
@@ -23,6 +30,10 @@ sealed interface ModalContent {
         val confirmText: UiText,
         val cancelText: UiText?,
         val onConfirm: () -> Unit
+    ) : ModalContent
+
+    data class FriendRequest(
+        val state: FriendRequestUiState
     ) : ModalContent
 }
 

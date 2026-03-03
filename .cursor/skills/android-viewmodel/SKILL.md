@@ -1,52 +1,78 @@
 ---
 name: android-viewmodel
-description: Best practices for implementing Android ViewModels, StateFlow for UI state, SharedFlow for one-off events, and handling ApiResult from repository/API (fold vs onSuccess/onFailure).
+description: Best practices for implementing Android ViewModels following Google's strongly recommended architecture. StateFlow for UI state, process events in ViewModel (no event emission to UI), handling ApiResult from repository (fold vs onSuccess/onFailure).
 ---
 
 # Android ViewModel & State Management
+
+Follow [Android Architecture Recommendations](https://developer.android.com/topic/architecture/recommendations) (strongly recommended).
 
 ## Instructions
 
 Use `ViewModel` to hold state and business logic. It must outlive configuration changes.
 
-### 1. UI State (StateFlow)
-*   **What**: Represents the persistent state of the UI (e.g., `Loading`, `Success(data)`, `Error`).
+### 1. UI State (StateFlow) — Single Source of Truth
+*   **What**: Represents all UI state the screen needs (e.g., `Loading`, `Success(data)`, `Error`, snackbar message, navigation target).
 *   **Type**: `StateFlow<UiState>`.
 *   **Initialization**: Must have an initial value.
-*   **Exposure**: Expose as a read-only `StateFlow` backing a private `MutableStateFlow`.
+*   **Exposure**: Expose as read-only `StateFlow`. For streams from data layer, use `stateIn(scope, SharingStarted.WhileSubscribed(5000), initialValue)`.
     ```kotlin
+    // From repository stream
+    val uiState: StateFlow<NewsFeedUiState> = newsRepository
+        .getNewsStream()
+        .mapToUiState()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = NewsFeedUiState.Loading
+        )
+
+    // Or for mutable state
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
     ```
-*   **Updates**: Update state using `.update { oldState -> ... }` for thread safety.
+*   **Updates**: Use `.update { oldState -> ... }` for thread safety.
+*   **Single property**: Prefer one `uiState`; multiple unrelated properties are acceptable when justified.
 
-### 2. One-Off Events (SharedFlow)
-*   **What**: Transient events like "Show Toast", "Navigate to Screen", "Show Snackbar".
-*   **Type**: `SharedFlow<UiEvent>`.
-*   **Configuration**: Must use `replay = 0` to prevent events from re-triggering on screen rotation.
+### 2. Do NOT Send Events from ViewModel to UI (Strongly Recommended)
+*   **Process events immediately in the ViewModel** and update state with the result.
+*   **Avoid** `SharedFlow` / `Channel` for one-off events (toast, snackbar, navigation). Model them as state instead.
+*   **Pattern**: Snackbar, toast, navigation target → include in `UiState`. UI observes state, reacts, then calls ViewModel to clear/consume.
     ```kotlin
-    private val _uiEvent = MutableSharedFlow<UiEvent>(replay = 0)
-    val uiEvent: SharedFlow<UiEvent> = _uiEvent.asSharedFlow()
-    ```
-*   **Sending**: Use `.emit(event)` (suspend) or `.tryEmit(event)`.
+    data class UiState(
+        val items: List<Item>,
+        val isLoading: Boolean = false,
+        val snackbarMessage: String? = null  // UI shows, then calls onSnackbarDismissed
+    )
 
-### 3. Collecting in UI
-*   **Compose**: Use `collectAsStateWithLifecycle()` for `StateFlow`.
+    fun onSnackbarDismissed() {
+        _uiState.update { it.copy(snackbarMessage = null) }
+    }
+    ```
+*   **Reference**: [Handle ViewModel events](https://developer.android.com/topic/architecture/ui-layer/events#handle-viewmodel-events).
+
+### 3. Lifecycle-Aware Collection in UI
+*   **Compose**: Always use `collectAsStateWithLifecycle()` for `StateFlow`.
     ```kotlin
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ```
-    For `SharedFlow`, use `LaunchedEffect` with `LocalLifecycleOwner`.
 *   **Views (XML)**: Use `repeatOnLifecycle(Lifecycle.State.STARTED)` within a coroutine.
 
-### 4. Scope
+### 4. ViewModel Constraints (Strongly Recommended)
+*   **Agnostic of Android lifecycle**: Do not hold `Activity`, `Fragment`, `Context`, or `Resources`. Use standard `ViewModel`, not `AndroidViewModel`.
+*   **Screen-level only**: Use ViewModels for screen composables, Activities/Fragments, or navigation destinations—not in reusable UI components.
+*   **Reusable UI**: Use plain state holder classes (not ViewModels) for complex reusable components; hoist state externally.
+
+### 5. Scope
 *   Use `viewModelScope` for all coroutines started by the ViewModel.
-*   Ideally, specific operations should be delegated to UseCases or Repositories.
+*   Delegate operations to UseCases or Repositories where appropriate.
 
-### 5. Handling ApiResult / Result from repository
+### 6. Handling ApiResult / Result from repository
 
-When the ViewModel calls a repository and gets `ApiResult<T>` or `Result<T>`, choose based on whether you need **one value** from the result or only **side effects**. See also **.cursor/rules/viewmodel-apiresult.mdc** (applies when editing `*ViewModel.kt`).
+*   **fold**: use when you need to **use the returned data** — get one value (both success and failure return/transform to the same type).
+*   **onSuccess / onFailure**: use to **transform or handle the result** per branch; when you don't need a single value from the result, use onSuccess/onFailure.
 
-**Imports:** `fold` via `com.thinh.snaplet.utils.network.ApiResult`; `onSuccess`/`onFailure` via `com.thinh.snaplet.utils.network.onSuccess` and `com.thinh.snaplet.utils.network.onFailure`.
+Example: need one value → `val x = result.fold(onSuccess = { it }, onFailure = { null })`. Only side effects → `result.onSuccess { ... }.onFailure { ... }`.
 
-*   **Use `fold`** when you need to **produce a single value** (e.g. assign to `_uiState.value`) and **both** success and failure branches **return that same type** with different transformations (e.g. `UiState.Success(data)` vs `UiState.Error(message)`). Only then use fold.
-*   **Use `onSuccess` / `onFailure`** when you only need **side effects** (update state per branch, show snackbar, set status, emit event) and do **not** need to derive one value from the result. Each branch does its own side effects; no single "result of the call" is assigned.
+*   **Use `fold`** when you need to **produce a single value** (e.g. assign to `_uiState.value`) and **both** success and failure branches **return that same type** (e.g. `UiState.Success(data)` vs `UiState.Error(message)`).
+*   **Use `onSuccess` / `onFailure`** when you only need **side effects** (update state per branch, set snackbar in state, etc.) and do **not** need one derived value.

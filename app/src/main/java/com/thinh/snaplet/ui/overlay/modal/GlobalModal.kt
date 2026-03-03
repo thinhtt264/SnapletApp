@@ -13,5 +13,9 @@ internal fun GlobalModal(
             content = content,
             onDismiss = onDismiss
         )
+        is ModalContent.FriendRequest -> FriendRequestModal(
+            content = content,
+            onDismiss = onDismiss
+        )
     }
 }

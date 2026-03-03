@@ -18,7 +18,8 @@
     <string name="approve_camera">Allow Snaplet to access your camera to take photos</string>
     <string name="approve">Allow</string>
     <string name="recent_photos">Recent Photos</string>
-    <string name="send_request">Send request</string>
+    <string name="add_friend">Add</string>
+    <string name="you">You</string>
 
     <string name="login_email_title">What\'s your email?</string>
     <string name="login_password_title">Choose a password</string>
@@ -44,7 +45,6 @@
 
     <string name="register_password_title">Choose a password</string>
     <string name="username">Username</string>
-    <string name="username_placeholder">username</string>
     <string name="already_have_account">Already have an account?</string>
     <string name="email_already_taken">This email is already in use</string>
     <string name="email_check_failed">Unable to check email</string>
@@ -55,6 +55,14 @@
     <string name="invalid_credentials">Email or password is incorrect</string>
     <string name="add_caption_placeholder">Add a message</string>
     <string name="friends">Friends</string>
+    <string name="friend_sheet_title">My friends</string>
+    <string name="friend_sheet_count">%1$d / %2$d friends added</string>
+    <string name="friend_sheet_add_placeholder">Add a new friend</string>
+    <string name="friend_sheet_find_from_apps">Find friends from other apps</string>
+    <string name="friend_sheet_other">Other</string>
+    <string name="friend_request_section_title">Friend requests</string>
+    <string name="accept">Accept</string>
+    <string name="blocked">Blocked</string>
 
     <!-- Empty media (Locket) screen -->
     <string name="empty_media_title">Send your first Locket</string>

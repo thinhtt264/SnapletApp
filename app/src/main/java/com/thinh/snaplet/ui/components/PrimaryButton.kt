@@ -41,6 +41,7 @@ fun PrimaryButton(
     shape: Shape? = null,
     border: BorderStroke? = null,
     typography: TextStyle = MaterialTheme.typography.titleLarge,
+    leadingIcon: @Composable (() -> Unit)? = null,
 ) {
     val buttonColors = colors ?: ButtonDefaults.buttonColors(containerColor = Color.Transparent)
     val containerColor =
@@ -67,23 +68,36 @@ fun PrimaryButton(
             modifier = Modifier.padding(finalContentPadding),
             contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = if (titleColor != Color.Unspecified) titleColor else contentColor,
-                        strokeWidth = 2.dp
-                    )
-                } else BaseText(
-                    text = title,
-                    typography = typography,
-                    color = titleColor,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = if (titleColor != Color.Unspecified) titleColor else contentColor,
+                    strokeWidth = 2.dp
                 )
+            } else {
+                if (leadingIcon != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        leadingIcon()
+                        BaseText(
+                            text = title,
+                            typography = typography,
+                            color = titleColor,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    BaseText(
+                        text = title,
+                        typography = typography,
+                        color = titleColor,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }

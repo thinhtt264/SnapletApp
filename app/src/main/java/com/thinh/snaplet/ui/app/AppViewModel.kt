@@ -3,9 +3,16 @@ package com.thinh.snaplet.ui.app
 import AuthState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.data.repository.auth.AuthRepository
 import com.thinh.snaplet.data.repository.device.DeviceRepository
 import com.thinh.snaplet.navigation.NavScreen
+import com.thinh.snaplet.platform.deeplink.DeepLinkEvent
+import com.thinh.snaplet.platform.deeplink.DeepLinkManager
+import com.thinh.snaplet.ui.overlay.ModalContent
+import com.thinh.snaplet.ui.overlay.OverlayEventBus
+import com.thinh.snaplet.ui.screens.friend_request.FriendRequestUiState
+import com.thinh.snaplet.utils.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,7 +29,9 @@ import javax.inject.Inject
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val deviceRepository: DeviceRepository
+    private val deviceRepository: DeviceRepository,
+    private val deepLinkManager: DeepLinkManager,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState: MutableStateFlow<AppUiState> = MutableStateFlow(AppUiState())
@@ -37,8 +46,12 @@ class AppViewModel @Inject constructor(
 
     private var isInitialized = false
 
+    /** Pending friend request deeplink (userName) to show after login in this session. */
+    private var pendingFriendRequestUserName: String? = null
+
     init {
         initializeApp()
+        observeAuthState()
     }
 
     private fun initializeApp() {
@@ -57,16 +70,14 @@ class AppViewModel @Inject constructor(
                         }
                     )
                 }
-
             } catch (_: Exception) {
                 _uiState.update { it.copy(startDestination = NavScreen.AuthGraph.route) }
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
                 isInitialized = true
+                observeDeepLinkEvents()
             }
         }
-
-        observeAuthState()
     }
 
     private fun observeAuthState() {
@@ -77,6 +88,10 @@ class AppViewModel @Inject constructor(
                 when (authState) {
                     is AuthState.Authenticated -> {
                         _uiEvent.emit(AppUiEvent.NavigateToHomeGraph)
+                        pendingFriendRequestUserName?.let { userName ->
+                            pendingFriendRequestUserName = null
+                            handleFriendRequestDeepLink(userName)
+                        }
                     }
 
                     is AuthState.Unauthenticated -> {
@@ -90,5 +105,32 @@ class AppViewModel @Inject constructor(
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun observeDeepLinkEvents() {
+        viewModelScope.launch {
+            deepLinkManager.events.collect { event ->
+                if (event is DeepLinkEvent.FriendRequest) {
+                    handleFriendRequestDeepLink(event.userName)
+                }
+            }
+        }
+    }
+
+    private suspend fun handleFriendRequestDeepLink(userName: String) {
+        if (!authRepository.isAuthenticated()) {
+            pendingFriendRequestUserName = userName
+            return
+        }
+        val profileResult = userRepository.getUserProfile(userName)
+        profileResult.fold(
+            onSuccess = { userProfile ->
+                val state = FriendRequestUiState(userProfile = userProfile)
+                OverlayEventBus.showModal(ModalContent.FriendRequest(state = state))
+            },
+            onFailure = { error ->
+                Logger.e("❌ Failed to load user profile: ${error.message}")
+            }
+        )
     }
 }

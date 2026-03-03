@@ -4,26 +4,26 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.focus.onFocusChanged
-import kotlinx.coroutines.launch
 import com.thinh.snaplet.R
 import com.thinh.snaplet.ui.components.FormTextField
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -45,10 +45,10 @@ fun RegisterUsernamePage(
     val usernameFocusRequester = remember { FocusRequester() }
     val firstNameFocusRequester = remember { FocusRequester() }
     val lastNameFocusRequester = remember { FocusRequester() }
-    
+
     val firstNameBringIntoViewRequester = remember { BringIntoViewRequester() }
     val lastNameBringIntoViewRequester = remember { BringIntoViewRequester() }
-    
+
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -60,7 +60,7 @@ fun RegisterUsernamePage(
         subtitle = email,
         subtitleColor = colorScheme.primary,
         buttonText = stringResource(R.string.continue_text),
-        buttonEnabled = !isLoading  && firstNameError == null && lastNameError == null,
+        buttonEnabled = !isLoading && firstNameError == null && lastNameError == null,
         isLoading = isLoading,
         onButtonClick = onContinue,
         inputField = {
@@ -69,7 +69,7 @@ fun RegisterUsernamePage(
                     value = username,
                     onValueChange = onUsernameChange,
                     label = stringResource(R.string.username),
-                    placeholder = stringResource(R.string.username_placeholder),
+                    placeholder = stringResource(R.string.username),
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next,
                     onImeAction = {

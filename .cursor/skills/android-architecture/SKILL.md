@@ -1,13 +1,15 @@
 ---
 name: android-architecture
-description: Expert guidance on setting up and maintaining a modern Android application architecture using Clean Architecture and Hilt. Use this when asked about project structure, module setup, or dependency injection.
+description: Expert guidance on setting up and maintaining a modern Android application architecture using Clean Architecture and Hilt. Aligns with Google's Architecture Recommendations. Use when asked about project structure, module setup, or dependency injection.
 ---
 
 # Android Modern Architecture & Modularization
 
+Follow [Android Architecture Recommendations](https://developer.android.com/topic/architecture/recommendations) (strongly recommended). Apply Clean Architecture and layered design.
+
 ## Instructions
 
-When designing or refactoring an Android application, adhere to the **Guide to App Architecture** and **Clean Architecture** principles.
+When designing or refactoring an Android application, adhere to the **Guide to App Architecture**, **Clean Architecture**, and the official **Architecture Recommendations**.
 
 ### 1. High-Level Layers
 Structure the application into three primary layers. Dependencies must strictly flow **inwards** (or downwards) to the core logic.
@@ -46,7 +48,14 @@ For production apps, use a multi-module strategy to improve build times and sepa
 *   **:core:ui**: Shared Composables, Theme, Resources.
 *   **:feature:[name]**: Standalone feature modules containing their own UI and ViewModels. Depends on `:core:domain` and `:core:ui`.
 
-### 4. Checklist for implementation
+### 4. Compose & UI (Strongly Recommended)
+- [ ] Use **single-activity** app with **Navigation Compose** for multi-screen apps.
+- [ ] Follow **Unidirectional Data Flow (UDF)**: ViewModel exposes state, UI sends actions via callbacks.
+- [ ] Use **lifecycle-aware collection**: `collectAsStateWithLifecycle()` in Compose; `repeatOnLifecycle(STARTED)` in Views.
+- [ ] ViewModels at **screen level only**; use **plain state holder classes** for reusable UI components.
+- [ ] Do **not** send events from ViewModel to UI—process in ViewModel and update state (see `android-viewmodel` skill).
+
+### 5. Checklist for implementation
 - [ ] Ensure `Domain` layer has no Android dependencies.
 - [ ] Repositories should default to main-safe suspend functions (use `Dispatchers.IO` internally if needed).
-- [ ] ViewModels should interact with the UI layer via `StateFlow` (see `android-viewmodel` skill).
+- [ ] ViewModels should interact with the UI layer via `StateFlow` only (see `android-viewmodel` skill).

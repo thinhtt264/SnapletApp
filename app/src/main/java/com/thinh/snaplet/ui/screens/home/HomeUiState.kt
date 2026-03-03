@@ -3,8 +3,15 @@ package com.thinh.snaplet.ui.screens.home
 import android.graphics.Bitmap
 import androidx.camera.core.CameraSelector
 import com.thinh.snaplet.data.model.Post
+import com.thinh.snaplet.data.model.RelationshipWithUser
+import com.thinh.snaplet.domain.model.RelationshipAction
+import com.thinh.snaplet.platform.share.ShareApp
 
-typealias TempPost = Post
+/** Pending row with [RelationshipAction] from use case (PendingByMe vs PendingByOther). */
+data class PendingListItemState(
+    val relationship: RelationshipWithUser,
+    val action: RelationshipAction,
+)
 
 data class HomeUiState(
     val cameraState: CameraState,
@@ -13,15 +20,15 @@ data class HomeUiState(
     val posts: List<Post> = emptyList(),
     val isLoadingPosts: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val isUploading: Boolean = false,
 
     val nextCursor: String? = null, // Cursor for pagination, null means no more data
 
     val error: String? = null,
 
+    val friendSheetState: FriendBottomSheetState = FriendBottomSheetState(),
+
     val uploadStatuses: Map<String, UploadStatus> = emptyMap(),
-    val isDownloading: Boolean = false,
-    val tempPosts: List<TempPost> = emptyList() // List of temp posts with all info for retry
+    val isDownloading: Boolean = false
 ) {
     /** Returns true if more data can be loaded (nextCursor is not null and not currently loading) */
     val canLoadMore: Boolean get() = nextCursor != null && !isLoadingMore && !isLoadingPosts
@@ -45,3 +52,10 @@ data class CameraState(
     val isEditMode: Boolean get() = capturedImagePath != null
 }
 
+data class FriendBottomSheetState(
+    val friendsCount: Int? = null,
+    val friendList: List<RelationshipWithUser> = emptyList(),
+    val pendingList: List<PendingListItemState> = emptyList(),
+    val isLoadingFriendList: Boolean = false,
+    val shareApps: List<ShareApp> = emptyList(),
+)
