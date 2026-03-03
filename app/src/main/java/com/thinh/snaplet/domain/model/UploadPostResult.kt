@@ -1,9 +1,8 @@
 package com.thinh.snaplet.domain.model
 
-/**
- * Result of the upload post flow (request upload -> upload file -> confirm -> create post).
- */
+import com.thinh.snaplet.data.model.Post
+
 sealed class UploadPostResult {
-    data object Success : UploadPostResult()
+    data class Success(val post: Post) : UploadPostResult()
     data class Failed(val message: String) : UploadPostResult()
 }

@@ -51,12 +51,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -103,12 +100,19 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val _uiEvent = MutableSharedFlow<HomeUiEvent>(
-        replay = 0, extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.SUSPEND
-    )
-    val uiEvent = _uiEvent.asSharedFlow()
-
     private val _imageCapture = mutableStateOf<ImageCapture?>(null)
+
+    fun onSnackbarDismissed() {
+        _uiState.update { it.copy(snackbarMessage = null) }
+    }
+
+    fun onPermissionRequestHandled() {
+        _uiState.update { it.copy(pendingPermission = null) }
+    }
+
+    fun onScrollToFirstPostHandled() {
+        _uiState.update { it.copy(shouldScrollToFirstPost = false) }
+    }
 
     private var currentPostVisible: Post? = null
 
@@ -126,15 +130,14 @@ class HomeViewModel @Inject constructor(
 
     private fun loadFriendsCount() {
         viewModelScope.launch {
-            getDisplayableFriendsCountUseCase()
-                .onSuccess { count ->
+            getDisplayableFriendsCountUseCase().onSuccess { count ->
                     updateFriendSheetState { it.copy(friendsCount = count) }
                 }
         }
     }
 
     fun loadShareApps() {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+        viewModelScope.launch(Dispatchers.Default) {
             val apps = shareManager.getTopShareApps()
             updateFriendSheetState { it.copy(shareApps = apps) }
         }
@@ -145,19 +148,16 @@ class HomeViewModel @Inject constructor(
             updateFriendSheetState { it.copy(isLoadingFriendList = true) }
             getRelationshipsByStatusesUseCase(
                 listOf(
-                    RelationshipStatus.ACCEPTED,
-                    RelationshipStatus.PENDING
+                    RelationshipStatus.ACCEPTED, RelationshipStatus.PENDING
                 )
-            )
-                .onSuccess { list ->
+            ).onSuccess { list ->
                     val accepted = list.filter { it.status == RelationshipStatus.ACCEPTED }
                     val pending = list.filter { it.status == RelationshipStatus.PENDING }
                     val pendingWithActions = coroutineScope {
                         pending.map { item ->
                             async {
                                 PendingListItemState(
-                                    item,
-                                    getRelationshipActionUseCase(item.userId)
+                                    item, getRelationshipActionUseCase(item.userId)
                                 )
                             }
                         }.awaitAll()
@@ -169,8 +169,7 @@ class HomeViewModel @Inject constructor(
                             isLoadingFriendList = false
                         )
                     }
-                }
-                .onFailure {
+                }.onFailure {
                     updateFriendSheetState { it.copy(isLoadingFriendList = false) }
                 }
         }
@@ -178,8 +177,7 @@ class HomeViewModel @Inject constructor(
 
     fun acceptFriendRequest(pending: RelationshipWithUser) {
         viewModelScope.launch {
-            acceptFriendRequestUseCase(pending.id)
-                .onSuccess {
+            acceptFriendRequestUseCase(pending.id).onSuccess {
                     val acceptedRelationship = pending.copy(status = RelationshipStatus.ACCEPTED)
                     updateFriendSheetState { state ->
                         state.copy(
@@ -188,9 +186,8 @@ class HomeViewModel @Inject constructor(
                         )
                     }
                     loadFriendsCount()
-                }
-                .onFailure { error ->
-                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
+                }.onFailure { error ->
+                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
                 }
         }
     }
@@ -199,26 +196,22 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _uiState.value.friendSheetState
             if (friend.status == RelationshipStatus.PENDING) {
-                removeRelationshipUseCase(friend.id)
-                    .onSuccess {
+                removeRelationshipUseCase(friend.id).onSuccess {
                         updateFriendSheetState { s ->
                             s.copy(pendingList = s.pendingList.filterNot { it.relationship.id == friend.id })
                         }
-                    }
-                    .onFailure { error ->
-                        emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
+                    }.onFailure { error ->
+                        _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
                     }
             } else {
                 val currentCount = state.friendsCount
-                removeFriendUseCase(friend.id, currentCount)
-                    .onSuccess {
+                removeFriendUseCase(friend.id, currentCount).onSuccess {
                         updateFriendSheetState { s ->
                             s.copy(friendList = s.friendList.filterNot { it.id == friend.id })
                         }
                         loadFriendsCount()
-                    }
-                    .onFailure { error ->
-                        emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
+                    }.onFailure { error ->
+                        _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
                     }
             }
         }
@@ -264,29 +257,24 @@ class HomeViewModel @Inject constructor(
 
             val cursor = if (isLoadMore) state.nextCursor else null
 
-            getNewsfeedUseCase(cursor = cursor).fold(
-                onSuccess = { feedData ->
-                    _uiState.update {
-                        it.copy(
-                            posts = if (isLoadMore) it.posts + feedData.data else feedData.data,
-                            isLoadingPosts = false,
-                            isLoadingMore = false,
-                            nextCursor = feedData.pagination.nextCursor,
-                            error = null
-                        )
-                    }
-                },
-                onFailure = { apiError ->
-                    _uiState.update {
-                        it.copy(
-                            isLoadingPosts = false,
-                            isLoadingMore = false,
-                            error = apiError.message
-                        )
-                    }
-                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(apiError.message)))
+            getNewsfeedUseCase(cursor = cursor).fold(onSuccess = { feedData ->
+                _uiState.update {
+                    it.copy(
+                        posts = if (isLoadMore) it.posts + feedData.data else feedData.data,
+                        isLoadingPosts = false,
+                        isLoadingMore = false,
+                        nextCursor = feedData.pagination.nextCursor,
+                        error = null
+                    )
                 }
-            )
+            }, onFailure = { apiError ->
+                _uiState.update {
+                    it.copy(
+                        isLoadingPosts = false, isLoadingMore = false, error = apiError.message
+                    )
+                }
+                _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(apiError.message)) }
+            })
         }
     }
 
@@ -328,14 +316,14 @@ class HomeViewModel @Inject constructor(
         updateCameraState { it.copy(hasCameraPermission = hasPermission) }
 
         if (!hasPermission) {
-            emitEvent(HomeUiEvent.RequestPermission(Permission.Camera))
+            _uiState.update { it.copy(pendingPermission = Permission.Camera) }
         }
     }
 
     fun onPermissionResult(granted: Boolean) {
         updateCameraState { it.copy(hasCameraPermission = granted) }
         if (!granted) {
-            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Camera permission is required")))
+            _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("Camera permission is required")) }
         }
     }
 
@@ -359,17 +347,12 @@ class HomeViewModel @Inject constructor(
     fun onCapturePhoto(context: Context) {
         val cameraState = _uiState.value.cameraState
         when (validateCaptureReadinessUseCase(
-            cameraState.hasCameraPermission,
-            cameraState.isCameraActive
+            cameraState.hasCameraPermission, cameraState.isCameraActive
         )) {
-            CaptureReadiness.NeedPermission -> emitEvent(HomeUiEvent.RequestPermission(Permission.Camera))
-            CaptureReadiness.CameraNotReady -> emitEvent(
-                HomeUiEvent.ShowError(
-                    UiText.DynamicString(
-                        "Camera is not ready"
-                    )
-                )
-            )
+            CaptureReadiness.NeedPermission -> _uiState.update { it.copy(pendingPermission = Permission.Camera) }
+            CaptureReadiness.CameraNotReady -> _uiState.update {
+                it.copy(snackbarMessage = UiText.DynamicString("Camera is not ready"))
+            }
 
             CaptureReadiness.Ready -> takePhoto(context)
         }
@@ -377,7 +360,7 @@ class HomeViewModel @Inject constructor(
 
     private fun takePhoto(context: Context) {
         val capture = _imageCapture.value ?: run {
-            emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Camera is not ready")))
+            _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("Camera is not ready")) }
             return
         }
 
@@ -385,10 +368,8 @@ class HomeViewModel @Inject constructor(
         updateCameraState { it.copy(isCapturing = true) }
 
         val photoFile = File(
-            context.cacheDir,
-            SimpleDateFormat(
-                "yyyy-MM-dd-HH-mm-ss-SSS",
-                Locale.US
+            context.cacheDir, SimpleDateFormat(
+                "yyyy-MM-dd-HH-mm-ss-SSS", Locale.US
             ).format(System.currentTimeMillis()) + ".jpg"
         )
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
@@ -400,8 +381,7 @@ class HomeViewModel @Inject constructor(
                         withContext(Dispatchers.Main.immediate) {
                             updateCameraState {
                                 it.copy(
-                                    isCapturing = false,
-                                    capturedImagePath = photoFile.absolutePath
+                                    isCapturing = false, capturedImagePath = photoFile.absolutePath
                                 )
                             }
                         }
@@ -410,10 +390,9 @@ class HomeViewModel @Inject constructor(
 
                 override fun onError(exception: ImageCaptureException) {
                     updateCameraState { it.copy(isCapturing = false) }
-                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Failed to capture photo")))
+                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("Failed to capture photo")) }
                 }
-            }
-        )
+            })
     }
 
     fun onCancelCapture() {
@@ -446,8 +425,7 @@ class HomeViewModel @Inject constructor(
                         state.cameraState.lensFacing == CameraSelector.LENS_FACING_FRONT
                     val processedPath = withContext(Dispatchers.IO) {
                         FileUtils.flipAndCompressImage(
-                            File(input.imagePath),
-                            flipHorizontal = isFrontCamera
+                            File(input.imagePath), flipHorizontal = isFrontCamera
                         ) ?: input.imagePath
                     }
                     val transform = ImageTransform(rotation = 0, scaleX = 1f, scaleY = 1f)
@@ -468,7 +446,7 @@ class HomeViewModel @Inject constructor(
                         )
                     }
 
-                    emitEvent(HomeUiEvent.ScrollToUploadingPost)
+                    _uiState.update { it.copy(shouldScrollToFirstPost = true) }
                     runUploadAndUpdateStatus(tempPostId, processedPath, transform, input.caption)
                 }
 
@@ -476,33 +454,41 @@ class HomeViewModel @Inject constructor(
                 }
 
                 is ValidateUploadPostUseCase.ValidateUploadResult.NoImage -> {
-                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("No image to upload")))
+                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("No image to upload")) }
                 }
 
                 is ValidateUploadPostUseCase.ValidateUploadResult.UserProfileNotFound -> {
-                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("User profile not found")))
+                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("User profile not found")) }
                 }
             }
         }
     }
 
     private fun runUploadAndUpdateStatus(
-        tempPostId: String,
-        imagePath: String,
-        transform: ImageTransform,
-        caption: String?
+        tempPostId: String, imagePath: String, transform: ImageTransform, caption: String?
     ) {
         viewModelScope.launch {
             when (val result = uploadPostUseCase(imagePath, transform, caption)) {
                 is UploadPostResult.Success -> {
+                    val realPostId = result.post.id
                     tempPosts = tempPosts.filterNot { it.id == tempPostId }
-                    setUploadStatus(tempPostId, UploadStatus.Success)
-                    emitEvent(HomeUiEvent.ShowSuccess(UiText.DynamicString("Post uploaded successfully")))
+                    _uiState.update { state ->
+                        state.copy(
+                            posts = state.posts.map { if (it.id == tempPostId) it.copy(id = realPostId) else it },
+                            uploadStatuses = state.uploadStatuses - tempPostId,
+                            snackbarMessage = UiText.DynamicString("Post uploaded successfully")
+                        )
+                    }
+                    // Sync cached ref so interactions (delete/share) use the real BE id
+                    // before onItemVisible re-reads from the updated posts list.
+                    if (currentPostVisible?.id == tempPostId) {
+                        currentPostVisible = currentPostVisible?.copy(id = realPostId)
+                    }
                 }
 
                 is UploadPostResult.Failed -> {
                     setUploadStatus(tempPostId, UploadStatus.Failed(result.message))
-                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(result.message)))
+                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(result.message)) }
                 }
             }
         }
@@ -521,14 +507,12 @@ class HomeViewModel @Inject constructor(
                 is PostAction.Share -> SheetOption(
                     id = "share",
                     label = UiText.StringResource(R.string.share),
-                    onClick = { /* TODO: share */ }
-                )
+                    onClick = { /* TODO: share */ })
 
                 is PostAction.Download -> SheetOption(
                     id = "download",
                     label = UiText.StringResource(R.string.download),
-                    onClick = { downloadPostImage(post) }
-                )
+                    onClick = { downloadPostImage(post) })
 
                 is PostAction.Delete -> SheetOption(
                     id = "delete",
@@ -541,21 +525,18 @@ class HomeViewModel @Inject constructor(
                             confirmText = UiText.StringResource(R.string.delete),
                             onConfirm = { deletePost(post.id) },
                         )
-                    }
-                )
+                    })
 
                 is PostAction.Report -> SheetOption(
                     id = "report",
                     label = UiText.StringResource(R.string.report),
                     color = Red,
-                    onClick = { /* TODO: report */ }
-                )
+                    onClick = { /* TODO: report */ })
 
                 is PostAction.Cancel -> SheetOption(
                     id = "cancel",
                     label = UiText.StringResource(R.string.cancel),
-                    onClick = { /* dismiss only */ }
-                )
+                    onClick = { /* dismiss only */ })
             }
         }
         OverlayEventBus.showOptionsSheet(options = options)
@@ -568,23 +549,20 @@ class HomeViewModel @Inject constructor(
                 val input = result.input
                 setUploadStatus(input.tempPostId, UploadStatus.Uploading)
                 runUploadAndUpdateStatus(
-                    input.tempPostId,
-                    input.imagePath,
-                    input.transform,
-                    input.caption
+                    input.tempPostId, input.imagePath, input.transform, input.caption
                 )
             }
 
             is ValidateRetryUploadUseCase.ValidateRetryResult.PostNotFound -> {
-                emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Cannot retry upload: Post data not found")))
+                _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("Cannot retry upload: Post data not found")) }
             }
 
             is ValidateRetryUploadUseCase.ValidateRetryResult.MediaNotFound -> {
-                emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Cannot retry upload: Media not found")))
+                _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("Cannot retry upload: Media not found")) }
             }
 
             is ValidateRetryUploadUseCase.ValidateRetryResult.ImagePathNotFound -> {
-                emitEvent(HomeUiEvent.ShowError(UiText.DynamicString("Cannot retry upload: Image path not found")))
+                _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("Cannot retry upload: Image path not found")) }
             }
         }
     }
@@ -606,8 +584,7 @@ class HomeViewModel @Inject constructor(
 
     private fun deletePost(postId: String) {
         viewModelScope.launch {
-            deletePostUseCase(postId)
-                .onSuccess {
+            deletePostUseCase(postId).onSuccess {
                     tempPosts = tempPosts.filterNot { it.id == postId }
                     _uiState.update { state ->
                         state.copy(
@@ -615,10 +592,9 @@ class HomeViewModel @Inject constructor(
                             uploadStatuses = state.uploadStatuses - postId
                         )
                     }
-                    emitEvent(HomeUiEvent.ShowSuccess(UiText.StringResource(R.string.post_deleted)))
-                }
-                .onFailure { error ->
-                    emitEvent(HomeUiEvent.ShowError(UiText.DynamicString(error.message)))
+                    _uiState.update { it.copy(snackbarMessage = UiText.StringResource(R.string.post_deleted)) }
+                }.onFailure { error ->
+                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
                 }
         }
     }
@@ -626,29 +602,27 @@ class HomeViewModel @Inject constructor(
     fun downloadPostImage(post: Post) {
         if (_uiState.value.isDownloading) return
         val media = post.media.firstOrNull() ?: run {
-            emitEvent(HomeUiEvent.ShowError(UiText.StringResource(R.string.download_failed)))
+            _uiState.update { it.copy(snackbarMessage = UiText.StringResource(R.string.download_failed)) }
             return
         }
         val imageSource = media.originalUrl
 
         _uiState.update { it.copy(isDownloading = true) }
         viewModelScope.launch {
-            downloadPostImageUseCase(imageSource)
-                .onSuccess { _uiState.update { it.copy(isDownloading = false) } }
-                .onFailure { e ->
-                    _uiState.update { it.copy(isDownloading = false) }
-                    emitEvent(
-                        HomeUiEvent.ShowError(
-                            UiText.DynamicString(
-                                e.message ?: "Download failed"
-                            )
+            downloadPostImageUseCase(imageSource).onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isDownloading = false
                         )
-                    )
+                    }
+                }.onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isDownloading = false,
+                            snackbarMessage = UiText.DynamicString(e.message ?: "Download failed")
+                        )
+                    }
                 }
         }
-    }
-
-    private fun emitEvent(event: HomeUiEvent) {
-        viewModelScope.launch { _uiEvent.emit(event) }
     }
 }

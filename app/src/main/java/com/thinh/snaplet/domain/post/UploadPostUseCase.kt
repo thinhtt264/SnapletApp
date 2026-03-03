@@ -46,7 +46,7 @@ class UploadPostUseCase @Inject constructor(
                         caption = caption,
                         visibility = "friend-only"
                     ).fold(
-                        onSuccess = { UploadPostResult.Success },
+                        onSuccess = { createdPost -> UploadPostResult.Success(createdPost) },
                         onFailure = { UploadPostResult.Failed("Upload failed: ${it.message}") }
                     )
                 },

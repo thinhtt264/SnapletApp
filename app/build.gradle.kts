@@ -1,6 +1,7 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 import java.io.FileInputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
@@ -31,7 +32,7 @@ android {
             if (keystorePropertiesFile.exists()) {
                 val keystoreProperties = Properties()
                 keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-                
+
                 storeFile = file(keystoreProperties["SNAPLET_KEYSTORE_FILE"] as String)
                 storePassword = keystoreProperties["SNAPLET_KEYSTORE_PASSWORD"] as String
                 keyAlias = keystoreProperties["SNAPLET_KEY_ALIAS"] as String
@@ -64,15 +65,15 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    kotlinOptions {
+        freeCompilerArgs = listOf("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
     }
 
     applicationVariants.all {
@@ -85,12 +86,20 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+        freeCompilerArgs = listOf("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
+    }
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -104,26 +113,26 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.exifinterface)
     ksp(libs.hilt.android.compiler)
-    
+
     // CameraX
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-    
+
     // Coil for image loading
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
-    
+
     // Retrofit for API calls
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.gson)
-    
+
     // DataStore for local storage
     implementation(libs.androidx.datastore.preferences)
-    
+
     add("developmentImplementation", libs.chucker)
     add("productionImplementation", libs.chucker.no.op)
 
