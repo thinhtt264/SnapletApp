@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
@@ -68,28 +69,14 @@ fun PrimaryButton(
             modifier = Modifier.padding(finalContentPadding),
             contentAlignment = Alignment.Center
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = if (titleColor != Color.Unspecified) titleColor else contentColor,
-                    strokeWidth = 2.dp
-                )
-            } else {
-                if (leadingIcon != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        leadingIcon()
-                        BaseText(
-                            text = title,
-                            typography = typography,
-                            color = titleColor,
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                } else {
+            val contentAlpha = if (isLoading) 0f else 1f
+            if (leadingIcon != null) {
+                Row(
+                    modifier = Modifier.alpha(contentAlpha),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    leadingIcon()
                     BaseText(
                         text = title,
                         typography = typography,
@@ -98,6 +85,22 @@ fun PrimaryButton(
                         textAlign = TextAlign.Center
                     )
                 }
+            } else {
+                BaseText(
+                    modifier = Modifier.alpha(contentAlpha),
+                    text = title,
+                    typography = typography,
+                    color = titleColor,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+            }
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = if (titleColor != Color.Unspecified) titleColor else contentColor,
+                    strokeWidth = 2.dp
+                )
             }
         }
     }

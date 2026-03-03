@@ -23,7 +23,7 @@ data class Post(
     val avatarUrl: String? = null,
 
     @SerializedName("media")
-    val media: List<Media>,
+    val media: List<Media> = emptyList(),
 
     @SerializedName("caption")
     val caption: String? = null,

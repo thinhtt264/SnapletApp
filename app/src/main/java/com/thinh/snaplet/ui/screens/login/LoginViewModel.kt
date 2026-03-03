@@ -117,7 +117,6 @@ class LoginViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { userProfile ->
-                    Logger.d("✅ Login successful for: ${userProfile.displayName}")
                     _uiState.update { it.copy(isLoading = false) }
                     _uiEvent.emit(LoginUIEvent.LoginSuccess)
                 },

@@ -17,7 +17,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,7 +56,7 @@ data class CameraActions(
 
 @Composable
 fun Home(viewModel: HomeViewModel = hiltViewModel()) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -94,7 +94,8 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
         permission = Permission.Camera, onPermissionResult = viewModel::onPermissionResult
     ) { requestPermission ->
 
-        UiEventEffect(
+        HomeStateEffects(
+            uiState = uiState,
             viewModel = viewModel,
             context = context,
             snackBarHostState = snackBarHostState,
@@ -103,7 +104,8 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
                 if (pagerState.currentPage == CAMERA_PAGE_INDEX) pagerState.animateScrollToPage(
                     1
                 )
-            })
+            }
+        )
 
         HomeScreen(
             pagerState = pagerState,
@@ -147,36 +149,35 @@ private fun CameraBindingEffect(
 }
 
 @Composable
-private fun UiEventEffect(
+private fun HomeStateEffects(
+    uiState: HomeUiState,
     viewModel: HomeViewModel,
     context: Context,
     snackBarHostState: SnackbarHostState,
     requestPermission: () -> Unit,
     onScrollToFirstPost: suspend () -> Unit
 ) {
-    LaunchedEffect(Unit) {
-        viewModel.uiEvent.collect { event ->
-            when (event) {
-                is HomeUiEvent.RequestPermission -> {
-                    requestPermission()
-                }
+    uiState.snackbarMessage?.let { message ->
+        LaunchedEffect(message) {
+            snackBarHostState.showSnackbar(
+                message = message.asString(context),
+                duration = SnackbarDuration.Short,
+            )
+            viewModel.onSnackbarDismissed()
+        }
+    }
 
-                is HomeUiEvent.ShowError -> {
-                    snackBarHostState.showSnackbar(
-                        message = event.message.asString(context),
-                        duration = SnackbarDuration.Short,
-                    )
-                }
+    uiState.pendingPermission?.let {
+        LaunchedEffect(it) {
+            requestPermission()
+            viewModel.onPermissionRequestHandled()
+        }
+    }
 
-                is HomeUiEvent.ShowSuccess -> {
-//                    snackBarHostState.showSnackbar(
-//                        message = event.message.asString(context),
-//                        duration = SnackbarDuration.Short,
-//                    )
-                }
-
-                is HomeUiEvent.ScrollToUploadingPost -> onScrollToFirstPost()
-            }
+    if (uiState.shouldScrollToFirstPost) {
+        LaunchedEffect(uiState.shouldScrollToFirstPost) {
+            onScrollToFirstPost()
+            viewModel.onScrollToFirstPostHandled()
         }
     }
 }

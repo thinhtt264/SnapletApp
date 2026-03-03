@@ -5,7 +5,9 @@ import androidx.camera.core.CameraSelector
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.data.model.RelationshipWithUser
 import com.thinh.snaplet.domain.model.RelationshipAction
+import com.thinh.snaplet.platform.permission.Permission
 import com.thinh.snaplet.platform.share.ShareApp
+import com.thinh.snaplet.ui.common.UiText
 
 /** Pending row with [RelationshipAction] from use case (PendingByMe vs PendingByOther). */
 data class PendingListItemState(
@@ -28,7 +30,16 @@ data class HomeUiState(
     val friendSheetState: FriendBottomSheetState = FriendBottomSheetState(),
 
     val uploadStatuses: Map<String, UploadStatus> = emptyMap(),
-    val isDownloading: Boolean = false
+    val isDownloading: Boolean = false,
+
+    /** Snackbar message to show. UI shows then calls onSnackbarDismissed(). */
+    val snackbarMessage: UiText? = null,
+
+    /** Permission to request. UI requests then calls onPermissionRequestHandled(). */
+    val pendingPermission: Permission? = null,
+
+    /** When true, UI scrolls to first post then calls onScrollToFirstPostHandled(). */
+    val shouldScrollToFirstPost: Boolean = false
 ) {
     /** Returns true if more data can be loaded (nextCursor is not null and not currently loading) */
     val canLoadMore: Boolean get() = nextCursor != null && !isLoadingMore && !isLoadingPosts
