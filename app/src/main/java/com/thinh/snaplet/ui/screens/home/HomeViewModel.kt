@@ -450,8 +450,7 @@ class HomeViewModel @Inject constructor(
                     runUploadAndUpdateStatus(tempPostId, processedPath, transform, input.caption)
                 }
 
-                is ValidateUploadPostUseCase.ValidateUploadResult.AlreadyUploading -> { /* no-op, already uploading */
-                }
+                is ValidateUploadPostUseCase.ValidateUploadResult.AlreadyUploading -> { /* no-op, already uploading */ }
 
                 is ValidateUploadPostUseCase.ValidateUploadResult.NoImage -> {
                     _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("No image to upload")) }
@@ -488,7 +487,7 @@ class HomeViewModel @Inject constructor(
 
                 is UploadPostResult.Failed -> {
                     setUploadStatus(tempPostId, UploadStatus.Failed(result.message))
-                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(result.message)) }
+//                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(result.message)) }
                 }
             }
         }
@@ -571,6 +570,11 @@ class HomeViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(uploadStatuses = state.uploadStatuses + (tempPostId to status))
         }
+    }
+
+    fun deleteFailedPost(tempPostId: String) {
+        tempPosts = tempPosts.filterNot { it.id == tempPostId }
+        removeTempPost(tempPostId)
     }
 
     private fun removeTempPost(tempPostId: String) {

@@ -1,6 +1,7 @@
 package com.thinh.snaplet.ui.screens.home.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,7 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,14 +32,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.common.CommonImages
 import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
 import com.thinh.snaplet.ui.components.ImageSize
 import com.thinh.snaplet.ui.screens.home.UploadStatus
+import com.thinh.snaplet.ui.theme.Red
 import com.thinh.snaplet.utils.formatTimeAgo
 
 private const val TOP_SPACE_RATIO = 0.15f
@@ -46,10 +57,13 @@ fun MediaPage(
     onGridClick: () -> Unit = {},
     onCaptureClick: () -> Unit = {},
     onMoreClick: () -> Unit = {},
+    onRetryClick: () -> Unit = {},
+    onDeleteClick: () -> Unit = {},
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeight = maxHeight
         val topPadding = screenHeight * TOP_SPACE_RATIO
+        val isFailed = uploadStatus is UploadStatus.Failed
 
         Column(
             modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
@@ -63,16 +77,21 @@ fun MediaPage(
                     .clip(RoundedCornerShape(MediaItemDimensions.MEDIA_CORNER_RADIUS))
             ) {
                 PostMediaContent(post = post)
+
+                if (isFailed) {
+                    UploadFailedOverlay(onRetryClick = onRetryClick)
+                }
             }
 
             Spacer(Modifier.height(12.dp))
 
             PostMetadata(
-                post = post, uploadStatus = uploadStatus
+                post = post,
+                uploadStatus = uploadStatus,
+                onDeleteClick = onDeleteClick
             )
         }
 
-        // --- Bottom Actions ---
         if (showBottomAction) {
             BottomAction(
                 onGridClick = onGridClick,
@@ -137,51 +156,115 @@ private fun PostMediaContent(post: Post) {
 }
 
 @Composable
+private fun UploadFailedOverlay(onRetryClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(onClick = onRetryClick)
+            .zIndex(100f),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = Color.White
+            )
+            BaseText(
+                text = stringResource(R.string.upload_failed_tap_to_retry),
+                typography = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(12.dp)
+                .size(28.dp)
+                .background(color = Red, shape = CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
 private fun PostMetadata(
-    modifier: Modifier = Modifier, post: Post, uploadStatus: UploadStatus?
+    modifier: Modifier = Modifier,
+    post: Post,
+    uploadStatus: UploadStatus?,
+    onDeleteClick: () -> Unit = {}
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (uploadStatus is UploadStatus.Uploading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.onBackground,
-                strokeWidth = 2.dp
-            )
-            BaseText(
-                text = "Uploading....",
-                typography = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-            ) {
-                AsyncImage(
-                    imageUrl = post.avatarUrl ?: "",
-                    contentDescription = "Avatar of ${post.displayName}",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    resizeSize = ImageSize.Thumbnail,
-                    showLoadingIndicator = true
+        when (uploadStatus) {
+            is UploadStatus.Uploading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    strokeWidth = 2.dp
+                )
+                BaseText(
+                    text = stringResource(R.string.uploading),
+                    typography = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
-            BaseText(
-                text = post.firstName,
-                typography = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
 
-        BaseText(
-            text = " ${formatTimeAgo(post.createdAt)}",
-            typography = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+            is UploadStatus.Failed -> {
+                IconButton(onClick = onDeleteClick) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "delete",
+                        modifier = Modifier.size(36.dp),
+                        tint = Red
+                    )
+                }
+            }
+
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                ) {
+                    AsyncImage(
+                        imageUrl = post.avatarUrl ?: "",
+                        contentDescription = "Avatar of ${post.displayName}",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        resizeSize = ImageSize.Thumbnail,
+                        showLoadingIndicator = true
+                    )
+                }
+                BaseText(
+                    text = post.firstName,
+                    typography = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                BaseText(
+                    text = " ${formatTimeAgo(post.createdAt)}",
+                    typography = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
     }
 }

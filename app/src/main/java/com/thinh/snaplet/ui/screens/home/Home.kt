@@ -175,7 +175,7 @@ private fun HomeStateEffects(
     }
 
     if (uiState.shouldScrollToFirstPost) {
-        LaunchedEffect(uiState.shouldScrollToFirstPost) {
+        LaunchedEffect(true) {
             onScrollToFirstPost()
             viewModel.onScrollToFirstPostHandled()
         }
@@ -227,7 +227,9 @@ private fun HomeScreen(
             cameraActions = cameraActions,
             onNavigateToCameraPage = onNavigateToCameraPage,
             onMoreClick = onMoreClick,
-            onShowFriendSheet = { showFriendSheet = true }
+            onShowFriendSheet = { showFriendSheet = true },
+            onRetryUpload = viewModel::retryUpload,
+            onDeleteFailedPost = viewModel::deleteFailedPost
         )
 
         TopAction(
@@ -288,7 +290,9 @@ private fun HomePager(
     cameraActions: CameraActions,
     onNavigateToCameraPage: () -> Unit,
     onMoreClick: () -> Unit,
-    onShowFriendSheet: () -> Unit = {}
+    onShowFriendSheet: () -> Unit = {},
+    onRetryUpload: (String) -> Unit = {},
+    onDeleteFailedPost: (String) -> Unit = {}
 ) {
     VerticalPager(
         state = pagerState,
@@ -323,7 +327,9 @@ private fun HomePager(
                         showMoreButtonLoading = showMoreButtonLoading,
                         onGridClick = { /* TODO */ },
                         onCaptureClick = onNavigateToCameraPage,
-                        onMoreClick = onMoreClick
+                        onMoreClick = onMoreClick,
+                        onRetryClick = { onRetryUpload(post.id) },
+                        onDeleteClick = { onDeleteFailedPost(post.id) }
                     )
                 }
             }
