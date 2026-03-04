@@ -1,13 +1,5 @@
 package com.thinh.snaplet.navigation
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
@@ -17,13 +9,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.thinh.snaplet.ui.screens.home.Home
 import com.thinh.snaplet.ui.screens.login.Login
+import com.thinh.snaplet.ui.screens.my_profile.MyProfile
 import com.thinh.snaplet.ui.screens.onboarding.Onboarding
 import com.thinh.snaplet.ui.screens.register.Register
-
-private const val NAV_ANIM_DURATION = 250
-private const val FADE_DURATION_DIVISOR = 1
-private const val ENTER_OFFSET_PERCENT = 0.3f
-private const val EXIT_OFFSET_PERCENT = 0.15f
 
 @Composable
 fun NavGraph(
@@ -35,112 +23,56 @@ fun NavGraph(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier,
-        enterTransition = {
-            slideInHorizontally(
-                initialOffsetX = { fullWidth -> (fullWidth * ENTER_OFFSET_PERCENT).toInt() },
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION, easing = FastOutSlowInEasing
-                )
-            ) + fadeIn(
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION / FADE_DURATION_DIVISOR,
-                    easing = FastOutSlowInEasing
-                )
-            )
-        },
-        exitTransition = {
-            slideOutHorizontally(
-                targetOffsetX = { fullWidth -> -(fullWidth * EXIT_OFFSET_PERCENT).toInt() },
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION, easing = FastOutSlowInEasing
-                )
-            ) + fadeOut(
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION / FADE_DURATION_DIVISOR,
-                    easing = FastOutSlowInEasing
-                )
-            )
-        },
-        popEnterTransition = {
-            slideInHorizontally(
-                initialOffsetX = { fullWidth -> -(fullWidth * EXIT_OFFSET_PERCENT).toInt() },
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION, easing = FastOutSlowInEasing
-                )
-            ) + fadeIn(
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION / FADE_DURATION_DIVISOR,
-                    easing = FastOutSlowInEasing
-                )
-            )
-        },
-        popExitTransition = {
-            slideOutHorizontally(
-                targetOffsetX = { fullWidth -> (fullWidth * ENTER_OFFSET_PERCENT).toInt() },
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION, easing = FastOutSlowInEasing
-                )
-            ) + fadeOut(
-                animationSpec = tween(
-                    durationMillis = NAV_ANIM_DURATION / FADE_DURATION_DIVISOR,
-                    easing = FastOutSlowInEasing
-                )
-            )
-        }) {
+        enterTransition = NavTransitions.Default.enter,
+        exitTransition = NavTransitions.Default.exit,
+        popEnterTransition = NavTransitions.Default.popEnter,
+        popExitTransition = NavTransitions.Default.popExit
+    ) {
         authGraph(navController = navController)
         homeGraph(navController = navController)
     }
 }
 
 fun NavGraphBuilder.homeGraph(navController: NavHostController) {
+    val actions = NavActions(navController)
     navigation(
         startDestination = NavScreen.Home.route,
         route = NavScreen.HomeGraph.route,
-        enterTransition = {
-            fadeIn(tween(120)) + scaleIn(
-                initialScale = 0.92f, animationSpec = tween(120, easing = FastOutSlowInEasing)
-            )
-        },
-
-        exitTransition = {
-            fadeOut(tween(90)) + scaleOut(
-                targetScale = 0.95f, animationSpec = tween(90)
-            )
-        }
-
+        enterTransition = NavTransitions.HomeGraph.enter,
+        exitTransition = NavTransitions.HomeGraph.exit
     ) {
         composable(route = NavScreen.Home.route) {
-            Home()
+            Home(onProfileClick = actions::navigateToMyProfile)
+        }
+        composable(
+            route = NavScreen.MyProfile.route,
+            enterTransition = NavTransitions.MyProfile.enter,
+            exitTransition = NavTransitions.MyProfile.exit,
+            popEnterTransition = NavTransitions.MyProfile.popEnter,
+            popExitTransition = NavTransitions.MyProfile.popExit
+        ) {
+            MyProfile(onBackClick = actions::popBackStack)
         }
     }
 }
 
 fun NavGraphBuilder.authGraph(navController: NavHostController) {
+    val actions = NavActions(navController)
     navigation(
-        startDestination = NavScreen.Onboarding.route, route = NavScreen.AuthGraph.route
+        startDestination = NavScreen.Onboarding.route,
+        route = NavScreen.AuthGraph.route
     ) {
         composable(route = NavScreen.Onboarding.route) {
-            Onboarding(onNavigateToLogin = {
-                navController.navigate(NavScreen.Login.route) {
-                    popUpTo(NavScreen.Onboarding.route) { inclusive = true }
-                }
-            }, onNavigateToRegister = {
-                navController.navigate(NavScreen.Register.route) {
-                    popUpTo(NavScreen.Onboarding.route) { inclusive = true }
-                }
-            })
+            Onboarding(
+                onNavigateToLogin = actions::navigateToLoginReplacingOnboarding,
+                onNavigateToRegister = actions::navigateToRegisterReplacingOnboarding
+            )
         }
-
         composable(route = NavScreen.Login.route) {
-            Login(onRegisterClick = {
-                navController.navigate(NavScreen.Register.route)
-            })
+            Login(onRegisterClick = actions::navigateToRegister)
         }
-
         composable(route = NavScreen.Register.route) {
-            Register(onLoginClick = {
-                navController.navigate(NavScreen.Login.route)
-            })
+            Register(onLoginClick = actions::navigateToLogin)
         }
     }
 }

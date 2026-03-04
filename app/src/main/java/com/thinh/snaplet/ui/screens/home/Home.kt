@@ -55,7 +55,10 @@ data class CameraActions(
 )
 
 @Composable
-fun Home(viewModel: HomeViewModel = hiltViewModel()) {
+fun Home(
+    onProfileClick: () -> Unit = {},
+    viewModel: HomeViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -116,7 +119,8 @@ fun Home(viewModel: HomeViewModel = hiltViewModel()) {
                 scope.launch { pagerState.animateScrollToPage(CAMERA_PAGE_INDEX) }
             },
             onItemVisible = viewModel::onItemVisible,
-            onMoreClick = viewModel::onShowMoreOptions
+            onMoreClick = viewModel::onShowMoreOptions,
+            onProfileClick = onProfileClick
         )
 
         SnackbarHost(hostState = snackBarHostState)
@@ -191,6 +195,7 @@ private fun HomeScreen(
     onNavigateToCameraPage: () -> Unit,
     onItemVisible: (currentIndex: Int) -> Unit,
     onMoreClick: () -> Unit,
+    onProfileClick: () -> Unit = {},
 ) {
     var showFriendSheet by remember { mutableStateOf(false) }
     var friendSearchQuery by remember { mutableStateOf("") }
@@ -233,7 +238,7 @@ private fun HomeScreen(
         )
 
         TopAction(
-            onProfileClick = { /* TODO */ },
+            onProfileClick = onProfileClick,
             onFriendsClick = { showFriendSheet = true },
             onChatClick = { /* TODO */ },
             friendsCount = uiState.friendSheetState.friendsCount,
