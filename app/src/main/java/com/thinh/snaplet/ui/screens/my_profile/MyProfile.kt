@@ -191,7 +191,19 @@ private fun MyProfileContent(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(scrollState)
     ) {
-        BackButton(onBackClick = onBackClick)
+        Box(
+            modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+                contentDescription = "back",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .padding(end = 20.dp)
+                    .size(32.dp)
+                    .pressScaleClickable(onClick = onBackClick),
+            )
+        }
 
         ProfileHeader(
             avatarUrl = uiState.avatarUrl,
@@ -219,27 +231,6 @@ private fun MyProfileContent(
             modifier = Modifier
                 .height(32.dp)
                 .navigationBarsPadding()
-        )
-    }
-}
-
-@Composable
-private fun BackButton(
-    onBackClick: () -> Unit, modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .pressScaleClickable(onClick = onBackClick)
-    ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-            contentDescription = "back",
-            tint = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(28.dp)
         )
     }
 }
