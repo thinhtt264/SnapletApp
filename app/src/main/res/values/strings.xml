@@ -12,6 +12,7 @@
     <string name="delete_photo_title">Xóa ảnh?</string>
     <string name="delete_photo_message">Việc này sẽ xóa vĩnh viễn ảnh khỏi lịch sử của bạn và bạn bè sẽ không còn có thể thấy ảnh này nữa.</string>
     <string name="logout">Đăng xuất</string>
+    <string name="pick_photo_from_gallery">Chọn từ thư viện</string>
 
     <string name="onboarding_subtitle">Ảnh trực tiếp từ bạn bè,\nngay trên màn hình chính</string>
     <string name="create_account">Tạo một tài khoản</string>
@@ -107,4 +108,6 @@
     <string name="profile_section_danger_zone">Vùng nguy hiểm</string>
     <string name="profile_delete_account">Xóa tài khoản</string>
     <string name="profile_logout_confirm_title">Bạn có chắc bạn muốn đăng xuất?</string>
+    <string name="profile_change_avatar_title">Ảnh hồ sơ của bạn sẽ được hiển thị cho tất cả mọi người</string>
+    <string name="delete_avatar">Xóa ảnh hồ sơ</string>
 </resources>

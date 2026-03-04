@@ -1,5 +1,8 @@
 package com.thinh.snaplet.ui.screens.my_profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -124,6 +128,25 @@ fun MyProfile(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val pickMediaLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.onPhotoPicked(uri)
+        } else {
+            viewModel.onPhotoPickerDismissed()
+        }
+    }
+
+    LaunchedEffect(uiState.showPhotoPicker) {
+        if (uiState.showPhotoPicker) {
+            viewModel.onPhotoPickerLaunched()
+            pickMediaLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        }
+    }
+
     val strings = ProfileStrings(
         back = stringResource(R.string.profile_back),
         editPhoto = stringResource(R.string.profile_edit_photo),
@@ -166,7 +189,7 @@ fun MyProfile(
         editPhotoLabel = strings.editPhoto,
         inviteFriendsTitle = strings.inviteFriendsTitle,
         onBackClick = onBackClick,
-        onEditPhotoClick = { },
+        onEditPhotoClick = viewModel::onEditPhoto,
         onShareInviteClick = { },
         modifier = modifier
     )
@@ -206,7 +229,7 @@ private fun MyProfileContent(
         }
 
         ProfileHeader(
-            avatarUrl = uiState.avatarUrl,
+            avatarUrl = uiState.selectedPhotoUri ?: uiState.avatarUrl,
             firstName = uiState.firstName,
             displayName = uiState.displayName,
             editPhotoLabel = editPhotoLabel,
