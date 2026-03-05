@@ -215,7 +215,10 @@ private fun MyProfileContent(
             .verticalScroll(scrollState)
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 4.dp),
+            contentAlignment = Alignment.TopEnd
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.ArrowForward,

@@ -114,7 +114,9 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(shouldScrollToFirstPost = false) }
     }
 
-    private var currentPostVisible: Post? = null
+    private var currentVisibleIndex: Int = -1
+    private val currentPostVisible: Post?
+        get() = _uiState.value.posts.getOrNull(currentVisibleIndex)
 
     /** Temp posts for retry only: lookup by id to get imagePath/transform/caption. Not in UI state. */
     private var tempPosts: List<Post> = emptyList()
@@ -279,7 +281,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onItemVisible(currentIndex: Int) {
-        currentPostVisible = _uiState.value.posts.getOrNull(currentIndex)
+        currentVisibleIndex = currentIndex
 
         val state = _uiState.value
         val shouldLoad = shouldTriggerLoadMoreUseCase(
@@ -478,11 +480,6 @@ class HomeViewModel @Inject constructor(
                             uploadStatuses = state.uploadStatuses - tempPostId,
                             snackbarMessage = UiText.DynamicString("Post uploaded successfully")
                         )
-                    }
-                    // Sync cached ref so interactions (delete/share) use the real BE id
-                    // before onItemVisible re-reads from the updated posts list.
-                    if (currentPostVisible?.id == tempPostId) {
-                        currentPostVisible = currentPostVisible?.copy(id = realPostId)
                     }
                 }
 

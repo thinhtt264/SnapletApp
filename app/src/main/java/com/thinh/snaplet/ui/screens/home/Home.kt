@@ -15,6 +15,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -23,11 +24,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.platform.permission.Permission
@@ -148,6 +153,39 @@ private fun CameraBindingEffect(
                 snapshotHandler?.invoke()?.let(onSnapshotCaptured)
                 onCameraPageHidden()
             }
+        }
+    }
+
+    val currentShouldBindCamera by rememberUpdatedState(shouldBindCamera)
+    val currentSnapshotHandler by rememberUpdatedState(snapshotHandler)
+    val currentOnSnapshotCaptured by rememberUpdatedState(onSnapshotCaptured)
+    val currentOnCameraPageHidden by rememberUpdatedState(onCameraPageHidden)
+    val currentOnCameraPageVisible by rememberUpdatedState(onCameraPageVisible)
+    val currentIsOnCameraPage by rememberUpdatedState(isOnCameraPage)
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    if (currentShouldBindCamera) {
+                        currentSnapshotHandler?.invoke()?.let(currentOnSnapshotCaptured)
+                        currentOnCameraPageHidden()
+                    }
+                }
+
+                Lifecycle.Event.ON_RESUME -> {
+                    if (currentIsOnCameraPage && !currentShouldBindCamera) {
+                        currentOnCameraPageVisible()
+                    }
+                }
+
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 }
