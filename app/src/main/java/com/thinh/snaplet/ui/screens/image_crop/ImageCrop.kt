@@ -34,9 +34,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -76,7 +78,7 @@ fun ImageCrop(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (imageUri != null) {
                 key(imageUri) {
-                    AvatarCropper(
+                    ImageCropper(
                         uri = imageUri, frameSize = 400.dp, onCropDone = onCropDone
                     )
                 }
@@ -86,12 +88,8 @@ fun ImageCrop(
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  AvatarCropper
-// ─────────────────────────────────────────────────────────────
-
 @Composable
-fun AvatarCropper(
+fun ImageCropper(
     modifier: Modifier = Modifier,
     uri: Uri,
     frameSize: Dp = 400.dp,
@@ -109,19 +107,19 @@ fun AvatarCropper(
     var frameOffsetY by remember { mutableFloatStateOf(0f) }
     var imageScale by remember { mutableFloatStateOf(1f) }
 
-    // minScale: scale tối thiểu để ảnh luôn phủ đủ frame về cả 2 chiều.
-    // Ảnh landscape (height nhỏ hơn framePx) → minScale > 1 → ảnh tự scale lên.
-    // Tính mỗi khi imageHeightPx thay đổi (sau khi Coil render xong).
+    // minScale: ảnh landscape (height < framePx) cần scale lên để phủ frame
     fun computeMinScale(imgH: Int): Float {
         if (imgH == 0) return 1f
         return maxOf(framePx / imgH, 1f)
     }
 
-    fun clampFrame(offset: Float, scale: Float = imageScale): Float {
+    // Clamp frame trong boundary ảnh GỐC — không nhân scale.
+    // Box có clip() nên graphicsLayer không tràn ra ngoài viewport gốc.
+    // → frame chỉ scroll trong vùng ảnh gốc, không mở rộng theo zoom.
+    fun clampFrame(offset: Float): Float {
         if (imageHeightPx == 0) return 0f
-        val scaledH = imageHeightPx * scale
         val halfFrame = framePx / 2f
-        val halfImg = scaledH / 2f
+        val halfImg = imageHeightPx / 2f
         if (halfImg <= halfFrame) return 0f
         return offset.coerceIn(-(halfImg - halfFrame), halfImg - halfFrame)
     }
@@ -136,15 +134,19 @@ fun AvatarCropper(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
+                // clip: ảnh zoom to bị giữ trong boundary Box gốc
+                // → Canvas overlay cùng size → dim đúng, không có pixel tràn ra ngoài sáng
+                .clip(RectangleShape)
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         if (zoom != 1f) {
-                            // minScale là lower bound — không cho zoom nhỏ hơn mức phủ frame
+                            // Zoom: visual only — boundary frame KHÔNG đổi theo scale
                             val minScale = computeMinScale(imageHeightPx)
                             val newScale = (imageScale * zoom).coerceIn(minScale, minScale * 5f)
-                            frameOffsetY = clampFrame(frameOffsetY, newScale)
                             imageScale = newScale
+                            // KHÔNG re-clamp frameOffsetY — boundary luôn là ảnh gốc
                         } else {
+                            // Pan: frame scroll trong boundary ảnh gốc
                             frameOffsetY = clampFrame(frameOffsetY + pan.y)
                         }
                     }
@@ -162,9 +164,7 @@ fun AvatarCropper(
                         if (newH != imageHeightPx || newW != imageWidthPx) {
                             imageWidthPx = newW
                             imageHeightPx = newH
-                            // Khi Coil render xong và đo được kích thước thực:
-                            // nếu ảnh landscape (height < framePx) → apply minScale ngay
-                            // để ảnh scale lên phủ frame, không lộ nền đen
+                            // Apply minScale ngay khi đo được (ảnh landscape tự scale lên)
                             val minScale = computeMinScale(newH)
                             if (imageScale < minScale) {
                                 imageScale = minScale
@@ -241,17 +241,6 @@ fun AvatarCropper(
 //  Crop logic
 // ─────────────────────────────────────────────────────────────
 
-/**
- * Tính vùng ảnh gốc tương ứng với frame rồi decode bằng BitmapRegionDecoder.
- *
- * Khi imageScale > 1 (ảnh landscape đã được scale lên để phủ frame),
- * cần tính ngược scale để ra đúng pixel gốc:
- *
- *   scaledImgTop  = (displayH - displayH * scale) / 2   ← pivot center
- *   frameTopInScaled   = frameTop - scaledImgTop
- *   frameTopInDisplay  = frameTopInScaled / scale
- *   srcTop = frameTopInDisplay * (origH / displayH)
- */
 private fun cropRegion(
     context: Context,
     uri: Uri,
@@ -307,10 +296,14 @@ private fun cropRegion(
 private fun DrawScope.drawDimRects(frameTop: Float, frameH: Float) {
     val dim = Color(0x99000000)
     val frameBottom = frameTop + frameH
-    if (frameTop > 0f) drawRect(dim, topLeft = Offset.Zero, size = Size(size.width, frameTop))
-    if (frameBottom < size.height) drawRect(
-        dim, topLeft = Offset(0f, frameBottom), size = Size(size.width, size.height - frameBottom)
-    )
+    if (frameTop > 0f)
+        drawRect(dim, topLeft = Offset.Zero, size = Size(size.width, frameTop))
+    if (frameBottom < size.height)
+        drawRect(
+            dim,
+            topLeft = Offset(0f, frameBottom),
+            size = Size(size.width, size.height - frameBottom)
+        )
 }
 
 private fun DrawScope.drawGrid(frameTop: Float, frameH: Float) {
