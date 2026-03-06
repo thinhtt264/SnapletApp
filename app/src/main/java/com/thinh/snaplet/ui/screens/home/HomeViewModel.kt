@@ -53,8 +53,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -98,7 +100,16 @@ class HomeViewModel @Inject constructor(
         )
     )
 
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<HomeUiState> = combine(
+        _uiState,
+        userRepository.observeMyUserProfile()
+    ) { state, profile ->
+        state.copy(profileAvatarUrl = profile?.avatarUrl)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = _uiState.value
+    )
 
     private val _imageCapture = mutableStateOf<ImageCapture?>(null)
 
@@ -114,7 +125,9 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(shouldScrollToFirstPost = false) }
     }
 
-    private var currentPostVisible: Post? = null
+    private var currentVisibleIndex: Int = -1
+    private val currentPostVisible: Post?
+        get() = _uiState.value.posts.getOrNull(currentVisibleIndex)
 
     /** Temp posts for retry only: lookup by id to get imagePath/transform/caption. Not in UI state. */
     private var tempPosts: List<Post> = emptyList()
@@ -131,8 +144,8 @@ class HomeViewModel @Inject constructor(
     private fun loadFriendsCount() {
         viewModelScope.launch {
             getDisplayableFriendsCountUseCase().onSuccess { count ->
-                    updateFriendSheetState { it.copy(friendsCount = count) }
-                }
+                updateFriendSheetState { it.copy(friendsCount = count) }
+            }
         }
     }
 
@@ -151,44 +164,44 @@ class HomeViewModel @Inject constructor(
                     RelationshipStatus.ACCEPTED, RelationshipStatus.PENDING
                 )
             ).onSuccess { list ->
-                    val accepted = list.filter { it.status == RelationshipStatus.ACCEPTED }
-                    val pending = list.filter { it.status == RelationshipStatus.PENDING }
-                    val pendingWithActions = coroutineScope {
-                        pending.map { item ->
-                            async {
-                                PendingListItemState(
-                                    item, getRelationshipActionUseCase(item.userId)
-                                )
-                            }
-                        }.awaitAll()
-                    }
-                    updateFriendSheetState {
-                        it.copy(
-                            friendList = accepted,
-                            pendingList = pendingWithActions,
-                            isLoadingFriendList = false
-                        )
-                    }
-                }.onFailure {
-                    updateFriendSheetState { it.copy(isLoadingFriendList = false) }
+                val accepted = list.filter { it.status == RelationshipStatus.ACCEPTED }
+                val pending = list.filter { it.status == RelationshipStatus.PENDING }
+                val pendingWithActions = coroutineScope {
+                    pending.map { item ->
+                        async {
+                            PendingListItemState(
+                                item, getRelationshipActionUseCase(item.userId)
+                            )
+                        }
+                    }.awaitAll()
                 }
+                updateFriendSheetState {
+                    it.copy(
+                        friendList = accepted,
+                        pendingList = pendingWithActions,
+                        isLoadingFriendList = false
+                    )
+                }
+            }.onFailure {
+                updateFriendSheetState { it.copy(isLoadingFriendList = false) }
+            }
         }
     }
 
     fun acceptFriendRequest(pending: RelationshipWithUser) {
         viewModelScope.launch {
             acceptFriendRequestUseCase(pending.id).onSuccess {
-                    val acceptedRelationship = pending.copy(status = RelationshipStatus.ACCEPTED)
-                    updateFriendSheetState { state ->
-                        state.copy(
-                            pendingList = state.pendingList.filterNot { it.relationship.id == pending.id },
-                            friendList = state.friendList + acceptedRelationship
-                        )
-                    }
-                    loadFriendsCount()
-                }.onFailure { error ->
-                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
+                val acceptedRelationship = pending.copy(status = RelationshipStatus.ACCEPTED)
+                updateFriendSheetState { state ->
+                    state.copy(
+                        pendingList = state.pendingList.filterNot { it.relationship.id == pending.id },
+                        friendList = state.friendList + acceptedRelationship
+                    )
                 }
+                loadFriendsCount()
+            }.onFailure { error ->
+                _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
+            }
         }
     }
 
@@ -197,22 +210,22 @@ class HomeViewModel @Inject constructor(
             val state = _uiState.value.friendSheetState
             if (friend.status == RelationshipStatus.PENDING) {
                 removeRelationshipUseCase(friend.id).onSuccess {
-                        updateFriendSheetState { s ->
-                            s.copy(pendingList = s.pendingList.filterNot { it.relationship.id == friend.id })
-                        }
-                    }.onFailure { error ->
-                        _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
+                    updateFriendSheetState { s ->
+                        s.copy(pendingList = s.pendingList.filterNot { it.relationship.id == friend.id })
                     }
+                }.onFailure { error ->
+                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
+                }
             } else {
                 val currentCount = state.friendsCount
                 removeFriendUseCase(friend.id, currentCount).onSuccess {
-                        updateFriendSheetState { s ->
-                            s.copy(friendList = s.friendList.filterNot { it.id == friend.id })
-                        }
-                        loadFriendsCount()
-                    }.onFailure { error ->
-                        _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
+                    updateFriendSheetState { s ->
+                        s.copy(friendList = s.friendList.filterNot { it.id == friend.id })
                     }
+                    loadFriendsCount()
+                }.onFailure { error ->
+                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
+                }
             }
         }
     }
@@ -279,7 +292,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onItemVisible(currentIndex: Int) {
-        currentPostVisible = _uiState.value.posts.getOrNull(currentIndex)
+        currentVisibleIndex = currentIndex
 
         val state = _uiState.value
         val shouldLoad = shouldTriggerLoadMoreUseCase(
@@ -450,7 +463,8 @@ class HomeViewModel @Inject constructor(
                     runUploadAndUpdateStatus(tempPostId, processedPath, transform, input.caption)
                 }
 
-                is ValidateUploadPostUseCase.ValidateUploadResult.AlreadyUploading -> { /* no-op, already uploading */ }
+                is ValidateUploadPostUseCase.ValidateUploadResult.AlreadyUploading -> { /* no-op, already uploading */
+                }
 
                 is ValidateUploadPostUseCase.ValidateUploadResult.NoImage -> {
                     _uiState.update { it.copy(snackbarMessage = UiText.DynamicString("No image to upload")) }
@@ -477,11 +491,6 @@ class HomeViewModel @Inject constructor(
                             uploadStatuses = state.uploadStatuses - tempPostId,
                             snackbarMessage = UiText.DynamicString("Post uploaded successfully")
                         )
-                    }
-                    // Sync cached ref so interactions (delete/share) use the real BE id
-                    // before onItemVisible re-reads from the updated posts list.
-                    if (currentPostVisible?.id == tempPostId) {
-                        currentPostVisible = currentPostVisible?.copy(id = realPostId)
                     }
                 }
 
@@ -530,7 +539,7 @@ class HomeViewModel @Inject constructor(
                     id = "report",
                     label = UiText.StringResource(R.string.report),
                     color = Red,
-                    onClick = { /* TODO: report */ })
+                    onClick = {})
 
                 is PostAction.Cancel -> SheetOption(
                     id = "cancel",
@@ -589,17 +598,17 @@ class HomeViewModel @Inject constructor(
     private fun deletePost(postId: String) {
         viewModelScope.launch {
             deletePostUseCase(postId).onSuccess {
-                    tempPosts = tempPosts.filterNot { it.id == postId }
-                    _uiState.update { state ->
-                        state.copy(
-                            posts = state.posts.filterNot { it.id == postId },
-                            uploadStatuses = state.uploadStatuses - postId
-                        )
-                    }
-                    _uiState.update { it.copy(snackbarMessage = UiText.StringResource(R.string.post_deleted)) }
-                }.onFailure { error ->
-                    _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
+                tempPosts = tempPosts.filterNot { it.id == postId }
+                _uiState.update { state ->
+                    state.copy(
+                        posts = state.posts.filterNot { it.id == postId },
+                        uploadStatuses = state.uploadStatuses - postId
+                    )
                 }
+                _uiState.update { it.copy(snackbarMessage = UiText.StringResource(R.string.post_deleted)) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(snackbarMessage = UiText.DynamicString(error.message)) }
+            }
         }
     }
 
@@ -614,19 +623,19 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(isDownloading = true) }
         viewModelScope.launch {
             downloadPostImageUseCase(imageSource).onSuccess {
-                    _uiState.update {
-                        it.copy(
-                            isDownloading = false
-                        )
-                    }
-                }.onFailure { e ->
-                    _uiState.update {
-                        it.copy(
-                            isDownloading = false,
-                            snackbarMessage = UiText.DynamicString(e.message ?: "Download failed")
-                        )
-                    }
+                _uiState.update {
+                    it.copy(
+                        isDownloading = false
+                    )
                 }
+            }.onFailure { e ->
+                _uiState.update {
+                    it.copy(
+                        isDownloading = false,
+                        snackbarMessage = UiText.DynamicString(e.message ?: "Download failed")
+                    )
+                }
+            }
         }
     }
 }

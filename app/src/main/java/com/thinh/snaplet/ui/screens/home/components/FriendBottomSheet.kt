@@ -308,7 +308,7 @@ private fun FriendListItemActionSlot(
 
         is RelationshipAction.PendingByMe -> {
             AppIconButton(
-                modifier = Modifier.size(ICON_BUTTON_SIZE / 1.5f),
+                modifier = Modifier.size(ICON_BUTTON_SIZE / 1.3f),
                 icon = IconSpec.Vector(
                     Icons.Outlined.Refresh, tint = MaterialTheme.colorScheme.onBackground
                 ),

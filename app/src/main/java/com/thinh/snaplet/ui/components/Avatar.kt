@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,6 +21,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.thinh.snaplet.ui.common.CommonImages
+import com.thinh.snaplet.ui.components.image.AsyncImage
+import com.thinh.snaplet.ui.components.image.ErrorPlaceholderConfig
+import com.thinh.snaplet.ui.components.image.ErrorStateConfig
+import com.thinh.snaplet.ui.components.image.ImageSize
+import com.thinh.snaplet.ui.components.image.LoadingStateConfig
 
 private val DEFAULT_AVATAR_BORDER_WIDTH = 2.dp
 private val AVATAR_BORDER_GAP = 4.dp
@@ -30,6 +36,7 @@ fun Avatar(
     firstName: String,
     isConnectedUser: Boolean,
     modifier: Modifier = Modifier,
+    isUploading: Boolean = false,
     size: Dp = 48.dp,
     borderWidth: Dp = DEFAULT_AVATAR_BORDER_WIDTH
 ) {
@@ -44,9 +51,7 @@ fun Avatar(
         modifier = modifier
             .size(size)
             .border(
-                width = borderWidth,
-                color = borderColor,
-                shape = CircleShape
+                width = borderWidth, color = borderColor, shape = CircleShape
             )
             .padding(borderWidth + AVATAR_BORDER_GAP)
             .clip(CircleShape),
@@ -62,12 +67,9 @@ fun Avatar(
             ) {
                 val fontSize = (minOf(maxWidth, maxHeight).value * 0.4f).sp
                 BaseText(
-                    text = initial,
-                    typography = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = fontSize,
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = initial, typography = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = fontSize, fontWeight = FontWeight.SemiBold
+                    ), color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
@@ -76,10 +78,29 @@ fun Avatar(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 resizeSize = ImageSize.Thumbnail,
-                errorPlaceholder = painterResource(CommonImages.ProfilePlaceholder),
-                showLoadingIndicator = false,
-                errorBackgroundColor = Color.Transparent
+                loadingConfig = LoadingStateConfig.Indicator(indicatorSize = size / 3),
+                errorConfig = ErrorStateConfig(
+                    backgroundColor = Color.Transparent,
+                    placeholder = ErrorPlaceholderConfig.WithPainter(
+                        painter = painterResource(CommonImages.ProfilePlaceholder), size = 124.dp
+                    )
+                )
             )
+
+            if (isUploading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.7f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(size / 3),
+                        strokeWidth = 3.dp
+                    )
+                }
+            }
         }
     }
 }

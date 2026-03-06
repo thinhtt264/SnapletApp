@@ -6,6 +6,8 @@ sealed class NavScreen(val route: String) {
 
     data object Onboarding : NavScreen("onboarding")
     data object Home : NavScreen("home")
+    data object MyProfile : NavScreen("my_profile")
+    data object ImageCrop : NavScreen("image_crop/{imageUri}")
     data object Login : NavScreen("login")
     data object Register : NavScreen("register")
 }
