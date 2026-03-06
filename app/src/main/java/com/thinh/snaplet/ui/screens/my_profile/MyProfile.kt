@@ -1,5 +1,6 @@
 package com.thinh.snaplet.ui.screens.my_profile
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -124,6 +125,7 @@ private data class ProfileStrings(
 fun MyProfile(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit,
+    onNavigateToImageCrop: (android.net.Uri) -> Unit,
     viewModel: MyProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -132,7 +134,8 @@ fun MyProfile(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            viewModel.onPhotoPicked(uri)
+            viewModel.onPhotoPickerDismissed()
+            onNavigateToImageCrop(uri)
         } else {
             viewModel.onPhotoPickerDismissed()
         }

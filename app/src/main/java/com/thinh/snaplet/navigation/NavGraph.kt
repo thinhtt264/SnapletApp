@@ -4,10 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import androidx.navigation.navArgument
 import com.thinh.snaplet.ui.screens.home.Home
+import com.thinh.snaplet.ui.screens.image_crop.ImageCrop
 import com.thinh.snaplet.ui.screens.login.Login
 import com.thinh.snaplet.ui.screens.my_profile.MyProfile
 import com.thinh.snaplet.ui.screens.onboarding.Onboarding
@@ -51,7 +54,22 @@ fun NavGraphBuilder.homeGraph(navController: NavHostController) {
             popEnterTransition = NavTransitions.MyProfile.popEnter,
             popExitTransition = NavTransitions.MyProfile.popExit
         ) {
-            MyProfile(onBackClick = actions::popBackStack)
+            MyProfile(
+                onBackClick = actions::popBackStack,
+                onNavigateToImageCrop = actions::navigateToImageCrop,
+            )
+        }
+        composable(
+            route = NavScreen.ImageCrop.route,
+            arguments = listOf(
+                navArgument("imageUri") { type = NavType.StringType }
+            ),
+            // enterTransition = NavTransitions.Default.enter,
+            // exitTransition = NavTransitions.Default.exit,
+            // popEnterTransition = NavTransitions.Default.popEnter,
+            // popExitTransition = NavTransitions.Default.popExit
+        ) {
+            ImageCrop()
         }
     }
 }
