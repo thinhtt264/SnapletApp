@@ -8,5 +8,5 @@ data class MyProfileUiState(
     val email: String = "",
     val widgetChainEnabled: Boolean = true,
     val showPhotoPicker: Boolean = false,
-    val selectedPhotoUri: String? = null,
+    val isAvatarChanging: Boolean = false,
 )

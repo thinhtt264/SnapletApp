@@ -6,11 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.thinh.snaplet.R
 import com.thinh.snaplet.data.repository.UserRepository
 import com.thinh.snaplet.data.repository.auth.AuthRepository
+import com.thinh.snaplet.domain.model.UploadAvatarResult
+import com.thinh.snaplet.domain.user.UploadAvatarUseCase
 import com.thinh.snaplet.platform.photo_picker.PhotoPickerManager
 import com.thinh.snaplet.ui.common.UiText
 import com.thinh.snaplet.ui.overlay.OverlayEventBus
 import com.thinh.snaplet.ui.overlay.SheetOption
 import com.thinh.snaplet.ui.theme.Red
+import com.thinh.snaplet.utils.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,64 +26,88 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MyProfileViewModel @Inject constructor(
-    userRepository: UserRepository,
+    private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
     private val photoPickerManager: PhotoPickerManager,
+    private val uploadAvatarUseCase: UploadAvatarUseCase,
 ) : ViewModel() {
 
-    private val _widgetChainEnabled = MutableStateFlow(true)
-    private val _showPhotoPicker = MutableStateFlow(false)
-    private val _selectedPhotoUri = MutableStateFlow<String?>(null)
+    private val _uiState = MutableStateFlow(
+        MyProfileUiState(
+            widgetChainEnabled = true,
+            showPhotoPicker = false,
+            isAvatarChanging = false,
+        )
+    )
 
     val uiState: StateFlow<MyProfileUiState> = combine(
+        _uiState,
         userRepository.observeMyUserProfile(),
-        _widgetChainEnabled,
-        _showPhotoPicker,
-        _selectedPhotoUri,
-    ) { profile, chainEnabled, showPicker, selectedUri ->
-        MyProfileUiState(
+    ) { state, profile ->
+        state.copy(
             displayName = profile?.displayName.orEmpty(),
             firstName = profile?.firstName.orEmpty(),
             avatarUrl = profile?.avatarUrl,
             userName = profile?.userName.orEmpty(),
             email = profile?.email.orEmpty(),
-            widgetChainEnabled = chainEnabled,
-            showPhotoPicker = showPicker,
-            selectedPhotoUri = selectedUri,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = MyProfileUiState()
+        initialValue = _uiState.value
     )
 
     fun onWidgetChainToggle() {
-        _widgetChainEnabled.update { !it }
+        _uiState.update { it.copy(widgetChainEnabled = !it.widgetChainEnabled) }
     }
 
     fun onPhotoPickerLaunched() {
-        _showPhotoPicker.value = false
+        _uiState.update { it.copy(showPhotoPicker = true) }
     }
 
     fun onPhotoPicked(uri: Uri) {
         viewModelScope.launch {
-            val processedUri = photoPickerManager.processPickedImage(uri)
-            if (processedUri != null) {
-                _selectedPhotoUri.value = processedUri.toString()
+            try {
+                _uiState.update { it.copy(isAvatarChanging = true) }
+
+                val processedUri = photoPickerManager.processPickedImage(uri)
+                val imagePath = processedUri?.path
+                if (!imagePath.isNullOrBlank()) {
+                    when (val result = uploadAvatarUseCase(imagePath)) {
+                        is UploadAvatarResult.Success -> {
+                            Logger.d("✅ Avatar uploaded successfully")
+                        }
+
+                        is UploadAvatarResult.Failed -> {
+                            Logger.e("❌ Avatar upload failed: ${result.message}")
+                        }
+                    }
+                } else {
+                    Logger.e("❌ Avatar upload failed: processedUri.path is null or blank")
+                }
+            } finally {
+                _uiState.update { it.copy(isAvatarChanging = false) }
             }
         }
     }
 
     fun onPhotoPickerDismissed() {
-        _showPhotoPicker.value = false
+        _uiState.update { it.copy(showPhotoPicker = false) }
     }
 
     private fun handlePickFromGallery() {
-        _showPhotoPicker.value = true
+        _uiState.update { it.copy(showPhotoPicker = true) }
     }
 
     private fun handleDeleteAvatar() {
-        _selectedPhotoUri.value = null
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isAvatarChanging = true) }
+                userRepository.deleteAvatar()
+            } finally {
+                _uiState.update { it.copy(isAvatarChanging = true) }
+            }
+        }
     }
 
     private fun handleLogout() {
@@ -112,8 +139,7 @@ class MyProfileViewModel @Inject constructor(
                 id = "pick_from_gallery",
                 label = UiText.StringResource(R.string.pick_photo_from_gallery),
                 onClick = ::handlePickFromGallery,
-            ),
-            SheetOption(
+            ), SheetOption(
                 id = "delete_avatar",
                 label = UiText.StringResource(R.string.delete_avatar),
                 color = Red,

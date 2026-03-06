@@ -207,7 +207,6 @@ private fun MyProfileContent(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -232,11 +231,12 @@ private fun MyProfileContent(
         }
 
         ProfileHeader(
-            avatarUrl = uiState.selectedPhotoUri ?: uiState.avatarUrl,
+            avatarUrl = uiState.avatarUrl,
             firstName = uiState.firstName,
             displayName = uiState.displayName,
             editPhotoLabel = editPhotoLabel,
             onEditPhotoClick = onEditPhotoClick,
+            isAvatarUploading = uiState.isAvatarChanging
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -266,6 +266,7 @@ private fun ProfileHeader(
     avatarUrl: String?,
     firstName: String,
     displayName: String,
+    isAvatarUploading: Boolean,
     editPhotoLabel: String,
     onEditPhotoClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -276,9 +277,10 @@ private fun ProfileHeader(
         Avatar(
             avatarUrl = avatarUrl,
             firstName = firstName,
+            isUploading = isAvatarUploading,
             isConnectedUser = true,
             size = 120.dp,
-            borderWidth = 3.dp,
+            borderWidth = 4.dp,
         )
 
         Spacer(modifier = Modifier.height(8.dp))

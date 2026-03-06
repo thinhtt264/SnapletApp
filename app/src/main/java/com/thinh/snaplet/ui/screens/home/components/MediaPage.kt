@@ -39,9 +39,11 @@ import androidx.compose.ui.zIndex
 import com.thinh.snaplet.R
 import com.thinh.snaplet.data.model.Post
 import com.thinh.snaplet.ui.common.CommonImages
-import com.thinh.snaplet.ui.components.AsyncImage
 import com.thinh.snaplet.ui.components.BaseText
-import com.thinh.snaplet.ui.components.ImageSize
+import com.thinh.snaplet.ui.components.image.AsyncImage
+import com.thinh.snaplet.ui.components.image.ErrorPlaceholderConfig
+import com.thinh.snaplet.ui.components.image.ErrorStateConfig
+import com.thinh.snaplet.ui.components.image.ImageSize
 import com.thinh.snaplet.ui.screens.home.UploadStatus
 import com.thinh.snaplet.ui.theme.Red
 import com.thinh.snaplet.utils.formatTimeAgo
@@ -128,9 +130,12 @@ private fun PostMediaContent(post: Post) {
                 },
             resizeSize = ImageSize.Small,
             contentScale = ContentScale.Crop,
-            showLoadingIndicator = true,
-            errorBackgroundColor = MaterialTheme.colorScheme.surface,
-            errorPlaceholder = painterResource(CommonImages.PhotoPlaceholder)
+            errorConfig = ErrorStateConfig(
+                backgroundColor = MaterialTheme.colorScheme.surface,
+                placeholder = ErrorPlaceholderConfig.WithPainter(
+                    painter = painterResource(CommonImages.PhotoPlaceholder)
+                )
+            )
         )
 
         if (!post.caption.isNullOrBlank()) {
@@ -250,7 +255,6 @@ private fun PostMetadata(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         resizeSize = ImageSize.Thumbnail,
-                        showLoadingIndicator = true
                     )
                 }
                 BaseText(
